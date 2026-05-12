@@ -544,12 +544,13 @@ git commit -m "feat(shared): add Zod schemas for pagination, ids, and error enve
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "outDir": "./dist"
   },
   "include": ["src/**/*", "drizzle.config.ts"]
 }
 ```
+
+> Note: we deliberately don't set `rootDir`. Because `drizzle.config.ts` sits at the package root rather than under `src/`, an explicit `rootDir: "./src"` triggers TS6059 — let TS infer rootDir from the include list instead.
 
 - [ ] **Step 3: Write `packages/db/drizzle.config.ts`**
 
