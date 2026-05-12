@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+.vite/
+*.tsbuildinfo
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+.vitest/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local data (dev compose volumes if mounted to repo)
+.data/
+.minio/
+.postgres/
