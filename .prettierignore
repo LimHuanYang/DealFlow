@@ -1,0 +1,16 @@
+# Lockfile (managed by pnpm)
+pnpm-lock.yaml
+
+# Build output / generated
+**/dist/
+**/build/
+**/coverage/
+**/playwright-report/
+**/test-results/
+**/routeTree.gen.ts
+
+# Docs are human-formatted (long lines, intentional layout)
+docs/
+
+# Vendored / external
+node_modules/
