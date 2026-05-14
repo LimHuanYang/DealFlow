@@ -7,6 +7,11 @@
 
   body {
     @apply bg-white text-neutral-900 antialiased;
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      sans-serif;
   }
 }

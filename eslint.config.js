@@ -5,7 +5,14 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ['**/dist/**', '**/build/**', '**/node_modules/**', '**/.vite/**'],
+    ignores: [
+      '**/dist/**',
+      '**/build/**',
+      '**/node_modules/**',
+      '**/.vite/**',
+      '**/routeTree.gen.ts',
+      'slides/**',
+    ],
   },
   {
     rules: {

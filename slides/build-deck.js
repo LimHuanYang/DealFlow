@@ -438,8 +438,14 @@ function s3_wedges(page, total) {
   s.addText(
     [
       { text: 'Summarize long notes in 2 bullets', options: { bullet: true, breakLine: true } },
-      { text: 'Draft follow-up emails from deal context', options: { bullet: true, breakLine: true } },
-      { text: 'Natural-language filters ("stalled >14d, >$10k")', options: { bullet: true, breakLine: true } },
+      {
+        text: 'Draft follow-up emails from deal context',
+        options: { bullet: true, breakLine: true },
+      },
+      {
+        text: 'Natural-language filters ("stalled >14d, >$10k")',
+        options: { bullet: true, breakLine: true },
+      },
       { text: 'Extract contacts from pasted email signatures', options: { bullet: true } },
     ],
     {
@@ -461,7 +467,11 @@ function s3_wedges(page, total) {
 function s4_audiences(page, total) {
   const s = pres.addSlide();
   s.background = { color: C.bgLight };
-  slideTitle(s, 'One kernel. Four audiences.', 'All share the same core. Each gets dedicated features over Phases 2-4.');
+  slideTitle(
+    s,
+    'One kernel. Four audiences.',
+    'All share the same core. Each gets dedicated features over Phases 2-4.',
+  );
 
   const audiences = [
     {
@@ -546,15 +556,33 @@ function s4_audiences(page, total) {
 function s5_kernel(page, total) {
   const s = pres.addSlide();
   s.background = { color: C.bgLight };
-  slideTitle(s, 'Phase 1 — The kernel.', 'Everything our four audiences share. Built first, polished, then expanded.');
+  slideTitle(
+    s,
+    'Phase 1 — The kernel.',
+    'Everything our four audiences share. Built first, polished, then expanded.',
+  );
 
   const left = [
     { head: 'Core CRM data', items: ['Contacts', 'Companies', 'Deals', 'Pipelines & stages'] },
-    { head: 'Workflow', items: ['Kanban with drag-drop', 'Activities, Notes, Tasks', 'Inline editing everywhere'] },
+    {
+      head: 'Workflow',
+      items: ['Kanban with drag-drop', 'Activities, Notes, Tasks', 'Inline editing everywhere'],
+    },
   ];
   const right = [
-    { head: 'Foundation', items: ['Email + password auth', 'Google OAuth', 'Multi-tenant isolation', 'Team invitations'] },
-    { head: 'Differentiators', items: ['4 AI actions in v1', 'Cmd-K command palette', 'SaaS + self-host from one codebase'] },
+    {
+      head: 'Foundation',
+      items: [
+        'Email + password auth',
+        'Google OAuth',
+        'Multi-tenant isolation',
+        'Team invitations',
+      ],
+    },
+    {
+      head: 'Differentiators',
+      items: ['4 AI actions in v1', 'Cmd-K command palette', 'SaaS + self-host from one codebase'],
+    },
   ];
 
   const colW = 4.35;
@@ -615,13 +643,49 @@ function s5_kernel(page, total) {
 function s6_roadmap(page, total) {
   const s = pres.addSlide();
   s.background = { color: C.bgLight };
-  slideTitle(s, 'The road from kernel to category leader.', 'Each phase ships something real. No 12-month silent builds.');
+  slideTitle(
+    s,
+    'The road from kernel to category leader.',
+    'Each phase ships something real. No 12-month silent builds.',
+  );
 
   const phases = [
-    { label: 'Phase 1', tag: 'Now', color: C.primary, items: ['Contacts', 'Deals + Pipeline', 'Activities, Notes', 'Auth + Orgs', '4 AI actions'] },
-    { label: 'Phase 2', tag: '+3 months', color: C.speed, items: ['Email sync', 'Calendar', 'Reporting', 'Magic links', 'Microsoft OAuth'] },
-    { label: 'Phase 3', tag: '+6 months', color: C.ai, items: ['Workflow automation', 'Custom objects + fields', 'Mobile app', 'Time-tracking', 'Client projects'] },
-    { label: 'Phase 4', tag: '+12 months', color: C.amber, items: ['Public API + webhooks', 'Native integrations', 'Marketplace', 'SSO / SAML', 'Multi-region'] },
+    {
+      label: 'Phase 1',
+      tag: 'Now',
+      color: C.primary,
+      items: ['Contacts', 'Deals + Pipeline', 'Activities, Notes', 'Auth + Orgs', '4 AI actions'],
+    },
+    {
+      label: 'Phase 2',
+      tag: '+3 months',
+      color: C.speed,
+      items: ['Email sync', 'Calendar', 'Reporting', 'Magic links', 'Microsoft OAuth'],
+    },
+    {
+      label: 'Phase 3',
+      tag: '+6 months',
+      color: C.ai,
+      items: [
+        'Workflow automation',
+        'Custom objects + fields',
+        'Mobile app',
+        'Time-tracking',
+        'Client projects',
+      ],
+    },
+    {
+      label: 'Phase 4',
+      tag: '+12 months',
+      color: C.amber,
+      items: [
+        'Public API + webhooks',
+        'Native integrations',
+        'Marketplace',
+        'SSO / SAML',
+        'Multi-region',
+      ],
+    },
   ];
 
   const cardW = 2.2;
@@ -702,7 +766,11 @@ function s6_roadmap(page, total) {
 function s7_deployment(page, total) {
   const s = pres.addSlide();
   s.background = { color: C.bgLight };
-  slideTitle(s, 'SaaS or self-host. Same code.', 'One env var switches modes. No fork, no two products.');
+  slideTitle(
+    s,
+    'SaaS or self-host. Same code.',
+    'One env var switches modes. No fork, no two products.',
+  );
 
   const halfW = 4.3;
   const gap = 0.4;
@@ -1078,7 +1146,11 @@ function s9_status(page, total) {
 function s10_matrix(page, total) {
   const s = pres.addSlide();
   s.background = { color: C.bgLight };
-  slideTitle(s, 'How we stack up.', 'Where we plan to land once Phase 1 ships. Be honest, not greedy.');
+  slideTitle(
+    s,
+    'How we stack up.',
+    'Where we plan to land once Phase 1 ships. Be honest, not greedy.',
+  );
 
   const rows = [
     ['', 'DealFlow', 'HubSpot', 'Pipedrive', 'Vtiger OSS'],
@@ -1175,17 +1247,26 @@ function s11_ask() {
     {
       title: 'Follow along',
       color: C.primary,
-      lines: ['github.com/LimHuanYang/DealFlow', 'Public repo. Watch / star for updates as Phase 1 ships.'],
+      lines: [
+        'github.com/LimHuanYang/DealFlow',
+        'Public repo. Watch / star for updates as Phase 1 ships.',
+      ],
     },
     {
       title: 'Be a design partner',
       color: C.speed,
-      lines: ['Early access + your feedback shapes the product.', 'Best fit: small B2B sales team, agency, or solo founder.'],
+      lines: [
+        'Early access + your feedback shapes the product.',
+        'Best fit: small B2B sales team, agency, or solo founder.',
+      ],
     },
     {
       title: 'Build something custom',
       color: C.ai,
-      lines: ['Custom CRM work or DealFlow-on-your-infra deployments.', 'Get in touch to discuss scope.'],
+      lines: [
+        'Custom CRM work or DealFlow-on-your-infra deployments.',
+        'Get in touch to discuss scope.',
+      ],
     },
   ];
 
