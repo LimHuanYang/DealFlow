@@ -2,12 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { startTestPostgres, type TestDatabase } from './postgres.js';
 
-describe('testcontainers Postgres helper', () => {
+describe('Postgres test helper (native, per-file disposable DB)', () => {
   let testDb: TestDatabase;
 
   beforeAll(async () => {
     testDb = await startTestPostgres();
-  }, 180_000); // testcontainers + Postgres init on Windows/WSL 2 can take 60-90s on first run
+  }, 30_000); // native Postgres + CREATE DATABASE is fast (~1-2s); generous margin for CI
 
   afterAll(async () => {
     await testDb.stop();

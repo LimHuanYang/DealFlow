@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> 🛠 **2026-05-15 revision** — Tasks 5 and 7 originally used Docker Compose + testcontainers. The repo migrated to **native Postgres on the host** for both dev and integration tests. See the design doc's banner for the why. The Task 5 and Task 7 sections below reflect the native path.
+
 **Goal:** Stand up a working DealFlow monorepo: pnpm workspaces, dev Docker environment (Postgres + MinIO + Mailhog), Drizzle DB infrastructure, Fastify API skeleton with a passing health endpoint integration test, Vite + React web skeleton with shadcn/ui initialized and a passing E2E smoke test, plus baseline CI. After this plan, every subsequent plan in Phase 1 starts from a clean, well-tested foundation rather than scaffolding work.
 
 **Architecture:** pnpm workspace monorepo with two deployables (`apps/api`, `apps/web`) and three shared packages (`packages/db`, `packages/shared`, `packages/ai`). Local dev runs via Docker Compose. The API uses Fastify with Zod-derived request validation; the web app uses Vite + React + TanStack Router/Query + Tailwind + shadcn/ui. Test infrastructure (Vitest + testcontainers-Postgres for integration, Playwright for E2E) is set up in this plan so every subsequent plan adds tests, not test infrastructure.
@@ -836,91 +838,67 @@ git commit -m "feat(ai): AIProvider interface + NoopAIProvider with AIDisabledEr
 
 ---
 
-## Task 5: Docker Compose dev environment (Postgres + MinIO + Mailhog)
+## Task 5: Install native Postgres 16 + create dealflow user/DBs
 
-**Files:**
-- Create: `infra/compose/docker-compose.dev.yml`
+> 🛠 Revised 2026-05-15 — replaced Docker Compose + MinIO + Mailhog with native Postgres on the host. MinIO and Mailhog are deferred to Sub-Plan 6+ when file storage and outbound email are actually needed.
 
-- [ ] **Step 1: Write `infra/compose/docker-compose.dev.yml`**
+**Prerequisite:** PostgreSQL 16 installed on the host. On Windows: download from https://www.postgresql.org/download/windows/, run the EDB installer, set the `postgres` superuser password to `postgres` (dev convention), keep the default port 5432, uncheck Stack Builder at the end. Verify with `Get-Service postgresql-x64-16` showing Running/Automatic.
 
-```yaml
-name: dealflow-dev
+- [ ] **Step 1: Verify Postgres is installed and listening**
 
-services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: dealflow
-      POSTGRES_PASSWORD: dealflow
-      POSTGRES_DB: dealflow
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U dealflow -d dealflow']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio12345
-    ports:
-      - '9000:9000'   # S3 API
-      - '9001:9001'   # Console
-    volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    restart: unless-stopped
-    ports:
-      - '1025:1025'   # SMTP
-      - '8025:8025'   # UI
-
-volumes:
-  postgres-data:
-  minio-data:
+```powershell
+Get-Service postgresql-x64-16
+Test-NetConnection -ComputerName localhost -Port 5432 -InformationLevel Quiet
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" --version
 ```
 
-- [ ] **Step 2: Bring up the environment**
+Expected: service Running/Automatic, port 5432 open, `psql (PostgreSQL) 16.x`.
 
-Run: `pnpm dev:env`
-Expected: Pulls images (first run), starts 3 containers. After ~10s, all three become healthy.
+- [ ] **Step 2: Create the `dealflow` role + `dealflow` and `dealflow_test` databases**
 
-- [ ] **Step 3: Verify connectivity**
+```powershell
+$env:PGPASSWORD = "postgres"
+$psql = "C:\Program Files\PostgreSQL\16\bin\psql.exe"
 
-Run: `docker compose -f infra/compose/docker-compose.dev.yml ps`
-Expected: `postgres` and `minio` show "healthy"; `mailhog` shows "running" (no healthcheck defined for mailhog image).
+& $psql -U postgres -h localhost -c "CREATE ROLE dealflow LOGIN PASSWORD 'dealflow' CREATEDB;"
+& $psql -U postgres -h localhost -c "CREATE DATABASE dealflow OWNER dealflow;"
+& $psql -U postgres -h localhost -c "CREATE DATABASE dealflow_test OWNER dealflow;"
 
-Run: `docker exec dealflow-dev-postgres-1 psql -U dealflow -d dealflow -c 'SELECT 1;'`
-Expected: Returns `1` row.
+$env:PGPASSWORD = ""
+```
 
-Open in browser (manual check):
-- MinIO console: http://localhost:9001 (login: `minio` / `minio12345`)
-- Mailhog: http://localhost:8025
+The `CREATEDB` privilege on the `dealflow` role lets the integration test helper create disposable per-file databases without needing the postgres superuser at test time.
 
-- [ ] **Step 4: Bring it down (to confirm clean shutdown)**
+- [ ] **Step 3: Verify the dealflow user can connect to both DBs**
 
-Run: `pnpm dev:env:down`
-Expected: All 3 containers stopped, network removed. Volumes retained.
+```powershell
+$env:PGPASSWORD = "dealflow"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U dealflow -h localhost -d dealflow      -c "SELECT current_user, current_database();"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U dealflow -h localhost -d dealflow_test -c "SELECT current_user, current_database();"
+$env:PGPASSWORD = ""
+```
 
-- [ ] **Step 5: Commit**
+Expected: two rows showing `dealflow` connected to each respective DB.
+
+- [ ] **Step 4: Document the dev database conventions**
+
+Default connection strings (used by env config in Sub-Plan 2):
+
+```
+APP:   postgres://dealflow:dealflow@localhost:5432/dealflow
+TEST:  postgres://postgres:postgres@localhost:5432/postgres   # admin URL — used to create/drop per-test DBs
+```
+
+These can be overridden via env vars (`DATABASE_URL`, `DEALFLOW_TEST_ADMIN_URL`, etc.).
+
+- [ ] **Step 5: Commit (configuration only — no compose file)**
+
+No files to add for this task — the Postgres install lives on the host, not in the repo. If you previously committed `infra/compose/docker-compose.dev.yml`, remove it now:
 
 ```bash
-git add infra/compose/docker-compose.dev.yml
-git commit -m "feat(infra): Docker Compose dev environment (Postgres + MinIO + Mailhog)"
+git rm infra/compose/docker-compose.dev.yml
+git add -u
+git commit -m "infra: switch from Docker Compose to native Postgres for dev"
 ```
 
 ---
@@ -1230,91 +1208,110 @@ git commit -m "feat(api): Fastify skeleton with health route, error envelope, an
 
 ---
 
-## Task 7: API integration test infrastructure (testcontainers Postgres)
+## Task 7: API integration test infrastructure (native Postgres helper)
+
+> 🛠 Revised 2026-05-15 — was testcontainers; now uses native Postgres + per-file disposable database via `CREATE/DROP DATABASE`. Requires Task 5's `dealflow` role with `CREATEDB`. ~18× faster than testcontainers on Windows (5 s vs 94 s per test file).
 
 **Files:**
-- Modify: `apps/api/package.json` — add `testcontainers` + `@dealflow/db` already included; add `pg` types if needed
+- Modify: `apps/api/package.json` — add `postgres` to devDependencies (used directly by the test helper for the admin connection)
 - Create: `apps/api/test/helpers/postgres.ts`
 - Create: `apps/api/test/helpers/postgres.test.ts`
 
 This task installs the test harness that every later sub-plan will use to test against a real Postgres instance.
 
-- [ ] **Step 1: Add `testcontainers` + `@testcontainers/postgresql` to `apps/api/package.json` devDependencies**
+- [ ] **Step 1: Add `postgres` to `apps/api/package.json` devDependencies**
 
 Modify the `devDependencies` block in `apps/api/package.json`:
 
 ```json
 "devDependencies": {
-  "@testcontainers/postgresql": "^10.13.2",
   "@types/node": "^22.7.0",
-  "testcontainers": "^10.13.2",
+  "postgres": "^3.4.5",
   "tsx": "^4.19.2",
   "typescript": "^5.6.3",
   "vitest": "^2.1.4"
 }
 ```
 
-> **Why two packages:** testcontainers 10.x moved `PostgreSqlContainer` out of the `testcontainers` core into the `@testcontainers/postgresql` subpackage. The core package is still needed for the underlying APIs.
+> **Why a direct `postgres` dep:** the test helper opens a small admin connection to issue `CREATE DATABASE`/`DROP DATABASE`. While `postgres-js` is already a transitive dep via `@dealflow/db`, pnpm doesn't hoist it, so we declare it explicitly here.
 
 - [ ] **Step 2: Run pnpm install**
 
 Run: `pnpm install`
-Expected: Installs `testcontainers`.
+Expected: Installs `postgres` (the `postgres-js` driver).
 
 - [ ] **Step 3: Write `apps/api/test/helpers/postgres.ts`**
 
 ```ts
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { randomBytes } from 'node:crypto';
+import postgres from 'postgres';
 import { createDb, type Database } from '@dealflow/db';
+
+const ADMIN_URL =
+  process.env.DEALFLOW_TEST_ADMIN_URL ?? 'postgres://postgres:postgres@localhost:5432/postgres';
+
+const APP_USER = process.env.DEALFLOW_TEST_USER ?? 'dealflow';
+const APP_PASSWORD = process.env.DEALFLOW_TEST_PASSWORD ?? 'dealflow';
+const PG_HOST = process.env.DEALFLOW_TEST_HOST ?? 'localhost';
+const PG_PORT = process.env.DEALFLOW_TEST_PORT ?? '5432';
 
 export interface TestDatabase {
   db: Database;
   url: string;
+  dbName: string;
   stop: () => Promise<void>;
 }
 
-/**
- * Start a fresh Postgres container for one test file.
- * Use in `beforeAll`; call `stop()` in `afterAll`.
- *
- * Sub-Plan 2 will extend this helper to also run Drizzle migrations
- * before returning the db handle.
- */
 export async function startTestPostgres(): Promise<TestDatabase> {
-  const container: StartedPostgreSqlContainer = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('dealflow_test')
-    .withUsername('dealflow')
-    .withPassword('dealflow')
-    .start();
+  const dbName = `dealflow_test_${randomBytes(8).toString('hex')}`;
 
-  const url = container.getConnectionUri();
-  const db = createDb(url);
+  const admin = postgres(ADMIN_URL, { max: 1 });
+  try {
+    await admin.unsafe(`CREATE DATABASE "${dbName}" OWNER "${APP_USER}"`);
+  } finally {
+    await admin.end();
+  }
+
+  const url = `postgres://${APP_USER}:${APP_PASSWORD}@${PG_HOST}:${PG_PORT}/${dbName}`;
+  const conn = createDb(url);
 
   return {
-    db,
+    db: conn.db,
     url,
+    dbName,
     stop: async () => {
-      await container.stop();
+      await conn.end();
+      const cleanup = postgres(ADMIN_URL, { max: 1 });
+      try {
+        await cleanup.unsafe(
+          `SELECT pg_terminate_backend(pid)
+           FROM pg_stat_activity
+           WHERE datname = '${dbName}' AND pid <> pg_backend_pid()`,
+        );
+        await cleanup.unsafe(`DROP DATABASE IF EXISTS "${dbName}"`);
+      } finally {
+        await cleanup.end();
+      }
     },
   };
 }
 ```
 
-> **Package note:** Modern testcontainers (10.x+) split `PostgreSqlContainer` into the dedicated `@testcontainers/postgresql` subpackage. The dependency list above already reflects this.
+> **Why `createDb` returns `{ db, client, end }`:** the test helper needs to close the connection pool before issuing `DROP DATABASE` (Postgres refuses to drop a DB with active sessions). See `packages/db/src/index.ts` — the `end()` method on `DealflowConnection` is dedicated to this lifecycle.
 
-- [ ] **Step 4: Write the failing test in `apps/api/test/helpers/postgres.test.ts`**
+- [ ] **Step 4: Write the test in `apps/api/test/helpers/postgres.test.ts`**
 
 ```ts
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { startTestPostgres, type TestDatabase } from './postgres.js';
 
-describe('testcontainers Postgres helper', () => {
+describe('Postgres test helper (native, per-file disposable DB)', () => {
   let testDb: TestDatabase;
 
   beforeAll(async () => {
     testDb = await startTestPostgres();
-  }, 180_000); // testcontainers + Postgres init on Windows/WSL 2 can take 60-90s on first run
+  }, 30_000); // native Postgres + CREATE DATABASE is fast (~1-2s); generous margin for CI
 
   afterAll(async () => {
     await testDb.stop();
@@ -1330,9 +1327,12 @@ describe('testcontainers Postgres helper', () => {
 - [ ] **Step 5: Run the test — it should pass**
 
 Run: `pnpm --filter @dealflow/api test test/helpers/postgres.test.ts`
-Expected: PASS. First run pulls the `postgres:16-alpine` image; subsequent runs are fast.
+Expected: PASS in ~5 seconds (CREATE DATABASE + connect + SELECT 1 + DROP DATABASE).
 
-**Troubleshooting:** If you see "Docker not running" or socket errors, ensure Docker Desktop is running. On Windows, the Docker socket must be exposed to WSL or via TCP.
+**Troubleshooting:**
+- "connect ECONNREFUSED" → Postgres service isn't running. `Get-Service postgresql-x64-16`; `Start-Service postgresql-x64-16`.
+- "password authentication failed" → the dealflow role or its password don't match Task 5's setup.
+- "must be owner of database" → the dealflow role lacks CREATEDB. Re-run Task 5 Step 2.
 
 - [ ] **Step 6: Commit**
 

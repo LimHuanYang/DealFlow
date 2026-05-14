@@ -1,16 +1,18 @@
 # DealFlow — Testing Checklist (Outside Claude)
 
-**Last updated:** 2026-05-13
-**Current phase:** Phase 1 · Sub-Plan 1 (Foundation) · Tasks 1-4 of 12 complete
+**Last updated:** 2026-05-15
+**Current phase:** Phase 1 · Sub-Plan 1 (Foundation) · Complete, tagged `phase-1-foundation`
 **Repo:** https://github.com/LimHuanYang/DealFlow
+
+> ℹ️ **Stack note (May 2026):** DealFlow runs on **native Postgres** on the host machine — Docker and WSL are no longer used. Lighter on RAM and simpler to set up. See `SETUP.md` for installation.
 
 ---
 
 ## ⚠️ Read this first — what actually exists right now
 
-DealFlow is **scaffolding**, not a product yet. This is by design: we're building from the foundation up, one slice at a time, so each layer is solid before the next is added.
+DealFlow is **scaffolding plus a few tests**, not a CRM product yet. This is by design.
 
-### ✅ What is built and testable RIGHT NOW (Tasks 1-4)
+### ✅ What is built and testable RIGHT NOW
 
 | Component | What you can verify |
 |---|---|
@@ -21,49 +23,41 @@ DealFlow is **scaffolding**, not a product yet. This is by design: we're buildin
 | `@dealflow/shared` (Zod) | 4 unit tests pass for `paginationQuerySchema` |
 | `@dealflow/db` (Drizzle scaffold) | Typechecks; schema entry point exists (empty for now) |
 | `@dealflow/ai` (provider + Noop) | 4 unit tests pass for `NoopAIProvider` throwing `AIDisabledError` |
+| `apps/api` Fastify health route | 2 tests pass (200 + 404 envelope) via `Fastify.inject()` |
+| `apps/api` Postgres test helper | 1 test passes — creates a disposable per-test database, runs `SELECT 1`, drops it |
+| `apps/web` skeleton | `pnpm --filter @dealflow/web build` produces a dist bundle |
+| Playwright E2E smoke | 1 test passes — opens the web app and asserts the "DealFlow" hero |
 | `.gitattributes` + `.gitignore` | Working tree stays clean across commits |
-| Git history | 7 commits on `main`, pushed to GitHub |
+| Git history | 15+ commits on `main`, pushed to GitHub, tagged `phase-1-foundation` |
 
 ### ❌ What is NOT built yet — do not try to test these
 
-These are explicitly planned for later Sub-Plans within Phase 1:
-
 | Feature | Plan | Don't expect to see |
 |---|---|---|
-| Fastify API server | Task 6 (Sub-Plan 1) | Any HTTP endpoint working |
-| React web app | Task 8 (Sub-Plan 1) | A real UI — only a placeholder "DealFlow" page |
-| Docker dev environment | Task 5 (Sub-Plan 1) | Postgres / MinIO / Mailhog containers |
 | Auth (signup, login, sessions) | Sub-Plan 2 | A login page |
 | Multi-tenancy (orgs, invites) | Sub-Plan 2 | Inviting teammates |
 | Contacts & Companies | Sub-Plan 3 | Creating/viewing contacts |
 | Deals & Pipeline (kanban) | Sub-Plan 4 | Drag-and-drop deals |
 | Activities / Notes / Tasks | Sub-Plan 5 | Logging calls or notes |
 | AI features (4 actions) | Sub-Plan 6 | AI summarize / draft / extract |
-| Self-host Docker image | Sub-Plan 7 | A single-image deploy |
-| E2E flows (Playwright) | Tasks 9 + Sub-Plans | Browser-based tests |
-| CI on GitHub Actions | Task 10 (Sub-Plan 1) | Green checks on PRs |
+| Self-host single-image deploy | Sub-Plan 7 (Phase 3+) | A one-command deploy |
 
-If you click around expecting a CRM right now, you will see nothing. That's not a bug.
+If you click around expecting a CRM right now, you will see nothing. That's not a bug — the web page literally only renders the word "DealFlow".
 
 ---
 
 ## Prerequisites — install BEFORE testing
 
-You need these installed on your Windows machine:
-
 | Tool | Why | Where to get it |
 |---|---|---|
-| **Windows 10 or 11** | Required for Docker Desktop with WSL 2 | (you already have this) |
-| **Node.js 22 LTS or newer** | Runs the JavaScript/TypeScript code | https://nodejs.org/en/download |
-| **pnpm 9+** | Package manager (faster than npm) | After Node: run `npm install -g pnpm@9.12.0` |
+| **Windows 10 or 11** | Host OS | (you already have this) |
+| **Node.js 22 LTS or newer** | Runs the code | https://nodejs.org/en/download |
+| **pnpm 9+** | Package manager | After Node: `npm install -g pnpm@9.12.0` |
 | **Git** | Downloads code from GitHub | https://git-scm.com/download/win |
-| **Docker Desktop** | Runs Postgres / MinIO / Mailhog containers | https://docs.docker.com/desktop/install/windows-install/ |
+| **PostgreSQL 16** + `dealflow` user + `dealflow` and `dealflow_test` databases | Database for the API + integration tests | https://www.postgresql.org/download/windows/ — see `SETUP.md` §6 for the exact setup commands |
 | **GitHub account** | To pull / push code | https://github.com/signup |
-| **Read access to the repo** | LimHuanYang/DealFlow is public — no special access needed |
-| **A code editor** (recommended) | To read code; VS Code is the default | https://code.visualstudio.com/download |
-| **A modern browser** | Chrome / Edge / Firefox latest | (you already have this) |
 
-**Hardware:** 8 GB RAM minimum (16 GB recommended once Postgres + Node + browser all run together), 10 GB free disk space.
+**Hardware:** 4 GB RAM free, 5 GB free disk, modern Windows.
 
 If you've never installed any of these, follow `SETUP.md` for the step-by-step beginner guide.
 
@@ -71,28 +65,20 @@ If you've never installed any of these, follow `SETUP.md` for the step-by-step b
 
 ## Verification Checklist (in order)
 
-Run each step. Each one has an exact command, the exact output to expect, and a ✅ / ❌ test you can apply.
-
 ### Step 1 — Verify your tools are installed
-
-Open **PowerShell** (Start menu → type "PowerShell" → Enter) and run:
 
 ```powershell
 node --version
 pnpm --version
 git --version
-docker --version
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" --version
 ```
 
 **Pass if:**
-- ✅ Node prints `v22.x.x` or higher (e.g. `v24.14.0`)
+- ✅ Node prints `v22.x.x` or higher
 - ✅ pnpm prints `9.x.x` or higher
 - ✅ Git prints `git version 2.x.x` or higher
-- ✅ Docker prints `Docker version 27.x.x` or higher
-
-**Fail / Troubleshoot:**
-- ❌ "command not found" → that tool isn't installed (or just installed and you didn't open a fresh PowerShell). Re-install or open a new PowerShell.
-- ❌ Old Node version → install Node 22 LTS.
+- ✅ psql prints `psql (PostgreSQL) 16.x`
 
 ### Step 2 — Clone the repo
 
@@ -104,7 +90,7 @@ cd DealFlow
 
 **Pass if:**
 - ✅ A `DealFlow` folder is created with files inside.
-- ✅ `git log --oneline` shows a list of commits ending with `docs: initial Phase 1 (Kernel) design`.
+- ✅ `git log --oneline` shows commits ending with the design doc.
 
 ### Step 3 — Install dependencies
 
@@ -114,15 +100,6 @@ pnpm install
 
 **Pass if:**
 - ✅ Ends with `Done in XX.Xs` — no red errors.
-- ✅ A `node_modules` folder appears in the project root and inside each package.
-- ✅ `pnpm-lock.yaml` already exists and is not modified afterwards.
-
-**First run takes ~45 seconds** (downloading packages from the internet). Subsequent runs are much faster (~5-10 seconds, mostly cached).
-
-**Fail / Troubleshoot:**
-- ❌ "ERR_PNPM_UNSUPPORTED_ENGINE" → your Node is older than 22. Upgrade.
-- ❌ Network errors → check your internet connection / proxy.
-- ❌ PowerShell script signing error → run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force` once, then retry.
 
 ### Step 4 — Lint + format checks pass
 
@@ -132,9 +109,8 @@ pnpm format:check
 ```
 
 **Pass if:**
-- ✅ Both end with exit code 0.
-- ✅ `pnpm format:check` prints `All matched files use Prettier code style!`.
-- ✅ `pnpm lint` prints nothing (no errors).
+- ✅ Both exit with code 0.
+- ✅ `pnpm format:check` says "All matched files use Prettier code style!".
 
 ### Step 5 — TypeScript typecheck passes
 
@@ -142,24 +118,19 @@ pnpm format:check
 pnpm typecheck
 ```
 
-**Pass if:**
-- ✅ All packages (`shared`, `db`, `ai`) typecheck with no errors.
-- ✅ Exit code 0.
+**Pass if all 5 workspace packages compile clean.**
 
-**Expected time:** ~5-15 seconds.
-
-### Step 6 — Unit tests pass
+### Step 6 — Unit + integration tests pass
 
 ```powershell
 pnpm test
 ```
 
 **Pass if:**
-- ✅ `@dealflow/shared`: **4 tests passed** (paginationQuerySchema)
-- ✅ `@dealflow/ai`: **4 tests passed** (NoopAIProvider)
-- ✅ Total: **8 tests passed, 0 failed**.
-
-**Expected time:** ~5-10 seconds.
+- ✅ `@dealflow/shared` 4 passed
+- ✅ `@dealflow/ai` 4 passed
+- ✅ `@dealflow/api` 3 passed (2 health + 1 Postgres helper)
+- ✅ Total: **11 passed, 0 failed**
 
 ### Step 7 — Verify git remote points to GitHub
 
@@ -167,50 +138,43 @@ pnpm test
 git remote -v
 ```
 
-**Pass if:**
-- ✅ Output contains `origin  https://github.com/LimHuanYang/DealFlow.git`
+**Pass if:** output contains `origin  https://github.com/LimHuanYang/DealFlow.git`
 
-### Step 8 — Verify Docker Desktop is running
-
-Open Docker Desktop (Start menu → Docker Desktop). Wait until the bottom-left status shows **green** and says **"Engine running"**.
-
-In PowerShell:
+### Step 8 — Verify Postgres is running
 
 ```powershell
-docker info
+Get-Service postgresql-x64-16
 ```
 
-**Pass if:**
-- ✅ Output includes a `Server Version: 27.x.x` (or newer) line.
-- ✅ No "Cannot connect" errors.
-
-**This is the gate** before we can run Task 5 (the dev environment). If it fails, see SETUP.md → "Docker Desktop won't start".
-
-### Step 9 — (Once Task 5 is built) Bring up the dev environment
-
-This step **will not work yet** because Task 5 hasn't been done. After it's complete, this section will be:
+**Pass if:** Status **Running**, StartType **Automatic**.
 
 ```powershell
-pnpm dev:env
+$env:PGPASSWORD = "dealflow"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U dealflow -h localhost -d dealflow -c "SELECT 1;"
+$env:PGPASSWORD = ""
 ```
 
-You'd expect to see Postgres, MinIO, and Mailhog containers starting.
+**Pass if:** returns `1` row. ✅
+
+### Step 9 — E2E smoke (Playwright)
+
+```powershell
+pnpm test:e2e
+```
+
+(First run downloads ~300 MB of Chromium — be patient.)
+
+**Pass if:** 1 test passes.
 
 ---
 
 ## Status Summary at the End
 
-If everything from Step 1–8 passes:
+If everything from Step 1–9 passes:
 
-> ✅ **Foundation is healthy.** No DealFlow features exist yet (Tasks 5-12 not done), but the scaffolding is solid. Ready to continue with Sub-Plan 1 Tasks 5-12, then move into Sub-Plan 2 (Auth & Tenancy).
+> ✅ **Foundation is healthy.** No DealFlow features exist yet (Sub-Plan 2+ not started), but the scaffolding is solid.
 
-If steps 1-7 pass but Step 8 (Docker) fails:
-
-> ⚠️ **Foundation builds and tests fine; Docker isn't ready yet.** That's only a blocker for Task 5 onwards. Fix Docker before continuing.
-
-If anything in steps 1-7 fails:
-
-> ❌ **Foundation has a real problem.** Report it with the section below.
+If anything fails, see SETUP.md §11 "Common problems" or report below.
 
 ---
 
@@ -220,38 +184,39 @@ When something fails, please include:
 
 1. **Which step number** failed.
 2. **Exact command** you ran.
-3. **Exact output / error message** (copy-paste the whole thing).
+3. **Exact output / error message** (copy-paste).
 4. **Your environment:**
-   - Output of `node --version`
-   - Output of `pnpm --version`
-   - Output of `docker --version`
+   - `node --version`
+   - `pnpm --version`
+   - `psql --version`
    - Windows version (Settings → System → About → "Edition" and "Version")
-5. **Screenshot** of the PowerShell window if visual context matters.
+5. **Screenshot** if helpful.
 
-Open an issue on GitHub: https://github.com/LimHuanYang/DealFlow/issues
+Open an issue: https://github.com/LimHuanYang/DealFlow/issues
 
 ---
 
-## Test Sign-off Form (copy-paste this)
+## Test Sign-off Form (copy-paste)
 
 ```
 Tester:
 Date:
 
 Environment:
-- Windows: 
-- Node: 
-- pnpm: 
-- Docker: 
+- Windows:
+- Node:
+- pnpm:
+- Postgres:
 
 Step 1  (versions):                  [ PASS / FAIL ]
 Step 2  (clone):                     [ PASS / FAIL ]
 Step 3  (pnpm install):              [ PASS / FAIL ]
 Step 4  (lint + format):             [ PASS / FAIL ]
 Step 5  (typecheck):                 [ PASS / FAIL ]
-Step 6  (unit tests — 8 passing):    [ PASS / FAIL ]
+Step 6  (unit tests — 11 passing):   [ PASS / FAIL ]
 Step 7  (git remote):                [ PASS / FAIL ]
-Step 8  (docker info):               [ PASS / FAIL ]
+Step 8  (Postgres running):          [ PASS / FAIL ]
+Step 9  (Playwright E2E):            [ PASS / FAIL ]
 
 Overall foundation status:  [ GREEN / YELLOW / RED ]
 

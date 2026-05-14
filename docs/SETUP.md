@@ -2,9 +2,11 @@
 
 > 👋 **Welcome.** This guide assumes you know how to use Windows but have **never used a terminal, Git, or any developer tools**. We go slowly. Every step says what to do AND what you should see afterwards.
 >
-> **Time required:** 30-60 minutes (most of it is waiting for downloads).
+> **Time required:** 30-45 minutes (most of it is waiting for downloads).
 >
 > **What you'll have at the end:** DealFlow's dev environment running on your computer, ready for the team to build features on top of.
+
+> ℹ️ **As of May 2026** DealFlow runs on **native Postgres** directly on Windows — no Docker, no WSL. Lighter on RAM and simpler to set up.
 
 ---
 
@@ -15,7 +17,7 @@
 3. [Install Git for Windows](#3-install-git)
 4. [Install Node.js](#4-install-nodejs)
 5. [Install pnpm](#5-install-pnpm)
-6. [Install Docker Desktop](#6-install-docker-desktop)
+6. [Install PostgreSQL 16](#6-install-postgres)
 7. [Install a code editor (optional but recommended)](#7-install-vs-code)
 8. [Download the DealFlow code from GitHub](#8-download-dealflow)
 9. [Set up the project for the first time](#9-first-time-setup)
@@ -42,9 +44,9 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 ### Your computer
 
 - ✅ A **Windows 10 or Windows 11** PC.
-- ✅ At least **8 GB of RAM** (16 GB is more comfortable).
-- ✅ At least **10 GB of free disk space**.
-- ✅ A working **internet connection** (you'll be downloading ~1.5 GB total).
+- ✅ At least **4 GB of RAM** free (8 GB total is fine).
+- ✅ At least **5 GB of free disk space**.
+- ✅ A working **internet connection** (you'll be downloading ~500 MB total).
 - ✅ **Administrator rights** on your computer (you'll be installing software).
 
 ### Accounts (free)
@@ -56,7 +58,7 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 - **Git for Windows** — for downloading the DealFlow code
 - **Node.js** — runs the JavaScript code that powers DealFlow
 - **pnpm** — manages the libraries DealFlow uses
-- **Docker Desktop** — runs the database and other supporting services
+- **PostgreSQL 16** — the database where DealFlow stores everything
 - **VS Code** (optional) — to look at the code
 
 ### What you should know (don't worry, we'll explain as we go)
@@ -80,9 +82,6 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 3. When the file (`Git-2.X.X-64-bit.exe`) finishes downloading, **double-click it** to run.
 4. Windows may ask **"Do you want to allow this app to make changes to your device?"** — click **Yes**.
 5. The installer opens. Just click **Next** through every screen — the defaults are correct.
-   - You'll see screens about "License", "Components", "Default editor", "Initial branch name", "PATH environment", "SSH", "HTTPS transport", "Line endings", etc.
-   - **You don't need to change anything.** Click **Next** each time.
-   - On the final screen, click **Install**.
 6. After ~30 seconds, click **Finish**.
 
 ### How to verify Git installed correctly
@@ -114,12 +113,12 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 ### Step-by-step
 
 1. Go to **https://nodejs.org/en/download/prebuilt-installer**.
-2. **Important:** make sure the version selector says **"v22.x.x (LTS)"** or higher. (LTS = Long-Term Support, the stable version.)
+2. **Important:** make sure the version selector says **"v22.x.x (LTS)"** or higher.
 3. Click **"Windows Installer (.msi)"** for **x64** (most modern PCs).
 4. When the file finishes downloading, **double-click it**.
 5. Windows asks to allow changes → **Yes**.
 6. The installer walks you through several screens. **Just click Next every time.** Defaults are correct.
-7. On the screen **"Tools for Native Modules"**, leave the checkbox **unchecked** unless you know you need it.
+7. On the screen **"Tools for Native Modules"**, leave the checkbox **unchecked**.
 8. Click **Install**, wait ~1 minute, then click **Finish**.
 
 ### How to verify Node installed correctly
@@ -133,7 +132,6 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
    ```
    v22.10.0
    ```
-   (or higher — `v24.x.x` is fine too)
 
 ✅ **Done with Step 4.**
 
@@ -142,29 +140,24 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 <a id="5-install-pnpm"></a>
 ## 5. Install pnpm
 
-**What it is:** pnpm is a tool that downloads and organizes the small libraries DealFlow depends on (like LEGO bricks). It comes from npm (which is included with Node.js) but is faster and uses less disk space.
+**What it is:** pnpm is a tool that downloads and organizes the small libraries DealFlow depends on (like LEGO bricks).
 
 ### Step-by-step
 
 1. Open **PowerShell**.
-2. Before installing pnpm, we need to allow PowerShell to run scripts. Type and press Enter:
+2. Allow PowerShell to run scripts (one-time):
    ```
    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
    ```
-   - This is a one-time setting. It allows scripts you write yourself (or trust) to run. It's a standard developer setup.
-   - You won't see any output. That's fine.
-3. Now install pnpm:
+3. Install pnpm:
    ```
    npm install -g pnpm@9.12.0
    ```
-4. Wait ~10-20 seconds. You'll see something like:
-   ```
-   added 1 package in 16s
-   ```
+4. Wait ~10-20 seconds. You'll see `added 1 package in 16s`.
 
 ### How to verify pnpm installed correctly
 
-1. **Close PowerShell completely** and open a fresh one. (This refreshes the list of programs it knows about.)
+1. **Close PowerShell completely** and open a fresh one.
 2. Type:
    ```
    pnpm --version
@@ -176,84 +169,88 @@ Today, DealFlow is **under construction**. You're not installing a finished app 
 
 ✅ **Done with Step 5.**
 
-❌ **Trouble?** If you see a script signing error, you skipped the `Set-ExecutionPolicy` command. Go back and do it.
-
 ---
 
-<a id="6-install-docker-desktop"></a>
-## 6. Install Docker Desktop
+<a id="6-install-postgres"></a>
+## 6. Install PostgreSQL 16
 
-**What it is:** Docker Desktop is software that runs little self-contained "containers" — mini-computers inside your computer. DealFlow uses it to run a database (Postgres), file storage (MinIO), and a test email server (Mailhog) without you needing to install each one separately.
+**What it is:** PostgreSQL ("Postgres") is the **database** — the program that stores everything DealFlow remembers: contacts, deals, notes, users. It runs quietly in the background as a Windows service.
 
-> ⚠️ **This is the most complex install.** Read through before starting. You may need to restart your computer.
+> ✅ **Replaces the old Docker + WSL approach.** Uses ~80-150 MB of RAM at idle. Always available — starts with Windows.
 
 ### Step-by-step
 
-1. Go to **https://docs.docker.com/desktop/install/windows-install/**.
-2. Click the big blue **"Docker Desktop for Windows"** button. This downloads `Docker Desktop Installer.exe` (~600 MB).
-3. When it finishes, **double-click** the installer.
-4. Windows asks to allow changes → **Yes**.
-5. The installer will show a **Configuration** screen with two checkboxes:
-   - ✅ **"Use WSL 2 instead of Hyper-V"** — leave this **CHECKED** (this is the modern, recommended option).
-   - ✅ **"Add shortcut to desktop"** — your choice.
-6. Click **OK**. Installation takes 2-5 minutes.
-7. When you see **"Installation succeeded"**, click **Close and restart** if it offers a restart. **If asked, let your computer restart — it's required.**
-8. After restart, **Docker Desktop should start automatically**. If it doesn't:
-   - Press **Windows key** → type **Docker Desktop** → **Enter**.
-9. **First launch:**
-   - It may show a **Service Agreement**. Read it, then click **Accept**.
-   - It may ask about a tutorial — you can **skip** it.
-   - It may say **"WSL 2 needs an update"** → click **Update**. (This downloads a small Windows update.)
-   - If it asks for a restart again, do it.
-10. **Wait for the bottom-left of the Docker Desktop window to turn green and say "Engine running".** This can take 30 seconds to 2 minutes the first time.
+1. Go to **https://www.postgresql.org/download/windows/**.
+2. Click **"Download the installer"** under **EDB**.
+3. Pick **Version 16.x** for **Windows x86-64** and click **Download**.
+4. When the installer (`postgresql-16.X-windows-x64.exe`, ~350 MB) finishes downloading, **double-click** it.
+5. Windows asks to allow changes → **Yes**.
 
-### How to verify Docker installed correctly
+### Click through the installer
 
-1. Open a fresh **PowerShell**.
-2. Type:
-   ```
-   docker --version
-   ```
-3. You should see:
-   ```
-   Docker version 27.X.X, build XXXXXXX
-   ```
-4. Now check the engine is actually running:
-   ```
-   docker info
-   ```
-   - If it works, you'll see a long list of details ending with something like `Server Version: 27.X.X`.
-   - If you see `"Cannot connect to the Docker daemon"`, Docker Desktop isn't running. Open it from the Start menu and wait for the green status.
+| Screen | What to do |
+|---|---|
+| 1. Welcome | **Next** |
+| 2. Installation Directory | keep default (`C:\Program Files\PostgreSQL\16`) → **Next** |
+| 3. Select Components | **Uncheck "Stack Builder"**. Keep PostgreSQL Server, pgAdmin 4, Command Line Tools checked → **Next** |
+| 4. Data Directory | keep default → **Next** |
+| 5. **Password** | type **`postgres`** *(simplest match for our dev convention; change later if you want)* → **Next** |
+| 6. Port | keep `5432` → **Next** |
+| 7. Locale | keep `Default locale` → **Next** |
+| 8. Pre-installation Summary | **Next** |
+| 9. Ready to Install | **Next** *(takes 2-3 minutes)* |
+| 10. Completion | **Uncheck "Launch Stack Builder"** → **Finish** |
 
-✅ **Done with Step 6.**
+### Create the `dealflow` user and databases
 
-❌ **"WSL 2 not installed" error:**
+After install, run this **once** in PowerShell to set up the dev user and the two databases (`dealflow` for the app, `dealflow_test` for tests):
 
-Run this in **PowerShell as Administrator** (right-click PowerShell → "Run as administrator"):
+```powershell
+$env:PGPASSWORD = "postgres"
+$psql = "C:\Program Files\PostgreSQL\16\bin\psql.exe"
+
+& $psql -U postgres -h localhost -c "CREATE ROLE dealflow LOGIN PASSWORD 'dealflow' CREATEDB;"
+& $psql -U postgres -h localhost -c "CREATE DATABASE dealflow OWNER dealflow;"
+& $psql -U postgres -h localhost -c "CREATE DATABASE dealflow_test OWNER dealflow;"
+
+$env:PGPASSWORD = ""
 ```
-wsl --install
+
+### How to verify PostgreSQL installed correctly
+
+In PowerShell:
+
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" --version
+Get-Service postgresql-x64-16
 ```
-Then **restart your computer** and try Docker Desktop again.
 
-❌ **"Virtualization not enabled" error:**
+You should see:
+- `psql (PostgreSQL) 16.x`
+- A `postgresql-x64-16` service with status **Running**, StartType **Automatic**.
 
-This is a BIOS setting. The fix depends on your PC manufacturer. Search Google for: `<your laptop model> enable virtualization BIOS` — most have a one-page guide. Common keys to enter BIOS at startup: F2, F10, F12, Del.
+### How to verify the `dealflow` user works
 
-> 📚 **Docker's official Windows install guide with screenshots:** https://docs.docker.com/desktop/install/windows-install/
+```powershell
+$env:PGPASSWORD = "dealflow"
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U dealflow -h localhost -d dealflow -c "SELECT current_user, current_database();"
+$env:PGPASSWORD = ""
+```
+
+You should see a row with `dealflow | dealflow`. ✅
+
+> 📚 **Official Postgres Windows install guide:** https://www.postgresql.org/docs/16/install-windows.html
+> 📚 **Want a GUI to browse the database?** pgAdmin 4 was installed with Postgres. Start menu → search **pgAdmin 4**.
 
 ---
 
 <a id="7-install-vs-code"></a>
 ## 7. Install VS Code (Optional but Recommended)
 
-**What it is:** Visual Studio Code is a free editor for code. You don't strictly need it for this guide, but it makes everything easier.
-
-### Step-by-step
-
 1. Go to **https://code.visualstudio.com/download**.
 2. Click **Windows** → download the User Installer.
 3. Run the installer. Default options are fine.
-4. Recommended: on the **"Select Additional Tasks"** screen, **check the box** that says **"Add 'Open with Code' action to Windows Explorer file context menu"** — this lets you right-click any folder and open it in VS Code.
+4. On **"Select Additional Tasks"**, **check** "Add 'Open with Code' action to Windows Explorer file context menu".
 
 ✅ **Done with Step 7.**
 
@@ -261,8 +258,6 @@ This is a BIOS setting. The fix depends on your PC manufacturer. Search Google f
 
 <a id="8-download-dealflow"></a>
 ## 8. Download the DealFlow Code from GitHub
-
-We use Git to "clone" (copy) the code from GitHub to your computer.
 
 ### Step-by-step
 
@@ -275,18 +270,11 @@ We use Git to "clone" (copy) the code from GitHub to your computer.
    ```
    cd $HOME\source\repos
    ```
-4. Download (clone) DealFlow:
+4. Clone DealFlow:
    ```
    git clone https://github.com/LimHuanYang/DealFlow.git
    ```
-5. After ~10 seconds, you'll see:
-   ```
-   Cloning into 'DealFlow'...
-   remote: Enumerating objects: XX, done.
-   Receiving objects: 100% (XX/XX), XX.XX KiB
-   Resolving deltas: 100% (XX/XX), done.
-   ```
-6. Move into the project folder:
+5. Move into the project folder:
    ```
    cd DealFlow
    ```
@@ -297,7 +285,7 @@ We use Git to "clone" (copy) the code from GitHub to your computer.
 ls
 ```
 
-You should see folders like `apps`, `packages`, `docs`, and files like `package.json`, `README.md`, `.gitignore`.
+Folders: `apps`, `packages`, `docs`. Files: `package.json`, `README.md`, etc.
 
 ✅ **Done with Step 8.**
 
@@ -306,23 +294,11 @@ You should see folders like `apps`, `packages`, `docs`, and files like `package.
 <a id="9-first-time-setup"></a>
 ## 9. First-Time Setup
 
-Now we install all the libraries DealFlow depends on.
+```
+pnpm install
+```
 
-### Step-by-step
-
-1. Make sure you're still in the `DealFlow` folder (your PowerShell prompt should end with `\DealFlow>`).
-2. Run:
-   ```
-   pnpm install
-   ```
-3. **Be patient.** This downloads ~111 packages. First time: **45-90 seconds**. After that, ~5-10 seconds.
-4. You should see a progress bar, then:
-   ```
-   devDependencies:
-   + @eslint/js 9.X.X
-   + ...
-   Done in XXs
-   ```
+Be patient — first run takes ~45-90 seconds. After: `Done in XXs`.
 
 ✅ **Done with Step 9.**
 
@@ -331,107 +307,72 @@ Now we install all the libraries DealFlow depends on.
 <a id="10-run-tests"></a>
 ## 10. Run the Tests to Confirm Everything Works
 
-DealFlow has **8 automatic tests** that prove the foundation is healthy. Let's run them.
+```
+pnpm test
+```
 
-### Step-by-step
+You should see:
 
-1. In PowerShell (still in the DealFlow folder), run:
-   ```
-   pnpm test
-   ```
-2. You should see something like:
-   ```
-   @dealflow/shared:
-   ✓ src/pagination.test.ts (4 tests) 17ms
-   Test Files  1 passed (1)
-   Tests       4 passed (4)
+```
+@dealflow/shared:   ✓ 4 tests passed
+@dealflow/ai:       ✓ 4 tests passed
+@dealflow/api:      ✓ 3 tests passed (health x2 + Postgres helper x1)
+Total:              11 passed
+```
 
-   @dealflow/ai:
-   ✓ src/providers/noop.test.ts (4 tests) 25ms
-   Test Files  1 passed (1)
-   Tests       4 passed (4)
-   ```
-3. Also try:
-   ```
-   pnpm typecheck
-   ```
-   Expect a quick, silent success (no errors).
-4. And:
-   ```
-   pnpm lint
-   ```
-   Expect a quick, silent success.
+Also try:
 
-✅ **🎉 If all three commands succeed: you're done. DealFlow's foundation is running on your computer.**
+```
+pnpm typecheck
+pnpm lint
+```
+
+Both should print no errors.
+
+✅ **🎉 If all succeed: DealFlow's foundation is running on your computer.**
 
 ---
 
 <a id="11-troubleshooting"></a>
 ## 11. Common Problems and How to Fix Them
 
-### ❌ "pnpm is not recognized" or "git is not recognized"
-
-**Cause:** Your terminal was open before you installed the tool. It doesn't know about it yet.
-
-**Fix:** Close PowerShell completely (every window) and open a fresh one.
+### ❌ "pnpm/git/psql is not recognized"
+Close PowerShell and open a fresh one. Windows needs a new terminal to see newly-installed tools.
 
 ### ❌ "The script cannot be loaded. Not digitally signed."
+Run once: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force`
 
-**Cause:** Windows blocks PowerShell scripts by default.
-
-**Fix:** Run this once in PowerShell:
+### ❌ Tests fail with "connect ECONNREFUSED 127.0.0.1:5432"
+Postgres isn't running. Check the service:
+```powershell
+Get-Service postgresql-x64-16
+Start-Service postgresql-x64-16   # if stopped
 ```
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+
+### ❌ Tests fail with "role 'dealflow' does not exist" or "password authentication failed"
+You skipped the "Create the dealflow user and databases" sub-step in Step 6. Run those `CREATE ROLE` / `CREATE DATABASE` commands now.
+
+### ❌ Tests fail with "database 'dealflow_test_XXXX' already exists"
+A previous test run leaked. Reset cleanly:
+```powershell
+$env:PGPASSWORD = "postgres"
+$psql = "C:\Program Files\PostgreSQL\16\bin\psql.exe"
+# List leaked test DBs
+& $psql -U postgres -h localhost -c "SELECT datname FROM pg_database WHERE datname LIKE 'dealflow_test_%';"
+# Drop one:  & $psql -U postgres -h localhost -c "DROP DATABASE dealflow_test_xxxxx;"
+$env:PGPASSWORD = ""
 ```
-
-### ❌ Docker Desktop says "Engine running" but `docker info` fails
-
-**Cause:** WSL 2 backend might be paused. Or the PowerShell window opened before Docker became ready.
-
-**Fix:** Close PowerShell, wait 10 more seconds for Docker, open a fresh PowerShell, try again.
 
 ### ❌ `pnpm install` fails with network errors
-
-**Cause:** Corporate proxy, VPN, or flaky internet.
-
-**Fix:** Disable VPN if you're on one. If you're on a corporate network, ask IT for proxy settings or use a personal connection for the first install.
-
-### ❌ "Cannot connect to the Docker daemon"
-
-**Cause:** Docker Desktop isn't running.
-
-**Fix:** Open Docker Desktop from the Start menu. Wait for the bottom-left to be green.
-
-### ❌ Disk space errors
-
-**Cause:** Docker images + Node packages can take ~5 GB. Your drive is full.
-
-**Fix:** Free up space. `pnpm store prune` reclaims some.
-
-### ❌ Tests fail saying "Cannot find module"
-
-**Cause:** `pnpm install` didn't finish, or the lock file is out of date.
-
-**Fix:** Run again:
-```
-pnpm install --frozen-lockfile
-```
-
-If that fails too, fully reset:
-```
-rm -rf node_modules
-rm -rf packages\*\node_modules
-pnpm install
-```
+Disable VPN if on one. If on a corporate network, ask IT for proxy settings or use a personal connection.
 
 ### Something else?
-
 Open an issue at **https://github.com/LimHuanYang/DealFlow/issues** with:
-- What you tried to do
+- What you tried
 - What you expected
 - What actually happened (copy-paste the error)
-- Output of `node --version`, `pnpm --version`, `docker --version`
-- A screenshot if possible
+- Output of `node --version`, `pnpm --version`, `psql --version`
+- A screenshot if relevant.
 
 ---
 
@@ -442,7 +383,6 @@ Open an issue at **https://github.com/LimHuanYang/DealFlow/issues** with:
 |---|---|
 | **Terminal** / **PowerShell** | The black window where you type commands instead of clicking buttons. |
 | **Command** | A line of text you type that tells the computer to do something. |
-| **CLI** | "Command-Line Interface" — fancy word for "tool you use in the terminal". |
 | **Repo** / **Repository** | A folder of code that lives on GitHub, plus its history of changes. |
 | **Clone** | To download a copy of a repository from GitHub to your computer. |
 | **Commit** | A saved snapshot of code changes, with a message describing what changed. |
@@ -452,23 +392,20 @@ Open an issue at **https://github.com/LimHuanYang/DealFlow/issues** with:
 | **Dependency** | A package DealFlow needs to work. |
 | **Node.js** | The "engine" that runs JavaScript / TypeScript on your computer. |
 | **pnpm** | The tool that downloads and organizes packages for DealFlow. |
-| **Docker** | Software that runs "containers" — mini self-contained environments. |
-| **Container** | A self-contained mini-computer running one program (like Postgres). |
-| **Postgres** / **PostgreSQL** | The database where DealFlow stores everything. |
+| **PostgreSQL** / **Postgres** | The database where DealFlow stores everything (contacts, deals, notes…). |
+| **Windows Service** | A program that runs in the background, started automatically by Windows (Postgres is one). |
 | **Frontend** / **Web** | The part you see — buttons, pages, the browser experience. |
-| **Backend** / **API** | The part you don't see — the brain that the frontend talks to. |
-| **Build** | The process of turning source code into the version that runs. |
+| **Backend** / **API** | The part you don't see — the brain the frontend talks to. |
 | **Test** | A small piece of code that checks another piece of code does the right thing. |
 | **Typecheck** | A check that the code uses the right types everywhere (TypeScript's job). |
 | **Lint** | A check that the code follows style rules (catches bugs and inconsistencies). |
-| **WSL 2** | "Windows Subsystem for Linux 2" — lets Windows run Linux for tools like Docker. |
 | **Workspace** / **Monorepo** | A single repo containing multiple projects (DealFlow has 5: api, web, shared, db, ai). |
 
 ---
 
 ## 🎉 You're Done
 
-If you got through all 10 steps, you have a working DealFlow development environment. The team can now build features on top of this foundation, and you can pull updates as they come.
+If you got through all 10 steps, you have a working DealFlow development environment.
 
 **To pull updates later:**
 

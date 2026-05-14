@@ -1,9 +1,16 @@
 # DealFlow — Phase 1 (Kernel) Design
 
-**Status:** Approved (2026-05-13)
+**Status:** Approved (2026-05-13). Stack revision applied 2026-05-15 (see banner below).
 **Author:** Initial design via brainstorming session
 **Phase:** 1 of 4 (Kernel)
 **Next:** Implementation plan via `writing-plans` skill
+
+> 🛠 **2026-05-15 stack revision — Docker removed from dev path.**
+> Original design used Docker Compose (Postgres + MinIO + Mailhog) for local development and testcontainers for integration tests. After hitting WSL 2 resource overhead on Windows hosts, we moved to **native Postgres on the host** for dev, and a **per-test disposable database via CREATE/DROP** for integration tests. Effects:
+> - Dev no longer requires Docker or WSL.
+> - MinIO and Mailhog are deferred (not used in Phase 1 anyway; revisited in Sub-Plan 6+).
+> - The self-host story (single Docker image) is still planned but moves from "always available" to "Phase 3+ deliverable".
+> - Tests run ~18× faster (5 s vs 94 s for the Postgres helper test).
 
 ---
 
@@ -67,14 +74,16 @@ Explicitly out of scope for Phase 1 — do not add until Phase 1 is shipped and 
 | Styling | Tailwind v4 | Standard for shadcn/ui. |
 | Components | shadcn/ui (Radix-based) | Owned components, accessible, professional out-of-the-box. |
 | Background jobs | pg-boss | Postgres-backed; one infrastructure piece for self-host. |
-| File storage | S3-compatible API | AWS S3 (SaaS) / MinIO (self-host); identical client code. |
-| Email out | Nodemailer + SMTP | Pluggable: Resend/SES (SaaS) / customer SMTP (self-host). |
+| File storage | S3-compatible API | AWS S3 (SaaS) / MinIO (self-host); identical client code. *(Deferred to Sub-Plan 6+.)* |
+| Email out | Nodemailer + SMTP | Pluggable: Resend/SES (SaaS) / customer SMTP (self-host). *(Deferred to Sub-Plan 2+.)* |
 | AI providers | Anthropic + OpenAI behind abstraction | `AI_PROVIDER=anthropic\|openai\|none`. |
 | Unit tests | Vitest | Fast, ESM-native. |
 | API integration tests | Vitest + Fastify `inject` | In-process, fast, no port binding. |
+| Integration test DB | Native Postgres + per-test-file disposable DB | `CREATE DATABASE dealflow_test_<random>` in `beforeAll`, `DROP` in `afterAll`. ~5 s/file. |
 | E2E tests | Playwright | The 5 critical user paths only. |
 | Package manager | pnpm | Workspaces; faster + disk-efficient than npm. |
-| Container | Docker | Both self-host image and SaaS deployment. |
+| Dev runtime | Native Postgres 16 on host | Replaces the original Docker Compose dev environment. |
+| Self-host packaging | Docker image | Built and shipped in Sub-Plan 7 / Phase 3+; not required for dev. |
 
 **Two notable choices to flag explicitly:**
 
@@ -628,6 +637,7 @@ TDD where it matters; not dogma where it doesn't.
 |---|---|---|
 | Unit | Vitest | Pure domain logic (filter compilation, win-probability math, kanban reordering math, AI prompt builders). |
 | API integration | Vitest + Fastify `inject` | Every endpoint × auth state × tenancy. Real Postgres via testcontainers (one shared container, fresh schema per test file). |
+| Integration DB | Native Postgres + per-file disposable DB | `startTestPostgres()` returns a Drizzle handle pointed at `dealflow_test_<random>`; `stop()` drops it. |
 | Tenancy | Vitest + table-driven helper | `assertTenantIsolation(endpoint)` auto-generates a cross-tenant test for every endpoint. Required. |
 | E2E | Playwright | Only the 5 critical paths: signup, create deal, move stage, invite teammate, AI summarize. |
 | Visual regression | Deferred to Phase 2. | — |

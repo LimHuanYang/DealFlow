@@ -16,9 +16,8 @@
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @dealflow/e2e test:e2e",
     "dev": "pnpm -r --parallel --filter @dealflow/api --filter @dealflow/web dev",
-    "dev:env": "docker compose -f infra/compose/docker-compose.dev.yml up -d",
-    "dev:env:down": "docker compose -f infra/compose/docker-compose.dev.yml down",
-    "dev:env:reset": "docker compose -f infra/compose/docker-compose.dev.yml down -v"
+    "db:status": "powershell -NoProfile -Command \"Get-Service postgresql-x64-16 | Select-Object Name,Status,StartType\"",
+    "db:psql": "& \"C:\\Program Files\\PostgreSQL\\16\\bin\\psql.exe\" -U dealflow -h localhost -d dealflow"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",
