@@ -1033,11 +1033,13 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
 - [ ] **Step 5: Write `apps/api/src/plugins/error-handler.ts`**
 
 ```ts
-import type { FastifyInstance } from 'fastify';
+import type { FastifyError, FastifyInstance } from 'fastify';
 import { ERROR_CODES } from '@dealflow/shared';
 
 export function registerErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((error, _req, reply) => {
+  // Note: explicit FastifyError annotation is required under Fastify v5 + strict TS;
+  // without it `error` is inferred as `unknown` and `.statusCode`/`.validation` lookups fail.
+  app.setErrorHandler((error: FastifyError, _req, reply) => {
     const status = error.statusCode ?? 500;
 
     if (status >= 500) {
@@ -1059,7 +1061,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 
     return reply.status(status).send({
       error: {
-        code: (error as { code?: string }).code ?? ERROR_CODES.INTERNAL,
+        code: error.code ?? ERROR_CODES.INTERNAL,
         message: error.message,
       },
     });
