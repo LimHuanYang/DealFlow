@@ -8,6 +8,7 @@ pnpm-lock.yaml
 **/playwright-report/
 **/test-results/
 **/routeTree.gen.ts
+packages/db/migrations/
 
 # Docs are human-formatted (long lines, intentional layout)
 docs/
