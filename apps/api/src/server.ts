@@ -4,6 +4,8 @@ import sensible from '@fastify/sensible';
 import { loadEnv, type Env } from './env.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerCors } from './plugins/cors.js';
+import { registerCookie } from './plugins/cookie.js';
+import { registerCsrf } from './plugins/csrf.js';
 import { registerHealthRoutes } from './routes/health.js';
 
 export interface BuildAppOptions {
@@ -17,6 +19,8 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await registerCors(app, env);
+  await registerCookie(app, env);
+  await registerCsrf(app, env);
   await app.register(sensible);
 
   registerErrorHandler(app);
