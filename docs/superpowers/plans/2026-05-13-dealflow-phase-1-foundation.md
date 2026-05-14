@@ -1239,12 +1239,13 @@ git commit -m "feat(api): Fastify skeleton with health route, error envelope, an
 
 This task installs the test harness that every later sub-plan will use to test against a real Postgres instance.
 
-- [ ] **Step 1: Add `testcontainers` to `apps/api/package.json` devDependencies**
+- [ ] **Step 1: Add `testcontainers` + `@testcontainers/postgresql` to `apps/api/package.json` devDependencies**
 
 Modify the `devDependencies` block in `apps/api/package.json`:
 
 ```json
 "devDependencies": {
+  "@testcontainers/postgresql": "^10.13.2",
   "@types/node": "^22.7.0",
   "testcontainers": "^10.13.2",
   "tsx": "^4.19.2",
@@ -1252,6 +1253,8 @@ Modify the `devDependencies` block in `apps/api/package.json`:
   "vitest": "^2.1.4"
 }
 ```
+
+> **Why two packages:** testcontainers 10.x moved `PostgreSqlContainer` out of the `testcontainers` core into the `@testcontainers/postgresql` subpackage. The core package is still needed for the underlying APIs.
 
 - [ ] **Step 2: Run pnpm install**
 
@@ -1261,7 +1264,7 @@ Expected: Installs `testcontainers`.
 - [ ] **Step 3: Write `apps/api/test/helpers/postgres.ts`**
 
 ```ts
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from 'testcontainers';
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createDb, type Database } from '@dealflow/db';
 
 export interface TestDatabase {
@@ -1290,10 +1293,14 @@ export async function startTestPostgres(): Promise<TestDatabase> {
   return {
     db,
     url,
-    stop: () => container.stop(),
+    stop: async () => {
+      await container.stop();
+    },
   };
 }
 ```
+
+> **Package note:** Modern testcontainers (10.x+) split `PostgreSqlContainer` into the dedicated `@testcontainers/postgresql` subpackage. The dependency list above already reflects this.
 
 - [ ] **Step 4: Write the failing test in `apps/api/test/helpers/postgres.test.ts`**
 
@@ -1307,7 +1314,7 @@ describe('testcontainers Postgres helper', () => {
 
   beforeAll(async () => {
     testDb = await startTestPostgres();
-  }, 60_000);
+  }, 180_000); // testcontainers + Postgres init on Windows/WSL 2 can take 60-90s on first run
 
   afterAll(async () => {
     await testDb.stop();

@@ -23,7 +23,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^10.13.2",
     "@types/node": "^22.7.0",
+    "testcontainers": "^10.13.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
