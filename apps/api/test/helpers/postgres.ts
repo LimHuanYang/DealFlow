@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import postgres from 'postgres';
-import { createDb, type Database } from '@dealflow/db';
+import { createDb, type Database, runMigrations } from '@dealflow/db';
 
 /**
  * Connection string for an *admin* role that can CREATE/DROP databases.
@@ -56,6 +56,9 @@ export async function startTestPostgres(): Promise<TestDatabase> {
 
   const url = `postgres://${APP_USER}:${APP_PASSWORD}@${PG_HOST}:${PG_PORT}/${dbName}`;
   const conn = createDb(url);
+
+  // Apply migrations so every test file starts against a fully-built schema.
+  await runMigrations(conn.db);
 
   return {
     db: conn.db,

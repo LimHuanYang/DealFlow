@@ -27,3 +27,5 @@ export function createDb(connectionString: string): DealflowConnection {
 }
 
 export * as schema from './schema/index.js';
+
+export { runMigrations, MIGRATIONS_FOLDER } from './migrator.js';
