@@ -4,3 +4,15 @@
 
 # Lockfiles + generated files
 pnpm-lock.yaml text eol=lf
+
+# Binary Office / PDF files — never LF-normalize, never diff as text
+*.pptx binary
+*.docx binary
+*.xlsx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
