@@ -1372,9 +1372,10 @@ git commit -m "test(api): testcontainers Postgres helper for integration tests"
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "build": "tsr generate && tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsr generate && tsc -p tsconfig.json --noEmit",
+    "generate-routes": "tsr generate"
   },
   "dependencies": {
     "@dealflow/shared": "workspace:*",
@@ -1387,6 +1388,7 @@ git commit -m "test(api): testcontainers Postgres helper for integration tests"
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tanstack/router-cli": "^1.79.0",
     "@tanstack/router-plugin": "^1.79.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

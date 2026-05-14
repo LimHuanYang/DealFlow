@@ -1,0 +1,36 @@
+{
+  "name": "@dealflow/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsr generate && tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsr generate && tsc -p tsconfig.json --noEmit",
+    "generate-routes": "tsr generate"
+  },
+  "dependencies": {
+    "@dealflow/shared": "workspace:*",
+    "@tanstack/react-query": "^5.59.0",
+    "@tanstack/react-router": "^1.79.0",
+    "clsx": "^2.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tanstack/router-cli": "^1.79.0",
+    "@tanstack/router-plugin": "^1.79.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
