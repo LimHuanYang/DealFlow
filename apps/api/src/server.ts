@@ -35,6 +35,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   if (opts.db) {
     const { registerAuthContext } = await import('./plugins/auth-context.js');
     await registerAuthContext(app, { db: opts.db, env });
+
+    const { registerAuthRoutes } = await import('./modules/auth/routes.js');
+    await registerAuthRoutes(app, { db: opts.db, env });
   }
 
   return app;
