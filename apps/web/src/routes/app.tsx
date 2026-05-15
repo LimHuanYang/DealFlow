@@ -33,7 +33,13 @@ function AppLayout() {
             variant="ghost"
             size="sm"
             onClick={async () => {
-              await logout();
+              try {
+                await logout();
+              } catch (err) {
+                // Don't block the user from leaving if the API call fails —
+                // the local cache + redirect still gets them off authed UI.
+                console.error('logout failed', err);
+              }
               queryClient.setQueryData(queryKeys.me, null);
               window.location.href = '/login';
             }}
