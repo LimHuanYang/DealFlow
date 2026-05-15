@@ -60,7 +60,10 @@ export class AuthService {
   async signup(input: SignupInput): Promise<Result<SignupSuccess>> {
     const email = normalizeEmail(input.email);
     if (!isValidEmail(email))
-      return { ok: false, error: { code: 'INVALID_EMAIL', message: 'Email is not a valid format' } };
+      return {
+        ok: false,
+        error: { code: 'INVALID_EMAIL', message: 'Email is not a valid format' },
+      };
     if (input.password.length < 12)
       return {
         ok: false,
@@ -74,7 +77,8 @@ export class AuthService {
           ok: false,
           error: {
             code: 'SELF_HOST_ALREADY_INITIALIZED',
-            message: 'This DealFlow instance is already initialized. Ask the owner for an invitation.',
+            message:
+              'This DealFlow instance is already initialized. Ask the owner for an invitation.',
           },
         };
       }

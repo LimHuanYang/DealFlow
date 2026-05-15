@@ -2,9 +2,7 @@ import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
 import type { Database } from '@dealflow/db';
 
-export async function buildTestApp(
-  opts: { envOverrides?: Partial<Env>; db?: Database } = {},
-) {
+export async function buildTestApp(opts: { envOverrides?: Partial<Env>; db?: Database } = {}) {
   const env: Env = {
     NODE_ENV: 'test',
     PORT: 0,

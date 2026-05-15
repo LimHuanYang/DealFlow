@@ -7,11 +7,7 @@ export interface TenantIsolationCase {
   url: (resourceId: string) => string;
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   /** Creates a resource in Org A and returns its id. */
-  createResource: (
-    app: FastifyInstance,
-    cookie: string,
-    orgId: string,
-  ) => Promise<string>;
+  createResource: (app: FastifyInstance, cookie: string, orgId: string) => Promise<string>;
   /** Optional body for state-changing methods. */
   body?: Record<string, unknown> | string;
   /** Expected status code when Org B tries to access Org A's resource. */
