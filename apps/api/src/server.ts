@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
+import type { Database } from '@dealflow/db';
 import { loadEnv, type Env } from './env.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerCors } from './plugins/cors.js';
@@ -11,6 +12,8 @@ import { registerHealthRoutes } from './routes/health.js';
 export interface BuildAppOptions {
   env?: Env;
   logger?: boolean;
+  /** Optional injected db. In tests, the disposable DB is passed in here. */
+  db?: Database;
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -25,6 +28,14 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
   registerErrorHandler(app);
   registerHealthRoutes(app);
+
+  // Auth context (req.user / req.session) only when a db is provided.
+  // Health-only tests pass no db and skip this; auth tests pass a disposable
+  // db and get full auth wiring.
+  if (opts.db) {
+    const { registerAuthContext } = await import('./plugins/auth-context.js');
+    await registerAuthContext(app, { db: opts.db, env });
+  }
 
   return app;
 }

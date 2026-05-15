@@ -1,7 +1,10 @@
 import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
+import type { Database } from '@dealflow/db';
 
-export async function buildTestApp(envOverrides: Partial<Env> = {}) {
+export async function buildTestApp(
+  opts: { envOverrides?: Partial<Env>; db?: Database } = {},
+) {
   const env: Env = {
     NODE_ENV: 'test',
     PORT: 0,
@@ -12,8 +15,8 @@ export async function buildTestApp(envOverrides: Partial<Env> = {}) {
     SESSION_COOKIE_NAME: 'dealflow_session',
     SESSION_DURATION_DAYS: 30,
     CSRF_SECRET: 'test-csrf-secret-32-chars-minimum-xxxxx',
-    ...envOverrides,
+    ...opts.envOverrides,
   };
-  const app = await buildApp({ env, logger: false });
+  const app = await buildApp({ env, logger: false, db: opts.db });
   return app;
 }
