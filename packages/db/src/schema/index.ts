@@ -4,3 +4,5 @@ export * from './org-members';
 export * from './sessions';
 export * from './oauth-accounts';
 export * from './invitations';
+export * from './companies';
+export * from './contacts';
