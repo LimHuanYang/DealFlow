@@ -11,7 +11,10 @@ export const createDealBodySchema = z.object({
   currency: z.string().length(3).optional(),
   primaryContactId: z.string().uuid().optional(),
   companyId: z.string().uuid().optional(),
-  expectedCloseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  expectedCloseDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const updateDealBodySchema = createDealBodySchema.partial();

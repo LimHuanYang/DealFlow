@@ -37,7 +37,7 @@ export function KanbanBoard({ pipeline, deals, onMove, onCreate }: KanbanBoardPr
     return byStage;
   }, [pipeline.stages, deals]);
 
-  const activeDeal = activeId ? deals.find((d) => d.id === activeId) ?? null : null;
+  const activeDeal = activeId ? (deals.find((d) => d.id === activeId) ?? null) : null;
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));

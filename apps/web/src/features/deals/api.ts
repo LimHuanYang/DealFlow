@@ -1,12 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
-import type {
-  CreateDealInput,
-  PublicDeal,
-  UpdateDealInput,
-  MoveDealInput,
-} from '@dealflow/shared';
+import type { CreateDealInput, PublicDeal, UpdateDealInput, MoveDealInput } from '@dealflow/shared';
 
 export function listDeals(pipelineId?: string, status?: string): Promise<{ items: PublicDeal[] }> {
   const params = new URLSearchParams();
@@ -87,9 +82,7 @@ export function useMoveDeal(pipelineId?: string) {
       const prev = qc.getQueryData<{ items: PublicDeal[] }>(listKey);
       if (prev) {
         qc.setQueryData<{ items: PublicDeal[] }>(listKey, {
-          items: prev.items.map((d) =>
-            d.id === id ? { ...d, stageId, positionInStage } : d,
-          ),
+          items: prev.items.map((d) => (d.id === id ? { ...d, stageId, positionInStage } : d)),
         });
       }
       return { prev };

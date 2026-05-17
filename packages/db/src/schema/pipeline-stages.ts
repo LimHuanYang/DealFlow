@@ -1,20 +1,14 @@
 import { sql } from 'drizzle-orm';
-import {
-  boolean,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { organizations } from './organizations';
 import { pipelines } from './pipelines';
 
 export const pipelineStages = pgTable(
   'pipeline_stages',
   {
-    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     pipelineId: uuid('pipeline_id')
       .notNull()
       .references(() => pipelines.id, { onDelete: 'cascade' }),
