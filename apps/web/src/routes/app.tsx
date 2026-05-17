@@ -15,6 +15,17 @@ export const Route = createFileRoute('/app')({
   component: AppLayout,
 });
 
+/**
+ * Returns the OS-appropriate label for the Cmd-K palette shortcut.
+ * macOS / iOS show the ⌘ glyph (Apple convention); Windows / Linux / others
+ * show `Ctrl+K` (cross-desktop convention). The palette listens for either
+ * modifier, so functionality is unaffected — only the display label changes.
+ */
+function getShortcutLabel(): string {
+  if (typeof navigator === 'undefined') return 'Ctrl+K';
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl+K';
+}
+
 function AppLayout() {
   const queryClient = useQueryClient();
   const meQuery = useQuery({
@@ -22,6 +33,7 @@ function AppLayout() {
     queryFn: getMe,
   });
   const user = meQuery.data?.user;
+  const shortcutLabel = getShortcutLabel();
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -53,7 +65,7 @@ function AppLayout() {
           <span className="font-semibold tracking-tight">DealFlow</span>
           <div className="flex items-center gap-3 text-sm">
             <kbd className="hidden rounded border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-xs text-neutral-500 md:inline">
-              ⌘K
+              {shortcutLabel}
             </kbd>
             {user && <span className="text-neutral-700">{user.email}</span>}
             <Button
