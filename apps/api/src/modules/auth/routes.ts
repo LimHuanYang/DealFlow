@@ -57,6 +57,7 @@ export async function registerAuthRoutes(
     orgs: new OrgsRepo(deps.db),
     users: new UsersRepo(deps.db),
     sessions: new SessionsRepo(deps.db),
+    db: deps.db,
     sessionDurationDays: deps.env.SESSION_DURATION_DAYS,
   });
 

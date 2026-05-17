@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
+import { schema } from '@dealflow/db';
 import { startTestPostgres, type TestDatabase } from '../../helpers/postgres.js';
 import { AuthService, type AuthError } from '../../../src/modules/auth/service.js';
 import { OrgsRepo } from '../../../src/modules/auth/orgs.repo.js';
@@ -15,6 +17,7 @@ describe('AuthService', () => {
       orgs: new OrgsRepo(testDb.db),
       users: new UsersRepo(testDb.db),
       sessions: new SessionsRepo(testDb.db),
+      db: testDb.db,
       sessionDurationDays: 30,
     });
   }, 30_000);
@@ -37,6 +40,31 @@ describe('AuthService', () => {
       expect(result.user.email).toBe('alice@example.com');
       expect(result.organization.name).toBe('Acme');
       expect(result.session.id).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it('seeds the default pipeline with 6 stages', async () => {
+      const result = await svc.signup({
+        email: `seed-${Date.now()}@example.com`,
+        password: 'StrongPa$$word1',
+        name: 'Seed',
+        orgName: 'SeedCo',
+        deploymentMode: 'saas',
+        userAgent: null,
+        ip: null,
+      });
+      if (!result.ok) throw new Error('signup failed');
+      const pipelines = await testDb.db
+        .select()
+        .from(schema.pipelines)
+        .where(eq(schema.pipelines.organizationId, result.organization.id));
+      expect(pipelines).toHaveLength(1);
+      expect(pipelines[0]!.name).toBe('Sales');
+      expect(pipelines[0]!.isDefault).toBe(true);
+      const stages = await testDb.db
+        .select()
+        .from(schema.pipelineStages)
+        .where(eq(schema.pipelineStages.pipelineId, pipelines[0]!.id));
+      expect(stages).toHaveLength(6);
     });
 
     it('rejects duplicate email', async () => {
@@ -73,6 +101,7 @@ describe('AuthService', () => {
           orgs: new OrgsRepo(fresh.db),
           users: new UsersRepo(fresh.db),
           sessions: new SessionsRepo(fresh.db),
+          db: fresh.db,
           sessionDurationDays: 30,
         });
         const result = await svcFresh.signup({

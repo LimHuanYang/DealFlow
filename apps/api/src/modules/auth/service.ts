@@ -3,7 +3,8 @@ import { isValidEmail, normalizeEmail } from '../../lib/email.js';
 import type { OrgsRepo } from './orgs.repo.js';
 import type { UsersRepo } from './users.repo.js';
 import type { SessionsRepo } from './sessions.repo.js';
-import type { schema } from '@dealflow/db';
+import type { Database, schema } from '@dealflow/db';
+import { createDefaultPipeline } from '../pipelines/seed.js';
 
 export type AuthErrorCode =
   | 'EMAIL_ALREADY_REGISTERED'
@@ -51,6 +52,7 @@ export interface AuthServiceDeps {
   orgs: OrgsRepo;
   users: UsersRepo;
   sessions: SessionsRepo;
+  db: Database;
   sessionDurationDays: number;
 }
 
@@ -96,6 +98,9 @@ export class AuthService {
     const slug = slugify(input.orgName) + '-' + user.id.slice(0, 8);
     const organization = await this.deps.orgs.create({ name: input.orgName, slug });
     await this.deps.orgs.addMember(organization.id, user.id, 'owner');
+
+    // Seed default pipeline so the new owner lands on a usable kanban.
+    await createDefaultPipeline(this.deps.db, organization.id);
 
     const session = await this.deps.sessions.create({
       userId: user.id,
