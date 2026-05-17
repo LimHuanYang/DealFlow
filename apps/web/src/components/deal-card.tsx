@@ -30,7 +30,8 @@ export function DealCard({ deal }: DealCardProps) {
     >
       <div className="flex items-start justify-between gap-2">
         <Link
-          to={`/app/deals/${deal.id}` as never}
+          to="/app/deals/$id"
+          params={{ id: deal.id }}
           className="font-medium text-neutral-900 hover:underline"
           onClick={(e) => e.stopPropagation()}
         >

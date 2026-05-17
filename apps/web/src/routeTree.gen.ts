@@ -14,8 +14,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppDealsIndexRouteImport } from './routes/app.deals.index'
 import { Route as AppContactsIndexRouteImport } from './routes/app.contacts.index'
 import { Route as AppCompaniesIndexRouteImport } from './routes/app.companies.index'
+import { Route as AppDealsIdRouteImport } from './routes/app.deals.$id'
 import { Route as AppContactsIdRouteImport } from './routes/app.contacts.$id'
 import { Route as AppCompaniesIdRouteImport } from './routes/app.companies.$id'
 
@@ -44,6 +46,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDealsIndexRoute = AppDealsIndexRouteImport.update({
+  id: '/deals/',
+  path: '/deals/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppContactsIndexRoute = AppContactsIndexRouteImport.update({
   id: '/contacts/',
   path: '/contacts/',
@@ -52,6 +59,11 @@ const AppContactsIndexRoute = AppContactsIndexRouteImport.update({
 const AppCompaniesIndexRoute = AppCompaniesIndexRouteImport.update({
   id: '/companies/',
   path: '/companies/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDealsIdRoute = AppDealsIdRouteImport.update({
+  id: '/deals/$id',
+  path: '/deals/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppContactsIdRoute = AppContactsIdRouteImport.update({
@@ -73,8 +85,10 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
+  '/app/deals/$id': typeof AppDealsIdRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
+  '/app/deals/': typeof AppDealsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,8 +97,10 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
+  '/app/deals/$id': typeof AppDealsIdRoute
   '/app/companies': typeof AppCompaniesIndexRoute
   '/app/contacts': typeof AppContactsIndexRoute
+  '/app/deals': typeof AppDealsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,8 +111,10 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
+  '/app/deals/$id': typeof AppDealsIdRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
+  '/app/deals/': typeof AppDealsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,8 +126,10 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/companies/$id'
     | '/app/contacts/$id'
+    | '/app/deals/$id'
     | '/app/companies/'
     | '/app/contacts/'
+    | '/app/deals/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,8 +138,10 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/companies/$id'
     | '/app/contacts/$id'
+    | '/app/deals/$id'
     | '/app/companies'
     | '/app/contacts'
+    | '/app/deals'
   id:
     | '__root__'
     | '/'
@@ -129,8 +151,10 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/companies/$id'
     | '/app/contacts/$id'
+    | '/app/deals/$id'
     | '/app/companies/'
     | '/app/contacts/'
+    | '/app/deals/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -177,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/deals/': {
+      id: '/app/deals/'
+      path: '/deals'
+      fullPath: '/app/deals/'
+      preLoaderRoute: typeof AppDealsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/contacts/': {
       id: '/app/contacts/'
       path: '/contacts'
@@ -189,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/companies'
       fullPath: '/app/companies/'
       preLoaderRoute: typeof AppCompaniesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/deals/$id': {
+      id: '/app/deals/$id'
+      path: '/deals/$id'
+      fullPath: '/app/deals/$id'
+      preLoaderRoute: typeof AppDealsIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/contacts/$id': {
@@ -212,16 +250,20 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesIdRoute: typeof AppCompaniesIdRoute
   AppContactsIdRoute: typeof AppContactsIdRoute
+  AppDealsIdRoute: typeof AppDealsIdRoute
   AppCompaniesIndexRoute: typeof AppCompaniesIndexRoute
   AppContactsIndexRoute: typeof AppContactsIndexRoute
+  AppDealsIndexRoute: typeof AppDealsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppCompaniesIdRoute: AppCompaniesIdRoute,
   AppContactsIdRoute: AppContactsIdRoute,
+  AppDealsIdRoute: AppDealsIdRoute,
   AppCompaniesIndexRoute: AppCompaniesIndexRoute,
   AppContactsIndexRoute: AppContactsIndexRoute,
+  AppDealsIndexRoute: AppDealsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

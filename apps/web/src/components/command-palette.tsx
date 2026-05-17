@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/command';
 import { CreateCompanyDialog } from '@/features/companies/create-company-dialog';
 import { CreateContactDialog } from '@/features/contacts/create-contact-dialog';
+import { CreateDealDialog } from '@/features/deals/create-deal-dialog';
+import { usePipelines } from '@/features/pipelines/api';
 
 /**
  * Global Cmd/Ctrl-K palette. Holds command definitions inline for now;
@@ -21,6 +23,9 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [createCompanyOpen, setCreateCompanyOpen] = useState(false);
   const [createContactOpen, setCreateContactOpen] = useState(false);
+  const [createDealOpen, setCreateDealOpen] = useState(false);
+  const pipelinesQuery = usePipelines();
+  const defaultPipeline = pipelinesQuery.data?.pipelines[0];
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -53,6 +58,16 @@ export function CommandPalette() {
               Create company
               <CommandShortcut>C O</CommandShortcut>
             </CommandItem>
+            <CommandItem
+              onSelect={() =>
+                run(() => {
+                  if (defaultPipeline) setCreateDealOpen(true);
+                })
+              }
+            >
+              Create deal
+              <CommandShortcut>C D</CommandShortcut>
+            </CommandItem>
           </CommandGroup>
           <CommandGroup heading="Go to">
             <CommandItem onSelect={() => run(() => void navigate({ to: '/app/contacts' }))}>
@@ -63,6 +78,10 @@ export function CommandPalette() {
               Companies
               <CommandShortcut>G O</CommandShortcut>
             </CommandItem>
+            <CommandItem onSelect={() => run(() => void navigate({ to: '/app/deals' }))}>
+              Deals
+              <CommandShortcut>G D</CommandShortcut>
+            </CommandItem>
             <CommandItem onSelect={() => run(() => void navigate({ to: '/app' }))}>
               Home
               <CommandShortcut>G H</CommandShortcut>
@@ -72,6 +91,13 @@ export function CommandPalette() {
       </CommandDialog>
       <CreateCompanyDialog open={createCompanyOpen} onOpenChange={setCreateCompanyOpen} />
       <CreateContactDialog open={createContactOpen} onOpenChange={setCreateContactOpen} />
+      {defaultPipeline && (
+        <CreateDealDialog
+          pipeline={defaultPipeline}
+          open={createDealOpen}
+          onOpenChange={setCreateDealOpen}
+        />
+      )}
     </>
   );
 }
