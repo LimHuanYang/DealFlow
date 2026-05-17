@@ -15,6 +15,13 @@
       "when": 1778987227706,
       "tag": "0001_dry_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779037464010,
+      "tag": "0002_reflective_vapor",
+      "breakpoints": true
     }
   ]
 }

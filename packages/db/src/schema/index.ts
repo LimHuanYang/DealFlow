@@ -6,3 +6,6 @@ export * from './oauth-accounts';
 export * from './invitations';
 export * from './companies';
 export * from './contacts';
+export * from './pipelines';
+export * from './pipeline-stages';
+export * from './deals';
