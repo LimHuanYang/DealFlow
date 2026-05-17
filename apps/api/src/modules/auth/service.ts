@@ -125,10 +125,14 @@ export class AuthService {
         error: { code: 'INVALID_CREDENTIALS', message: 'Email or password is incorrect' },
       };
 
-    // Pick a current_org_id: nullable here. Full multi-org switching lands in 2c.
+    // Auto-select the user's first org membership as the current org. This
+    // closes the Sub-Plan 2a gap where login-only users had session.currentOrgId
+    // = null and were blocked by `requireOrg` on every tenant-scoped endpoint.
+    // Full multi-org switching UI lands in Sub-Plan 2c.
+    const currentOrgId = await this.deps.orgs.findFirstOrgIdForUser(user.id);
     const session = await this.deps.sessions.create({
       userId: user.id,
-      currentOrgId: null,
+      currentOrgId,
       expiresInDays: this.deps.sessionDurationDays,
       userAgent: input.userAgent,
       ip: input.ip,
