@@ -40,3 +40,6 @@ Thumbs.db
 .data/
 .minio/
 .postgres/
+
+# Per-developer Claude / IDE config (preview launch settings, etc.)
+.claude/
