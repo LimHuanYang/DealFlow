@@ -11,4 +11,13 @@ export const queryKeys = {
       ['contacts', 'list', { q: q ?? '', companyId: companyId ?? '' }] as const,
     detail: (id: string) => ['contacts', 'detail', id] as const,
   },
+  pipelines: {
+    all: ['pipelines'] as const,
+  },
+  deals: {
+    all: ['deals'] as const,
+    list: (pipelineId?: string, status?: string) =>
+      ['deals', 'list', { pipelineId: pipelineId ?? '', status: status ?? '' }] as const,
+    detail: (id: string) => ['deals', 'detail', id] as const,
+  },
 };
