@@ -55,7 +55,10 @@ test('Cmd-K opens command palette and create-contact works from it', async ({ pa
   await page.keyboard.press('Meta+K');
 
   // Backup: if Meta+K doesn't fire on the platform Playwright runs on, try Ctrl+K
-  const paletteVisible = await page.getByPlaceholder('Type a command…').isVisible().catch(() => false);
+  const paletteVisible = await page
+    .getByPlaceholder('Type a command…')
+    .isVisible()
+    .catch(() => false);
   if (!paletteVisible) {
     await page.keyboard.press('Control+K');
   }

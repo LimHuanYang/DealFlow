@@ -56,7 +56,10 @@ export function EntityTable<T extends { id: string }>({
             {columns.map((c, i) => (
               <TableCell key={i} className={c.className}>
                 {i === 0 ? (
-                  <Link to={rowHref(row)} className="font-medium underline-offset-2 hover:underline">
+                  <Link
+                    to={rowHref(row)}
+                    className="font-medium underline-offset-2 hover:underline"
+                  >
                     {c.cell(row)}
                   </Link>
                 ) : (

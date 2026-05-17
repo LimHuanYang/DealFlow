@@ -124,16 +124,10 @@ const CommandItem = React.forwardRef<
 ));
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
-function CommandShortcut({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) {
+function CommandShortcut({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
-      className={cn(
-        'ml-auto text-xs tracking-widest text-neutral-500',
-        className,
-      )}
+      className={cn('ml-auto text-xs tracking-widest text-neutral-500', className)}
       {...props}
     />
   );

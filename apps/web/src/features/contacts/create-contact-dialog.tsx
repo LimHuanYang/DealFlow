@@ -52,7 +52,9 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
             <div className="flex flex-col gap-2">
               <Label htmlFor="firstName">First name</Label>
               <Input id="firstName" {...register('firstName')} autoFocus />
-              {errors.firstName && <p className="text-sm text-red-600">{errors.firstName.message}</p>}
+              {errors.firstName && (
+                <p className="text-sm text-red-600">{errors.firstName.message}</p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="lastName">Last name</Label>

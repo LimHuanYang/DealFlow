@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
-import type {
-  CreateContactInput,
-  PublicContact,
-  UpdateContactInput,
-} from '@dealflow/shared';
+import type { CreateContactInput, PublicContact, UpdateContactInput } from '@dealflow/shared';
 
 export interface ContactListResponse {
   items: PublicContact[];

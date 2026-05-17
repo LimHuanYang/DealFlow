@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
-import type {
-  CreateCompanyInput,
-  PublicCompany,
-  UpdateCompanyInput,
-} from '@dealflow/shared';
+import type { CreateCompanyInput, PublicCompany, UpdateCompanyInput } from '@dealflow/shared';
 
 export interface CompanyListResponse {
   items: PublicCompany[];

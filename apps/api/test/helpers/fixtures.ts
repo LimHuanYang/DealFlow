@@ -41,7 +41,12 @@ export async function createTestCompany(
 export async function createTestContact(
   app: FastifyInstance,
   cookie: string,
-  overrides: Partial<{ firstName: string; lastName: string; email: string; companyId: string }> = {},
+  overrides: Partial<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    companyId: string;
+  }> = {},
 ): Promise<PublicContact> {
   const res = await app.inject({
     method: 'POST',
