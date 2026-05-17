@@ -1,8 +1,9 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect, Link } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/lib/query-keys';
 import { getMe, logout } from '@/lib/auth';
+import { CommandPalette } from '@/components/command-palette';
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
@@ -20,35 +21,63 @@ function AppLayout() {
     queryKey: queryKeys.me,
     queryFn: getMe,
   });
-
   const user = meQuery.data?.user;
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-3">
-        <span className="font-semibold tracking-tight">DealFlow</span>
-        <div className="flex items-center gap-3 text-sm">
-          {user && <span className="text-neutral-700">{user.email}</span>}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              try {
-                await logout();
-              } catch (err) {
-                // Don't block the user from leaving if the API call fails —
-                // the local cache + redirect still gets them off authed UI.
-                console.error('logout failed', err);
-              }
-              queryClient.setQueryData(queryKeys.me, null);
-              window.location.href = '/login';
-            }}
+    <div className="flex min-h-screen bg-white">
+      <aside className="hidden w-48 shrink-0 border-r border-neutral-200 p-4 md:block">
+        <nav className="flex flex-col gap-1 text-sm">
+          <Link
+            to="/app/contacts"
+            className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
+            activeProps={{ className: 'rounded px-2 py-1.5 bg-neutral-100 font-medium text-neutral-900' }}
           >
-            Sign out
-          </Button>
+            Contacts
+          </Link>
+          <Link
+            to="/app/companies"
+            className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
+            activeProps={{ className: 'rounded px-2 py-1.5 bg-neutral-100 font-medium text-neutral-900' }}
+          >
+            Companies
+          </Link>
+        </nav>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-3">
+          <span className="font-semibold tracking-tight">DealFlow</span>
+          <div className="flex items-center gap-3 text-sm">
+            <kbd className="hidden rounded border border-neutral-200 bg-neutral-50 px-1.5 py-0.5 text-xs text-neutral-500 md:inline">
+              ⌘K
+            </kbd>
+            {user && <span className="text-neutral-700">{user.email}</span>}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await logout();
+                } catch (err) {
+                  // Don't block the user from leaving if the API call fails —
+                  // the local cache + redirect still gets them off authed UI.
+                  console.error('logout failed', err);
+                }
+                queryClient.setQueryData(queryKeys.me, null);
+                window.location.href = '/login';
+              }}
+            >
+              Sign out
+            </Button>
+          </div>
+        </header>
+
+        <div className="min-w-0 flex-1">
+          <Outlet />
         </div>
-      </header>
-      <Outlet />
+      </div>
+
+      <CommandPalette />
     </div>
   );
 }
