@@ -19,43 +19,35 @@ export async function registerOrganizationsRoutes(
 ): Promise<void> {
   const orgsRepo = new OrgsRepo(deps.db);
 
-  app.get(
-    '/api/v1/organizations/current',
-    { preHandler: requireOrg },
-    async (req, reply) => {
-      const orgId = req.session!.currentOrgId!;
-      const org = await orgsRepo.findById(orgId);
-      if (!org) {
-        return reply
-          .status(404)
-          .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
-      }
-      return reply.send({ organization: publicOrg(org) });
-    },
-  );
+  app.get('/api/v1/organizations/current', { preHandler: requireOrg }, async (req, reply) => {
+    const orgId = req.session!.currentOrgId!;
+    const org = await orgsRepo.findById(orgId);
+    if (!org) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
+    }
+    return reply.send({ organization: publicOrg(org) });
+  });
 
-  app.patch(
-    '/api/v1/organizations/current',
-    { preHandler: requireOrg },
-    async (req, reply) => {
-      const parsed = updateOrganizationBodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return reply.status(400).send({
-          error: {
-            code: ERROR_CODES.VALIDATION_FAILED,
-            message: 'Invalid organization update payload',
-            details: parsed.error.flatten().fieldErrors,
-          },
-        });
-      }
-      const orgId = req.session!.currentOrgId!;
-      const updated = await orgsRepo.update(orgId, parsed.data);
-      if (!updated) {
-        return reply
-          .status(404)
-          .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
-      }
-      return reply.send({ organization: publicOrg(updated) });
-    },
-  );
+  app.patch('/api/v1/organizations/current', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = updateOrganizationBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Invalid organization update payload',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    const updated = await orgsRepo.update(orgId, parsed.data);
+    if (!updated) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
+    }
+    return reply.send({ organization: publicOrg(updated) });
+  });
 }

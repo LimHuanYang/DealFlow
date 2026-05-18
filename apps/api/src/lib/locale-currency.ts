@@ -14,9 +14,7 @@ import { regionToCurrency, DEFAULT_CURRENCY, type CurrencyCode } from '@dealflow
  * Users can change the value later in Settings, so getting it wrong is a
  * minor papercut rather than data loss.
  */
-export function pickCurrencyFromAcceptLanguage(
-  header: string | null | undefined,
-): CurrencyCode {
+export function pickCurrencyFromAcceptLanguage(header: string | null | undefined): CurrencyCode {
   if (!header) return DEFAULT_CURRENCY;
   const trimmed = header.trim();
   if (!trimmed) return DEFAULT_CURRENCY;
