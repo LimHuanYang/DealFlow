@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createDealBodySchema,
   CURRENCY_OPTIONS,
+  isSupportedCurrency,
   type CreateDealInput,
   type PublicPipeline,
 } from '@dealflow/shared';
@@ -66,7 +67,7 @@ export function CreateDealDialog({
   // Once the current org loads, seed the currency field with the org's
   // preference. Users can override per-deal via the dropdown before submit.
   useEffect(() => {
-    if (orgCurrency) {
+    if (orgCurrency && isSupportedCurrency(orgCurrency)) {
       setValue('currency', orgCurrency);
     }
   }, [orgCurrency, setValue]);

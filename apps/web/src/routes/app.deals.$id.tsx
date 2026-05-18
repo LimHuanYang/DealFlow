@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CURRENCY_OPTIONS } from '@dealflow/shared';
+import { CURRENCY_OPTIONS, isSupportedCurrency } from '@dealflow/shared';
 import { InlineEdit } from '@/components/inline-edit';
 import { useDeal, useUpdateDeal } from '@/features/deals/api';
 import { formatCurrency } from '@/lib/format';
@@ -57,9 +57,8 @@ function DealDetailPage() {
             value={d.currency}
             onChange={async (e) => {
               const next = e.target.value;
-              if (next !== d.currency) {
-                await update.mutateAsync({ currency: next });
-              }
+              if (!isSupportedCurrency(next) || next === d.currency) return;
+              await update.mutateAsync({ currency: next });
             }}
             className="h-9 w-full max-w-sm rounded-md border border-neutral-200 bg-white px-3 text-sm"
             data-testid="deal-currency-select"

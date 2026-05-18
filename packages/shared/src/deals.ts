@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isSupportedCurrency } from './currency.js';
 
 export const dealStatusSchema = z.enum(['open', 'won', 'lost']);
 export type DealStatusValue = z.infer<typeof dealStatusSchema>;
@@ -8,7 +9,10 @@ export const createDealBodySchema = z.object({
   pipelineId: z.string().uuid(),
   stageId: z.string().uuid(),
   value: z.coerce.number().nonnegative().max(1_000_000_000).optional(),
-  currency: z.string().length(3).optional(),
+  currency: z
+    .string()
+    .refine(isSupportedCurrency, { message: 'Unsupported currency code' })
+    .optional(),
   primaryContactId: z.string().uuid().optional(),
   companyId: z.string().uuid().optional(),
   expectedCloseDate: z

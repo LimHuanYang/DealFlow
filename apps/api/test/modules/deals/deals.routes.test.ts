@@ -107,6 +107,40 @@ describe('Deals routes (CRUD)', () => {
     expect(res.json().error.code).toBe('VALIDATION_FAILED');
   });
 
+  it('POST rejects unsupported currency code', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/deals',
+      headers: { cookie },
+      payload: {
+        name: 'BadCurrency',
+        pipelineId,
+        stageId: leadStageId,
+        currency: 'XYZ',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_FAILED');
+  });
+
+  it('PATCH rejects unsupported currency code', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/deals',
+      headers: { cookie },
+      payload: { name: 'CurrencyPatchable', pipelineId, stageId: leadStageId },
+    });
+    const id = created.json<{ deal: { id: string } }>().deal.id;
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/deals/${id}`,
+      headers: { cookie },
+      payload: { currency: 'XYZ' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('VALIDATION_FAILED');
+  });
+
   it('401 when not authed', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/deals' });
     expect(res.statusCode).toBe(401);
