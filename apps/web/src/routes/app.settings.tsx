@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
-import { CURRENCY_OPTIONS, type CurrencyCode } from '@dealflow/shared';
+import {
+  CURRENCY_OPTIONS,
+  isSupportedCurrency,
+  type CurrencyCode,
+  type PublicOrganization,
+} from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
@@ -11,16 +16,6 @@ export const Route = createFileRoute('/app/settings')({
 
 function SettingsPage() {
   const orgQuery = useCurrentOrg();
-  const update = useUpdateOrg();
-  const [currency, setCurrency] = useState<CurrencyCode | ''>('');
-  const [saved, setSaved] = useState(false);
-
-  // Initialise the local form value from the server response when it lands.
-  useEffect(() => {
-    if (orgQuery.data?.organization.defaultCurrency) {
-      setCurrency(orgQuery.data.organization.defaultCurrency as CurrencyCode);
-    }
-  }, [orgQuery.data?.organization.defaultCurrency]);
 
   if (orgQuery.isPending) {
     return <main className="p-6 text-sm text-neutral-500">Loading…</main>;
@@ -29,15 +24,48 @@ function SettingsPage() {
     return <main className="p-6 text-sm text-red-600">Could not load organization.</main>;
   }
 
-  const org = orgQuery.data.organization;
-  const dirty = currency && currency !== org.defaultCurrency;
+  return <SettingsForm org={orgQuery.data.organization} />;
+}
+
+interface SettingsFormProps {
+  org: PublicOrganization;
+}
+
+function SettingsForm({ org }: SettingsFormProps) {
+  const update = useUpdateOrg();
+  // Initialise from the server value. No useEffect-sync needed because the
+  // parent already guards against rendering this component before data arrives.
+  // The server always supplies a supported currency; fall back to USD only if the
+  // string ever fails the runtime guard (e.g. an older row predating the constraint).
+  const [currency, setCurrency] = useState<CurrencyCode>(
+    isSupportedCurrency(org.defaultCurrency) ? org.defaultCurrency : 'USD',
+  );
+  const [saved, setSaved] = useState(false);
+  const timerRef = useRef<number | undefined>(undefined);
+
+  // Clear any pending "Saved" timer when the component unmounts so we don't
+  // call setState on an unmounted instance.
+  useEffect(
+    () => () => {
+      if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  const dirty = currency !== org.defaultCurrency;
+
+  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const next = e.target.value;
+    if (isSupportedCurrency(next)) setCurrency(next);
+  }
 
   async function onSave() {
-    if (!dirty || !currency) return;
+    if (!dirty) return;
     setSaved(false);
+    if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
     await update.mutateAsync({ defaultCurrency: currency });
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    timerRef.current = window.setTimeout(() => setSaved(false), 2000);
   }
 
   return (
@@ -55,7 +83,7 @@ function SettingsPage() {
           <select
             id="defaultCurrency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
+            onChange={onChange}
             className="h-9 w-full max-w-sm rounded-md border border-neutral-200 bg-white px-3 text-sm"
             data-testid="currency-select"
           >
@@ -70,10 +98,12 @@ function SettingsPage() {
           <Button onClick={onSave} disabled={!dirty || update.isPending}>
             {update.isPending ? 'Saving…' : 'Save'}
           </Button>
-          {saved && <span className="text-sm text-green-600">Saved</span>}
-          {update.isError && (
-            <span className="text-sm text-red-600">Couldn't save — please try again.</span>
-          )}
+          <div role="status" aria-live="polite" className="text-sm">
+            {saved && <span className="text-green-600">Saved</span>}
+            {update.isError && (
+              <span className="text-red-600">Couldn't save — please try again.</span>
+            )}
+          </div>
         </div>
       </section>
     </main>
