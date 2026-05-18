@@ -54,6 +54,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
     const { registerOrganizationsRoutes } = await import('./modules/organizations/routes.js');
     await registerOrganizationsRoutes(app, { db: opts.db });
+
+    const { registerActivitiesRoutes } = await import('./modules/activities/routes.js');
+    await registerActivitiesRoutes(app, { db: opts.db });
   }
 
   return app;
