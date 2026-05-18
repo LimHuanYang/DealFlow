@@ -29,11 +29,17 @@ export function pickCurrencyFromAcceptLanguage(
   const tag = firstTag.split(';')[0]?.trim();
   if (!tag) return DEFAULT_CURRENCY;
 
-  // Region subtag is the part after the first hyphen. RFC 5646 allows more
-  // complex tags, but `<lang>-<region>` is what browsers actually send.
+  // Region subtag per BCP 47. The first subtag is the language; we scan the
+  // rest for the first 2-letter ASCII subtag, which is the region under
+  // ISO 3166-1 alpha-2. This handles both the common case (`en-US`) and
+  // script-subtagged tags real browsers send (`zh-Hant-TW`, `zh-Hans-CN`,
+  // `sr-Latn-RS`) — in those, `parts[1]` is the script (4 letters), not the
+  // region. Variants like `de-CH-1996` still resolve correctly since `CH` is
+  // the first 2-letter subtag we find.
   const parts = tag.split('-');
   if (parts.length < 2) return DEFAULT_CURRENCY;
-  const region = parts[1];
+
+  const region = parts.slice(1).find((p) => /^[A-Za-z]{2}$/.test(p));
   if (!region) return DEFAULT_CURRENCY;
 
   return regionToCurrency(region) ?? DEFAULT_CURRENCY;

@@ -40,4 +40,25 @@ describe('pickCurrencyFromAcceptLanguage', () => {
     expect(pickCurrencyFromAcceptLanguage('en-us')).toBe('USD');
     expect(pickCurrencyFromAcceptLanguage('MS-my')).toBe('MYR');
   });
+
+  it('extracts region from BCP 47 script-subtagged tags', () => {
+    // Traditional Chinese in Taiwan — Safari/Chrome send this for users
+    // with the OS configured for Traditional Chinese.
+    expect(pickCurrencyFromAcceptLanguage('zh-Hant-TW')).toBe('TWD');
+    // Simplified Chinese in mainland China.
+    expect(pickCurrencyFromAcceptLanguage('zh-Hans-CN')).toBe('CNY');
+    // Serbian Latin script in Serbia (no region in our map → USD fallback).
+    expect(pickCurrencyFromAcceptLanguage('sr-Latn-RS')).toBe('USD');
+  });
+
+  it('handles BCP 47 variant subtags after region (de-CH-1996)', () => {
+    // Swiss German with the 1996 orthography variant — region "CH" comes
+    // before the variant subtag, so CHF wins.
+    expect(pickCurrencyFromAcceptLanguage('de-CH-1996')).toBe('CHF');
+  });
+
+  it('returns USD when no subtag is a 2-letter region (zh-Hant alone)', () => {
+    // Script only, no region — fall back to USD per the documented heuristic.
+    expect(pickCurrencyFromAcceptLanguage('zh-Hant')).toBe('USD');
+  });
 });
