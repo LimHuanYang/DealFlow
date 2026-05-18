@@ -7,3 +7,4 @@ export * from './pipelines.js';
 export * from './deals.js';
 export * from './currency.js';
 export * from './organizations.js';
+export * from './activities.js';
