@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateDeal } from './api';
+import { useCurrentOrg } from '@/features/organizations/api';
 
 interface CreateDealDialogProps {
   pipeline: PublicPipeline;
@@ -34,6 +35,9 @@ export function CreateDealDialog({
   const isOpen = isControlled ? open : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
+  const orgQuery = useCurrentOrg();
+  const orgCurrency = orgQuery.data?.organization.defaultCurrency;
+
   const mut = useCreateDeal();
   const {
     register,
@@ -54,6 +58,14 @@ export function CreateDealDialog({
     setValue('stageId', defaultStageId ?? pipeline.stages[0]?.id ?? '');
   }, [pipeline.id, defaultStageId, pipeline.stages, setValue]);
 
+  // Once the current org loads, set the currency in the hidden form field so
+  // new deals adopt the org's preference rather than the schema default 'USD'.
+  useEffect(() => {
+    if (orgCurrency) {
+      setValue('currency', orgCurrency);
+    }
+  }, [orgCurrency, setValue]);
+
   async function onSubmit(values: CreateDealInput) {
     await mut.mutateAsync(values);
     reset();
@@ -69,6 +81,7 @@ export function CreateDealDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <input type="hidden" {...register('pipelineId')} />
+          <input type="hidden" {...register('currency')} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...register('name')} autoFocus />
@@ -89,7 +102,7 @@ export function CreateDealDialog({
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="value">Value (optional)</Label>
+            <Label htmlFor="value">Value (optional, {orgCurrency ?? 'USD'})</Label>
             <Input id="value" type="number" min={0} {...register('value')} placeholder="0" />
           </div>
           <Button type="submit" disabled={isSubmitting}>
