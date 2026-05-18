@@ -6,6 +6,12 @@ import type { OrgRole } from '@dealflow/db/schema';
 export interface CreateOrgInput {
   name: string;
   slug: string;
+  defaultCurrency?: string;
+}
+
+export interface UpdateOrgInput {
+  name?: string;
+  defaultCurrency?: string;
 }
 
 export class OrgsRepo {
@@ -14,7 +20,12 @@ export class OrgsRepo {
   async create(input: CreateOrgInput): Promise<typeof schema.organizations.$inferSelect> {
     const [row] = await this.db
       .insert(schema.organizations)
-      .values({ name: input.name, slug: input.slug })
+      .values({
+        name: input.name,
+        slug: input.slug,
+        // Omit when undefined so the column default ('USD') kicks in.
+        ...(input.defaultCurrency ? { defaultCurrency: input.defaultCurrency } : {}),
+      })
       .returning();
     if (!row) throw new Error('Failed to insert organization');
     return row;
@@ -54,5 +65,27 @@ export class OrgsRepo {
       .orderBy(asc(schema.orgMembers.joinedAt))
       .limit(1);
     return row?.organizationId ?? null;
+  }
+
+  /**
+   * Updates a subset of org fields. Returns the post-update row, or `null` if
+   * the id didn't exist. `updatedAt` is bumped automatically.
+   */
+  async update(
+    id: string,
+    input: UpdateOrgInput,
+  ): Promise<typeof schema.organizations.$inferSelect | null> {
+    const patch: Partial<typeof schema.organizations.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.defaultCurrency !== undefined) patch.defaultCurrency = input.defaultCurrency;
+
+    const [row] = await this.db
+      .update(schema.organizations)
+      .set(patch)
+      .where(eq(schema.organizations.id, id))
+      .returning();
+    return row ?? null;
   }
 }

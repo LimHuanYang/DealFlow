@@ -5,6 +5,7 @@ import type { UsersRepo } from './users.repo.js';
 import type { SessionsRepo } from './sessions.repo.js';
 import type { Database, schema } from '@dealflow/db';
 import { createDefaultPipeline } from '../pipelines/seed.js';
+import { pickCurrencyFromAcceptLanguage } from '../../lib/locale-currency.js';
 
 export type AuthErrorCode =
   | 'EMAIL_ALREADY_REGISTERED'
@@ -28,6 +29,7 @@ export interface SignupInput {
   deploymentMode: 'saas' | 'self-host';
   userAgent: string | null;
   ip: string | null;
+  acceptLanguage: string | null;
 }
 
 export interface LoginInput {
@@ -96,7 +98,12 @@ export class AuthService {
     const passwordHash = await hashPassword(input.password);
     const user = await this.deps.users.create({ email, name: input.name, passwordHash });
     const slug = slugify(input.orgName) + '-' + user.id.slice(0, 8);
-    const organization = await this.deps.orgs.create({ name: input.orgName, slug });
+    const defaultCurrency = pickCurrencyFromAcceptLanguage(input.acceptLanguage);
+    const organization = await this.deps.orgs.create({
+      name: input.orgName,
+      slug,
+      defaultCurrency,
+    });
     await this.deps.orgs.addMember(organization.id, user.id, 'owner');
 
     // Seed default pipeline so the new owner lands on a usable kanban.

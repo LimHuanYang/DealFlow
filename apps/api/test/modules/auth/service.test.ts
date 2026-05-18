@@ -34,6 +34,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: 'test',
         ip: '127.0.0.1',
+        acceptLanguage: null,
       });
       expect(result.ok).toBe(true);
       if (!result.ok) return;
@@ -51,6 +52,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       if (!result.ok) throw new Error('signup failed');
       const pipelines = await testDb.db
@@ -76,6 +78,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       const second = await svc.signup({
         email: 'dup@example.com',
@@ -85,6 +88,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       expect(second.ok).toBe(false);
       if (second.ok) return;
@@ -112,6 +116,7 @@ describe('AuthService', () => {
           deploymentMode: 'self-host',
           userAgent: null,
           ip: null,
+          acceptLanguage: null,
         });
         expect(result.ok).toBe(true);
 
@@ -124,6 +129,7 @@ describe('AuthService', () => {
           deploymentMode: 'self-host',
           userAgent: null,
           ip: null,
+          acceptLanguage: null,
         });
         expect(second.ok).toBe(false);
         if (second.ok) return;
@@ -144,6 +150,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       const result = await svc.login({
         email: 'login@example.com',
@@ -163,6 +170,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       const result = await svc.login({
         email: 'wrong@example.com',
@@ -198,6 +206,7 @@ describe('AuthService', () => {
         deploymentMode: 'saas',
         userAgent: null,
         ip: null,
+        acceptLanguage: null,
       });
       if (!signup.ok) throw new Error('signup failed');
       await svc.logout(signup.session.id);

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'drizzle-orm';
 import { startTestPostgres, type TestDatabase } from '../../helpers/postgres.js';
 import { buildTestApp } from '../../helpers/build-app.js';
 
@@ -114,5 +115,79 @@ describe('POST /api/v1/auth/signup (self-host mode)', () => {
     expect((second.json() as { error: { code: string } }).error.code).toBe(
       'SELF_HOST_ALREADY_INITIALIZED',
     );
+  });
+});
+
+describe('POST /api/v1/auth/signup — default_currency from Accept-Language', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('en-US → USD', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/signup',
+      payload: {
+        email: `us.${Date.now()}@example.com`,
+        password: 'CorrectHorseBatteryStaple1',
+        name: 'U',
+        orgName: 'U',
+      },
+      headers: { 'accept-language': 'en-US,en;q=0.9' },
+    });
+    expect(res.statusCode).toBe(201);
+    const orgId = (res.json() as { organization: { id: string } }).organization.id;
+    const [row] = await testDb.db.execute<{ default_currency: string }>(
+      sql`SELECT default_currency FROM organizations WHERE id = ${orgId}`,
+    );
+    expect(row?.default_currency).toBe('USD');
+  });
+
+  it('ms-MY → MYR', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/signup',
+      payload: {
+        email: `my.${Date.now()}@example.com`,
+        password: 'CorrectHorseBatteryStaple1',
+        name: 'M',
+        orgName: 'M',
+      },
+      headers: { 'accept-language': 'ms-MY,en-US;q=0.9' },
+    });
+    expect(res.statusCode).toBe(201);
+    const orgId = (res.json() as { organization: { id: string } }).organization.id;
+    const [row] = await testDb.db.execute<{ default_currency: string }>(
+      sql`SELECT default_currency FROM organizations WHERE id = ${orgId}`,
+    );
+    expect(row?.default_currency).toBe('MYR');
+  });
+
+  it('missing header → USD (default)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/signup',
+      payload: {
+        email: `nohdr.${Date.now()}@example.com`,
+        password: 'CorrectHorseBatteryStaple1',
+        name: 'N',
+        orgName: 'N',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    const orgId = (res.json() as { organization: { id: string } }).organization.id;
+    const [row] = await testDb.db.execute<{ default_currency: string }>(
+      sql`SELECT default_currency FROM organizations WHERE id = ${orgId}`,
+    );
+    expect(row?.default_currency).toBe('USD');
   });
 });

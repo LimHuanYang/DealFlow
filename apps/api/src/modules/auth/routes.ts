@@ -78,6 +78,7 @@ export async function registerAuthRoutes(
       deploymentMode: deps.env.DEPLOYMENT_MODE,
       userAgent: req.headers['user-agent'] ?? null,
       ip: req.ip ?? null,
+      acceptLanguage: req.headers['accept-language'] ?? null,
     });
 
     if (!result.ok) {
