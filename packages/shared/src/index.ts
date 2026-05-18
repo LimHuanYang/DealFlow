@@ -6,3 +6,4 @@ export * from './contacts.js';
 export * from './pipelines.js';
 export * from './deals.js';
 export * from './currency.js';
+export * from './organizations.js';
