@@ -27,25 +27,35 @@ CREATE TABLE IF NOT EXISTS "activities" (
   ) = 1)
 );
 --> statement-breakpoint
-ALTER TABLE "activities"
-  ADD CONSTRAINT "activities_organization_id_organizations_id_fk"
-  FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE cascade;
+DO $$ BEGIN
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "activities"
-  ADD CONSTRAINT "activities_owner_user_id_users_id_fk"
-  FOREIGN KEY ("owner_user_id") REFERENCES "users"("id") ON DELETE set null;
+DO $$ BEGIN
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_owner_user_id_users_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "activities"
-  ADD CONSTRAINT "activities_contact_id_contacts_id_fk"
-  FOREIGN KEY ("contact_id") REFERENCES "contacts"("id") ON DELETE cascade;
+DO $$ BEGIN
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_contact_id_contacts_id_fk" FOREIGN KEY ("contact_id") REFERENCES "public"."contacts"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "activities"
-  ADD CONSTRAINT "activities_company_id_companies_id_fk"
-  FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE cascade;
+DO $$ BEGIN
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_company_id_companies_id_fk" FOREIGN KEY ("company_id") REFERENCES "public"."companies"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "activities"
-  ADD CONSTRAINT "activities_deal_id_deals_id_fk"
-  FOREIGN KEY ("deal_id") REFERENCES "deals"("id") ON DELETE cascade;
+DO $$ BEGIN
+ ALTER TABLE "activities" ADD CONSTRAINT "activities_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "activities_org_kind_idx" ON "activities" ("organization_id","kind");
 --> statement-breakpoint
