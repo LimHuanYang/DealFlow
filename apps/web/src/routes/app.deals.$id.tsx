@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { CURRENCY_OPTIONS } from '@dealflow/shared';
 import { InlineEdit } from '@/components/inline-edit';
 import { useDeal, useUpdateDeal } from '@/features/deals/api';
 import { formatCurrency } from '@/lib/format';
@@ -52,12 +53,23 @@ function DealDetailPage() {
         </dd>
         <dt className="text-neutral-500">Currency</dt>
         <dd>
-          <InlineEdit
+          <select
             value={d.currency}
-            onSave={async (v) => {
-              await update.mutateAsync({ currency: v.toUpperCase() });
+            onChange={async (e) => {
+              const next = e.target.value;
+              if (next !== d.currency) {
+                await update.mutateAsync({ currency: next });
+              }
             }}
-          />
+            className="h-9 w-full max-w-sm rounded-md border border-neutral-200 bg-white px-3 text-sm"
+            data-testid="deal-currency-select"
+          >
+            {CURRENCY_OPTIONS.map((o) => (
+              <option key={o.code} value={o.code}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </dd>
         <dt className="text-neutral-500">Expected close</dt>
         <dd>

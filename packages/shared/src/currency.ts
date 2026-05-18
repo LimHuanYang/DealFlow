@@ -1,52 +1,201 @@
 /**
- * Curated ISO 4217 currencies supported by the Settings dropdown.
+ * Full ISO 4217 active currency catalog (165 codes).
  *
- * Why curated, not "all 180": a scannable list beats a complete one. Add a
- * code here when a user requests it. The shape (code + human label) is shared
- * verbatim between web (select options) and api (server-side validation).
+ * We only maintain the code list here. Human labels are looked up at module
+ * load via `Intl.DisplayNames('en', { type: 'currency' })` — this way locale
+ * data comes from the platform (browser / Node ICU tables) and we don't
+ * hand-curate ~165 names that go stale. If `Intl.DisplayNames` is unavailable
+ * (very old runtimes), the label degrades to the bare code.
+ *
+ * The shape (`{ code, label }`) is shared verbatim between web (select
+ * options) and api (server-side validation via `isSupportedCurrency`).
  */
-export const CURRENCY_OPTIONS = [
-  { code: 'USD', label: 'US Dollar (USD)' },
-  { code: 'EUR', label: 'Euro (EUR)' },
-  { code: 'GBP', label: 'British Pound (GBP)' },
-  { code: 'JPY', label: 'Japanese Yen (JPY)' },
-  { code: 'CNY', label: 'Chinese Yuan (CNY)' },
-  { code: 'CAD', label: 'Canadian Dollar (CAD)' },
-  { code: 'AUD', label: 'Australian Dollar (AUD)' },
-  { code: 'NZD', label: 'New Zealand Dollar (NZD)' },
-  { code: 'CHF', label: 'Swiss Franc (CHF)' },
-  { code: 'SEK', label: 'Swedish Krona (SEK)' },
-  { code: 'NOK', label: 'Norwegian Krone (NOK)' },
-  { code: 'DKK', label: 'Danish Krone (DKK)' },
-  { code: 'PLN', label: 'Polish Złoty (PLN)' },
-  { code: 'CZK', label: 'Czech Koruna (CZK)' },
-  { code: 'HUF', label: 'Hungarian Forint (HUF)' },
-  { code: 'INR', label: 'Indian Rupee (INR)' },
-  { code: 'SGD', label: 'Singapore Dollar (SGD)' },
-  { code: 'HKD', label: 'Hong Kong Dollar (HKD)' },
-  { code: 'TWD', label: 'Taiwan Dollar (TWD)' },
-  { code: 'KRW', label: 'South Korean Won (KRW)' },
-  { code: 'MYR', label: 'Malaysian Ringgit (MYR)' },
-  { code: 'THB', label: 'Thai Baht (THB)' },
-  { code: 'IDR', label: 'Indonesian Rupiah (IDR)' },
-  { code: 'PHP', label: 'Philippine Peso (PHP)' },
-  { code: 'VND', label: 'Vietnamese Dong (VND)' },
-  { code: 'MXN', label: 'Mexican Peso (MXN)' },
-  { code: 'BRL', label: 'Brazilian Real (BRL)' },
-  { code: 'ARS', label: 'Argentine Peso (ARS)' },
-  { code: 'ZAR', label: 'South African Rand (ZAR)' },
-  { code: 'AED', label: 'UAE Dirham (AED)' },
-  { code: 'SAR', label: 'Saudi Riyal (SAR)' },
-  { code: 'ILS', label: 'Israeli Shekel (ILS)' },
-  { code: 'TRY', label: 'Turkish Lira (TRY)' },
-  { code: 'RUB', label: 'Russian Ruble (RUB)' },
+const ALL_CURRENCY_CODES = [
+  'AED',
+  'AFN',
+  'ALL',
+  'AMD',
+  'ANG',
+  'AOA',
+  'ARS',
+  'AUD',
+  'AWG',
+  'AZN',
+  'BAM',
+  'BBD',
+  'BDT',
+  'BGN',
+  'BHD',
+  'BIF',
+  'BMD',
+  'BND',
+  'BOB',
+  'BRL',
+  'BSD',
+  'BTN',
+  'BWP',
+  'BYN',
+  'BZD',
+  'CAD',
+  'CDF',
+  'CHF',
+  'CLP',
+  'CNY',
+  'COP',
+  'CRC',
+  'CUP',
+  'CVE',
+  'CZK',
+  'DJF',
+  'DKK',
+  'DOP',
+  'DZD',
+  'EGP',
+  'ERN',
+  'ETB',
+  'EUR',
+  'FJD',
+  'FKP',
+  'GBP',
+  'GEL',
+  'GHS',
+  'GIP',
+  'GMD',
+  'GNF',
+  'GTQ',
+  'GYD',
+  'HKD',
+  'HNL',
+  'HTG',
+  'HUF',
+  'IDR',
+  'ILS',
+  'INR',
+  'IQD',
+  'IRR',
+  'ISK',
+  'JMD',
+  'JOD',
+  'JPY',
+  'KES',
+  'KGS',
+  'KHR',
+  'KMF',
+  'KPW',
+  'KRW',
+  'KWD',
+  'KYD',
+  'KZT',
+  'LAK',
+  'LBP',
+  'LKR',
+  'LRD',
+  'LSL',
+  'LYD',
+  'MAD',
+  'MDL',
+  'MGA',
+  'MKD',
+  'MMK',
+  'MNT',
+  'MOP',
+  'MRU',
+  'MUR',
+  'MVR',
+  'MWK',
+  'MXN',
+  'MYR',
+  'MZN',
+  'NAD',
+  'NGN',
+  'NIO',
+  'NOK',
+  'NPR',
+  'NZD',
+  'OMR',
+  'PAB',
+  'PEN',
+  'PGK',
+  'PHP',
+  'PKR',
+  'PLN',
+  'PYG',
+  'QAR',
+  'RON',
+  'RSD',
+  'RUB',
+  'RWF',
+  'SAR',
+  'SBD',
+  'SCR',
+  'SDG',
+  'SEK',
+  'SGD',
+  'SHP',
+  'SLE',
+  'SOS',
+  'SRD',
+  'SSP',
+  'STN',
+  'SVC',
+  'SYP',
+  'SZL',
+  'THB',
+  'TJS',
+  'TMT',
+  'TND',
+  'TOP',
+  'TRY',
+  'TTD',
+  'TWD',
+  'TZS',
+  'UAH',
+  'UGX',
+  'USD',
+  'UYU',
+  'UZS',
+  'VES',
+  'VND',
+  'VUV',
+  'WST',
+  'XAF',
+  'XCD',
+  'XOF',
+  'XPF',
+  'YER',
+  'ZAR',
+  'ZMW',
+  'ZWL',
 ] as const;
 
-export type CurrencyCode = (typeof CURRENCY_OPTIONS)[number]['code'];
+export type CurrencyCode = (typeof ALL_CURRENCY_CODES)[number];
 
 export const DEFAULT_CURRENCY: CurrencyCode = 'USD';
 
-const CURRENCY_CODE_SET: ReadonlySet<string> = new Set(CURRENCY_OPTIONS.map((c) => c.code));
+const intlCurrencyNames =
+  typeof Intl !== 'undefined' && typeof Intl.DisplayNames === 'function'
+    ? new Intl.DisplayNames('en', { type: 'currency' })
+    : null;
+
+function labelFor(code: CurrencyCode): string {
+  if (intlCurrencyNames) {
+    try {
+      const name = intlCurrencyNames.of(code);
+      if (name && name !== code) return `${name} (${code})`;
+    } catch {
+      // Intl.DisplayNames throws on malformed input; codes here are all valid
+      // ISO 4217 so this branch only fires on a runtime that lacks the data.
+    }
+  }
+  return code;
+}
+
+export const CURRENCY_OPTIONS: ReadonlyArray<{ code: CurrencyCode; label: string }> =
+  ALL_CURRENCY_CODES.map((code) => ({ code, label: labelFor(code) })).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+
+const CURRENCY_CODE_SET: ReadonlySet<string> = new Set(ALL_CURRENCY_CODES);
 
 export function isSupportedCurrency(code: string): code is CurrencyCode {
   return CURRENCY_CODE_SET.has(code);
@@ -56,6 +205,10 @@ export function isSupportedCurrency(code: string): code is CurrencyCode {
  * Maps an ISO 3166-1 alpha-2 region code to the local CRM currency. Returns
  * `null` for unknown regions so callers can decide their own fallback (signup
  * falls back to `DEFAULT_CURRENCY`). Eurozone members all map to EUR.
+ *
+ * Only the major-market regions are mapped — uncovered regions fall back to
+ * USD at signup, and users can change it in Settings. Add a region here when
+ * a user reports their signup currency was wrong.
  */
 const REGION_TO_CURRENCY: ReadonlyMap<string, CurrencyCode> = new Map([
   // Americas

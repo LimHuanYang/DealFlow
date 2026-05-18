@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createDealBodySchema, type CreateDealInput, type PublicPipeline } from '@dealflow/shared';
+import {
+  createDealBodySchema,
+  CURRENCY_OPTIONS,
+  type CreateDealInput,
+  type PublicPipeline,
+} from '@dealflow/shared';
 import {
   Dialog,
   DialogContent,
@@ -58,8 +63,8 @@ export function CreateDealDialog({
     setValue('stageId', defaultStageId ?? pipeline.stages[0]?.id ?? '');
   }, [pipeline.id, defaultStageId, pipeline.stages, setValue]);
 
-  // Once the current org loads, set the currency in the hidden form field so
-  // new deals adopt the org's preference rather than the schema default 'USD'.
+  // Once the current org loads, seed the currency field with the org's
+  // preference. Users can override per-deal via the dropdown before submit.
   useEffect(() => {
     if (orgCurrency) {
       setValue('currency', orgCurrency);
@@ -81,7 +86,6 @@ export function CreateDealDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <input type="hidden" {...register('pipelineId')} />
-          <input type="hidden" {...register('currency')} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" {...register('name')} autoFocus />
@@ -102,8 +106,23 @@ export function CreateDealDialog({
             </select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="value">Value (optional, {orgCurrency ?? 'USD'})</Label>
+            <Label htmlFor="value">Value (optional)</Label>
             <Input id="value" type="number" min={0} {...register('value')} placeholder="0" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="currency">Currency</Label>
+            <select
+              id="currency"
+              {...register('currency')}
+              className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm"
+              data-testid="create-deal-currency-select"
+            >
+              {CURRENCY_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create deal'}

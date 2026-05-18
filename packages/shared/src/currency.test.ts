@@ -27,6 +27,19 @@ describe('CURRENCY_OPTIONS', () => {
     const codes = CURRENCY_OPTIONS.map((c) => c.code);
     expect(new Set(codes).size).toBe(codes.length);
   });
+
+  it('covers the full ISO 4217 active list (>=150 codes)', () => {
+    // Lock in the "all currencies in the world" UX requirement. The full
+    // active ISO 4217 list is ~165 codes; we don't pin the exact number so
+    // adding/removing one entry doesn't churn this test.
+    expect(CURRENCY_OPTIONS.length).toBeGreaterThanOrEqual(150);
+  });
+
+  it('is sorted alphabetically by label', () => {
+    const labels = CURRENCY_OPTIONS.map((c) => c.label);
+    const sorted = [...labels].sort((a, b) => a.localeCompare(b));
+    expect(labels).toEqual(sorted);
+  });
 });
 
 describe('isSupportedCurrency', () => {
