@@ -1,5 +1,6 @@
 export const queryKeys = {
   me: ['auth', 'me'] as const,
+  organization: ['organization', 'current'] as const,
   companies: {
     all: ['companies'] as const,
     list: (q?: string) => ['companies', 'list', { q: q ?? '' }] as const,
