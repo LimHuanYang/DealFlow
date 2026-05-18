@@ -6,6 +6,7 @@ import { schema } from '@dealflow/db';
 import {
   ERROR_CODES,
   createActivityBodySchema,
+  listTasksQuerySchema,
   updateActivityBodySchema,
 } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
@@ -171,5 +172,21 @@ export async function registerActivitiesRoutes(
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
     }
     return reply.status(204).send();
+  });
+
+  app.get('/api/v1/tasks', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = listTasksQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Invalid task filter',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    const rows = await repo.listTasks(orgId, parsed.data);
+    return reply.send({ items: rows.map(publicActivity) });
   });
 }
