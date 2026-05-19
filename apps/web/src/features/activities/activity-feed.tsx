@@ -1,19 +1,12 @@
 import { useState } from 'react';
 import type { PublicActivity } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
-import {
-  useActivitiesFor,
-  useDeleteActivity,
-  useUpdateActivity,
-} from './api';
+import { useActivitiesFor, useDeleteActivity, useUpdateActivity } from './api';
 import { AddNoteForm } from './add-note-form';
 import { AddTaskForm } from './add-task-form';
 import { TaskItem } from './task-item';
 
-type ParentFilter =
-  | { contactId: string }
-  | { companyId: string }
-  | { dealId: string };
+type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
 interface ActivityFeedProps {
   parent: ParentFilter;
@@ -92,9 +85,7 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
     return (
       <TaskItem
         task={activity}
-        onToggleDone={(id, patch) =>
-          onToggleDone(id, patch as { status: 'open' | 'done' })
-        }
+        onToggleDone={(id, patch) => onToggleDone(id, patch as { status: 'open' | 'done' })}
         onDelete={onDelete}
       />
     );

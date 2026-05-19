@@ -76,9 +76,7 @@ describe('ActivitiesRepo', () => {
     const list = await repo.listForParent(orgId, { contactId });
     expect(list.length).toBeGreaterThanOrEqual(2);
     for (let i = 1; i < list.length; i++) {
-      expect(list[i - 1]!.createdAt.getTime()).toBeGreaterThanOrEqual(
-        list[i]!.createdAt.getTime(),
-      );
+      expect(list[i - 1]!.createdAt.getTime()).toBeGreaterThanOrEqual(list[i]!.createdAt.getTime());
     }
   });
 

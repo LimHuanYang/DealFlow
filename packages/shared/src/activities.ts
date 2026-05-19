@@ -31,8 +31,7 @@ export const createActivityBodySchema = z
   })
   .refine(
     (v) => {
-      const n =
-        (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0);
+      const n = (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0);
       return n === 1;
     },
     {

@@ -108,6 +108,8 @@ describe('Activities tenancy', () => {
       url: '/api/v1/tasks',
       headers: { cookie: b.cookie },
     });
-    expect((bRes.json() as { items: { body: string }[] }).items.find((i) => i.body === 'A only')).toBeUndefined();
+    expect(
+      (bRes.json() as { items: { body: string }[] }).items.find((i) => i.body === 'A only'),
+    ).toBeUndefined();
   });
 });

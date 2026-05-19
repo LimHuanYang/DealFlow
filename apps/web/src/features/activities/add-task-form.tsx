@@ -3,10 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateActivity } from './api';
 
-type ParentFilter =
-  | { contactId: string }
-  | { companyId: string }
-  | { dealId: string };
+type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
 interface AddTaskFormProps {
   parent: ParentFilter;

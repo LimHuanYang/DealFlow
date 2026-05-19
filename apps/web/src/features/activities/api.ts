@@ -16,10 +16,7 @@ interface ActivityResponse {
   activity: PublicActivity;
 }
 
-type ParentFilter =
-  | { contactId: string }
-  | { companyId: string }
-  | { dealId: string };
+type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
 function parentQueryString(p: ParentFilter): string {
   if ('contactId' in p) return `contactId=${p.contactId}`;
@@ -74,8 +71,7 @@ export function useUpdateActivity(parent: ParentFilter) {
 export function useDeleteActivity(parent: ParentFilter) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      apiFetch<void>(`/api/v1/activities/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => apiFetch<void>(`/api/v1/activities/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: parentQueryKey(parent) });
       qc.invalidateQueries({ queryKey: ['tasks'] });
@@ -88,9 +84,7 @@ export function useTasks(query: ListTasksQuery) {
   return useQuery({
     queryKey: queryKeys.tasks.list(query.status, query.due),
     queryFn: () =>
-      apiFetch<ActivitiesListResponse>(
-        `/api/v1/tasks?status=${query.status}&due=${query.due}`,
-      ),
+      apiFetch<ActivitiesListResponse>(`/api/v1/tasks?status=${query.status}&due=${query.due}`),
   });
 }
 

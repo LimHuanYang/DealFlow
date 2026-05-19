@@ -15,8 +15,7 @@ interface TaskItemProps {
  */
 export function TaskItem({ task, onToggleDone, onDelete, contextLabel }: TaskItemProps) {
   const done = task.status === 'done';
-  const overdue =
-    !done && task.dueAt !== null && new Date(task.dueAt).getTime() < startOfToday();
+  const overdue = !done && task.dueAt !== null && new Date(task.dueAt).getTime() < startOfToday();
 
   return (
     <div className="flex items-start gap-3 py-2">
@@ -30,18 +29,12 @@ export function TaskItem({ task, onToggleDone, onDelete, contextLabel }: TaskIte
         data-testid={`task-checkbox-${task.id}`}
       />
       <div className="min-w-0 flex-1">
-        <p
-          className={
-            done ? 'text-sm text-neutral-400 line-through' : 'text-sm text-neutral-900'
-          }
-        >
+        <p className={done ? 'text-sm text-neutral-400 line-through' : 'text-sm text-neutral-900'}>
           {task.body}
         </p>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
           {task.dueAt && (
-            <span className={overdue ? 'text-red-600' : ''}>
-              Due {formatDate(task.dueAt)}
-            </span>
+            <span className={overdue ? 'text-red-600' : ''}>Due {formatDate(task.dueAt)}</span>
           )}
           {contextLabel && <span>· {contextLabel}</span>}
         </div>

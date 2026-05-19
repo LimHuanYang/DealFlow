@@ -20,10 +20,9 @@ const listQuerySchema = z
     companyId: z.string().uuid().optional(),
     dealId: z.string().uuid().optional(),
   })
-  .refine(
-    (v) => (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0) === 1,
-    { message: 'Set exactly one of contactId, companyId, dealId' },
-  );
+  .refine((v) => (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0) === 1, {
+    message: 'Set exactly one of contactId, companyId, dealId',
+  });
 
 function publicActivity(row: typeof schemaType.activities.$inferSelect) {
   return {
@@ -57,10 +56,7 @@ async function parentExistsInOrg(
       .select({ id: schema.contacts.id })
       .from(schema.contacts)
       .where(
-        and(
-          eq(schema.contacts.organizationId, orgId),
-          eq(schema.contacts.id, parent.contactId),
-        ),
+        and(eq(schema.contacts.organizationId, orgId), eq(schema.contacts.id, parent.contactId)),
       )
       .limit(1);
     return !!row;
@@ -70,10 +66,7 @@ async function parentExistsInOrg(
       .select({ id: schema.companies.id })
       .from(schema.companies)
       .where(
-        and(
-          eq(schema.companies.organizationId, orgId),
-          eq(schema.companies.id, parent.companyId),
-        ),
+        and(eq(schema.companies.organizationId, orgId), eq(schema.companies.id, parent.companyId)),
       )
       .limit(1);
     return !!row;
@@ -82,9 +75,7 @@ async function parentExistsInOrg(
     const [row] = await db
       .select({ id: schema.deals.id })
       .from(schema.deals)
-      .where(
-        and(eq(schema.deals.organizationId, orgId), eq(schema.deals.id, parent.dealId)),
-      )
+      .where(and(eq(schema.deals.organizationId, orgId), eq(schema.deals.id, parent.dealId)))
       .limit(1);
     return !!row;
   }

@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useCreateActivity } from './api';
 
-type ParentFilter =
-  | { contactId: string }
-  | { companyId: string }
-  | { dealId: string };
+type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
 interface AddNoteFormProps {
   parent: ParentFilter;

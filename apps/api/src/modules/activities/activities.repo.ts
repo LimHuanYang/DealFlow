@@ -1,11 +1,7 @@
 import { and, desc, eq, gt, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type {
-  CreateActivityInput,
-  ListTasksQuery,
-  UpdateActivityInput,
-} from '@dealflow/shared';
+import type { CreateActivityInput, ListTasksQuery, UpdateActivityInput } from '@dealflow/shared';
 
 export interface ListForParentQuery {
   contactId?: string;
