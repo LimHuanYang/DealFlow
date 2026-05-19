@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CURRENCY_OPTIONS, isSupportedCurrency } from '@dealflow/shared';
 import { InlineEdit } from '@/components/inline-edit';
+import { ActivityFeed } from '@/features/activities/activity-feed';
 import { useDeal, useUpdateDeal } from '@/features/deals/api';
 import { formatCurrency } from '@/lib/format';
 
@@ -82,6 +83,7 @@ function DealDetailPage() {
           />
         </dd>
       </dl>
+      <ActivityFeed parent={{ dealId: d.id }} />
     </main>
   );
 }

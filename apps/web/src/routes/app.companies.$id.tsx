@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { InlineEdit } from '@/components/inline-edit';
+import { ActivityFeed } from '@/features/activities/activity-feed';
 import { useCompany, useUpdateCompany } from '@/features/companies/api';
 
 export const Route = createFileRoute('/app/companies/$id')({
@@ -82,6 +83,7 @@ function CompanyDetailPage() {
           />
         </dd>
       </dl>
+      <ActivityFeed parent={{ companyId: c.id }} />
     </main>
   );
 }

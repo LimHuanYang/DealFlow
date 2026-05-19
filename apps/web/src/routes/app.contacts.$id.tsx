@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { InlineEdit } from '@/components/inline-edit';
+import { ActivityFeed } from '@/features/activities/activity-feed';
 import { useContact, useUpdateContact } from '@/features/contacts/api';
 
 export const Route = createFileRoute('/app/contacts/$id')({
@@ -83,6 +84,7 @@ function ContactDetailPage() {
           />
         </dd>
       </dl>
+      <ActivityFeed parent={{ contactId: c.id }} />
     </main>
   );
 }
