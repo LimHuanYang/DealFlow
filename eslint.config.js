@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/.vite/**',
       '**/routeTree.gen.ts',
       'slides/**',
+      '.claude/**',
     ],
   },
   {
