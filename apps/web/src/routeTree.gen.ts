@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppDealsIndexRouteImport } from './routes/app.deals.index'
 import { Route as AppContactsIndexRouteImport } from './routes/app.contacts.index'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
   '/app': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/settings': typeof AppSettingsRoute
+  '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/settings'
+    | '/app/tasks'
     | '/app/'
     | '/app/companies/$id'
     | '/app/contacts/$id'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/settings'
+    | '/app/tasks'
     | '/app'
     | '/app/companies/$id'
     | '/app/contacts/$id'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/settings'
+    | '/app/tasks'
     | '/app/'
     | '/app/companies/$id'
     | '/app/contacts/$id'
@@ -211,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/tasks': {
+      id: '/app/tasks'
+      path: '/tasks'
+      fullPath: '/app/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/settings': {
@@ -267,6 +286,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
+  AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesIdRoute: typeof AppCompaniesIdRoute
   AppContactsIdRoute: typeof AppContactsIdRoute
@@ -278,6 +298,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
+  AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
   AppCompaniesIdRoute: AppCompaniesIdRoute,
   AppContactsIdRoute: AppContactsIdRoute,
