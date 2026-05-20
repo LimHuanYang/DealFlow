@@ -9,3 +9,4 @@ export * from './currency.js';
 export * from './organizations.js';
 export * from './activities.js';
 export * from './ai.js';
+export * from './emails.js';
