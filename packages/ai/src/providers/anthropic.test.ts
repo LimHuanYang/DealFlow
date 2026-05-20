@@ -70,17 +70,48 @@ describe('AnthropicAIProvider.extractContact', () => {
 });
 
 describe('AnthropicAIProvider deferred methods', () => {
-  it('draftEmail + nlFilter throw AIDisabledError', async () => {
+  it('nlFilter throws AIDisabledError', async () => {
     const provider = new AnthropicAIProvider({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       client: { messages: { create: vi.fn() } } as any,
       model: 'claude-haiku-4-5',
     });
-    await expect(
-      provider.draftEmail({ dealContext: { id: 'x', summary: 'y' }, intent: 'z' }),
-    ).rejects.toBeInstanceOf(AIDisabledError);
     await expect(provider.nlFilter({ query: 'x', entity: 'deals' })).rejects.toBeInstanceOf(
       AIDisabledError,
     );
+  });
+});
+
+describe('AnthropicAIProvider.draftEmail', () => {
+  it('parses JSON into {subject, body}', async () => {
+    const client = fakeClient(
+      JSON.stringify({ subject: 'Hello Alice', body: 'Hi Alice,\nGreat to meet.' }),
+    );
+    const provider = new AnthropicAIProvider({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client: client as any,
+      model: 'claude-haiku-4-5',
+    });
+    const out = await provider.draftEmail({
+      dealContext: { id: 'c1', summary: 'Met at SaaStr; asked for pricing.' },
+      intent: 'follow up with pricing deck',
+    });
+    expect(out.subject).toBe('Hello Alice');
+    expect(out.body).toMatch(/Hi Alice/);
+  });
+
+  it('throws when model returns malformed json', async () => {
+    const client = fakeClient('not json at all');
+    const provider = new AnthropicAIProvider({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client: client as any,
+      model: 'claude-haiku-4-5',
+    });
+    await expect(
+      provider.draftEmail({
+        dealContext: { id: 'c1', summary: 'x' },
+        intent: 'y',
+      }),
+    ).rejects.toThrow();
   });
 });

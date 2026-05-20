@@ -11,7 +11,13 @@ import {
   type SummarizeNoteInput,
   type SummarizeNoteOutput,
 } from '../provider.js';
-import { SUMMARIZE_SYSTEM, EXTRACT_SYSTEM, parseExtractJson } from './prompts.js';
+import {
+  SUMMARIZE_SYSTEM,
+  EXTRACT_SYSTEM,
+  DRAFT_EMAIL_SYSTEM,
+  parseExtractJson,
+  parseDraftEmailJson,
+} from './prompts.js';
 
 export interface GeminiAIProviderOptions {
   client: GoogleGenAI;
@@ -48,8 +54,14 @@ export class GeminiAIProvider implements AIProvider {
     return parseExtractJson(res.text ?? '');
   }
 
-  async draftEmail(_input: DraftEmailInput): Promise<DraftEmailOutput> {
-    throw new AIDisabledError();
+  async draftEmail(input: DraftEmailInput): Promise<DraftEmailOutput> {
+    const userMessage = `Context:\n${input.dealContext.summary}\n\nIntent:\n${input.intent}`;
+    const res = await this.client.models.generateContent({
+      model: this.model,
+      contents: userMessage,
+      config: { systemInstruction: DRAFT_EMAIL_SYSTEM, maxOutputTokens: 800 },
+    });
+    return parseDraftEmailJson(res.text ?? '');
   }
   async nlFilter(_input: NlFilterInput): Promise<NlFilterOutput> {
     throw new AIDisabledError();

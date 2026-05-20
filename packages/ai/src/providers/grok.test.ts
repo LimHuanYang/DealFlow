@@ -61,17 +61,33 @@ describe('GrokAIProvider.extractContact', () => {
 });
 
 describe('GrokAIProvider deferred methods', () => {
-  it('draftEmail + nlFilter throw AIDisabledError', async () => {
+  it('nlFilter throws AIDisabledError', async () => {
     const provider = new GrokAIProvider({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       client: { chat: { completions: { create: vi.fn() } } } as any,
       model: 'grok-4',
     });
-    await expect(
-      provider.draftEmail({ dealContext: { id: 'x', summary: 'y' }, intent: 'z' }),
-    ).rejects.toBeInstanceOf(AIDisabledError);
     await expect(provider.nlFilter({ query: 'x', entity: 'deals' })).rejects.toBeInstanceOf(
       AIDisabledError,
     );
+  });
+});
+
+describe('GrokAIProvider.draftEmail', () => {
+  it('parses JSON into {subject, body}', async () => {
+    const client = fakeClient(
+      JSON.stringify({ subject: 'Hey Carol', body: 'Hi Carol,\nChecking in.' }),
+    );
+    const provider = new GrokAIProvider({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client: client as any,
+      model: 'grok-4',
+    });
+    const out = await provider.draftEmail({
+      dealContext: { id: 'c1', summary: 'history' },
+      intent: 'check in',
+    });
+    expect(out.subject).toBe('Hey Carol');
+    expect(out.body).toMatch(/Carol/);
   });
 });

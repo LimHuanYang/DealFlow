@@ -43,18 +43,34 @@ describe('GeminiAIProvider.extractContact', () => {
 });
 
 describe('GeminiAIProvider deferred methods', () => {
-  it('draftEmail + nlFilter throw AIDisabledError', async () => {
+  it('nlFilter throws AIDisabledError', async () => {
     const provider = new GeminiAIProvider({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       client: { models: { generateContent: vi.fn() } } as any,
       model: 'gemini-2.5-flash',
     });
-    await expect(
-      provider.draftEmail({ dealContext: { id: 'x', summary: 'y' }, intent: 'z' }),
-    ).rejects.toBeInstanceOf(AIDisabledError);
     await expect(provider.nlFilter({ query: 'x', entity: 'deals' })).rejects.toBeInstanceOf(
       AIDisabledError,
     );
+  });
+});
+
+describe('GeminiAIProvider.draftEmail', () => {
+  it('parses JSON into {subject, body}', async () => {
+    const client = fakeClient(
+      JSON.stringify({ subject: 'Hi Bob', body: 'Hi Bob,\nFollowing up.' }),
+    );
+    const provider = new GeminiAIProvider({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client: client as any,
+      model: 'gemini-2.5-flash',
+    });
+    const out = await provider.draftEmail({
+      dealContext: { id: 'c1', summary: 'history' },
+      intent: 'follow up',
+    });
+    expect(out.subject).toBe('Hi Bob');
+    expect(out.body).toMatch(/Bob/);
   });
 });
 

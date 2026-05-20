@@ -11,7 +11,13 @@ import {
   type SummarizeNoteInput,
   type SummarizeNoteOutput,
 } from '../provider.js';
-import { SUMMARIZE_SYSTEM, EXTRACT_SYSTEM, parseExtractJson } from './prompts.js';
+import {
+  SUMMARIZE_SYSTEM,
+  EXTRACT_SYSTEM,
+  DRAFT_EMAIL_SYSTEM,
+  parseExtractJson,
+  parseDraftEmailJson,
+} from './prompts.js';
 
 export interface GrokAIProviderOptions {
   /** OpenAI SDK client configured with baseURL='https://api.x.ai/v1'. */
@@ -62,8 +68,19 @@ export class GrokAIProvider implements AIProvider {
     return parseExtractJson(content);
   }
 
-  async draftEmail(_input: DraftEmailInput): Promise<DraftEmailOutput> {
-    throw new AIDisabledError();
+  async draftEmail(input: DraftEmailInput): Promise<DraftEmailOutput> {
+    const userMessage = `Context:\n${input.dealContext.summary}\n\nIntent:\n${input.intent}`;
+    const res = await this.client.chat.completions.create({
+      model: this.model,
+      max_tokens: 800,
+      messages: [
+        { role: 'system', content: DRAFT_EMAIL_SYSTEM },
+        { role: 'user', content: userMessage },
+      ],
+    });
+    const content = res.choices[0]?.message?.content;
+    if (!content) throw new Error('Grok returned an empty response');
+    return parseDraftEmailJson(content);
   }
   async nlFilter(_input: NlFilterInput): Promise<NlFilterOutput> {
     throw new AIDisabledError();

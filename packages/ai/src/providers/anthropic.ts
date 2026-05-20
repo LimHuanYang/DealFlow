@@ -11,7 +11,13 @@ import {
   type SummarizeNoteInput,
   type SummarizeNoteOutput,
 } from '../provider.js';
-import { SUMMARIZE_SYSTEM, EXTRACT_SYSTEM, parseExtractJson } from './prompts.js';
+import {
+  SUMMARIZE_SYSTEM,
+  EXTRACT_SYSTEM,
+  DRAFT_EMAIL_SYSTEM,
+  parseExtractJson,
+  parseDraftEmailJson,
+} from './prompts.js';
 
 export interface AnthropicAIProviderOptions {
   client: Anthropic;
@@ -48,8 +54,15 @@ export class AnthropicAIProvider implements AIProvider {
     return parseExtractJson(extractText(res));
   }
 
-  async draftEmail(_input: DraftEmailInput): Promise<DraftEmailOutput> {
-    throw new AIDisabledError();
+  async draftEmail(input: DraftEmailInput): Promise<DraftEmailOutput> {
+    const userMessage = `Context:\n${input.dealContext.summary}\n\nIntent:\n${input.intent}`;
+    const res = await this.client.messages.create({
+      model: this.model,
+      max_tokens: 800,
+      system: DRAFT_EMAIL_SYSTEM,
+      messages: [{ role: 'user', content: userMessage }],
+    });
+    return parseDraftEmailJson(extractText(res));
   }
   async nlFilter(_input: NlFilterInput): Promise<NlFilterOutput> {
     throw new AIDisabledError();

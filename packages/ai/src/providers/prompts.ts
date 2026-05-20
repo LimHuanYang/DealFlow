@@ -1,4 +1,4 @@
-import type { ExtractContactOutput } from '../provider.js';
+import type { DraftEmailOutput, ExtractContactOutput } from '../provider.js';
 
 export const SUMMARIZE_SYSTEM = [
   'You are a CRM assistant. Read the activity history below and write a concise summary',
@@ -36,4 +36,30 @@ export function parseExtractJson(raw: string): ExtractContactOutput {
   } catch {
     return {};
   }
+}
+
+export const DRAFT_EMAIL_SYSTEM = [
+  'You are a sales-CRM email drafting assistant. Read the activity history and',
+  "the user's intent below, then write a single email reply. Return a JSON object",
+  'with exactly two keys: `subject` (concise, no quotes, no "Re:" prefix unless',
+  'truly a reply) and `body` (plain text, 2–5 short paragraphs, no signature).',
+  'Be specific, friendly, and assume the recipient already knows you.',
+  'Return ONLY the JSON object — no prose, no markdown fences.',
+].join(' ');
+
+/**
+ * Parse the model's draft-email JSON. Handles fences, naked JSON, garbage.
+ * Throws on unparseable input (the caller should fall through to the next
+ * provider in the chain).
+ */
+export function parseDraftEmailJson(raw: string): DraftEmailOutput {
+  let candidate = raw;
+  const fenceMatch = candidate.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch && fenceMatch[1]) candidate = fenceMatch[1];
+  candidate = candidate.trim();
+  const obj = JSON.parse(candidate) as Record<string, unknown>;
+  if (typeof obj.subject !== 'string' || typeof obj.body !== 'string') {
+    throw new Error('Model returned invalid draft email shape');
+  }
+  return { subject: obj.subject, body: obj.body };
 }
