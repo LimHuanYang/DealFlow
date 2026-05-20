@@ -35,6 +35,9 @@ importers:
       '@dealflow/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@dealflow/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@dealflow/shared':
         specifier: workspace:*
         version: link:../../packages/shared

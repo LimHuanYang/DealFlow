@@ -3,6 +3,7 @@ import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import type { Database } from '@dealflow/db';
 import { buildAIProvider, describeChain, type AIProvider } from '@dealflow/ai';
+import { buildEmailProvider, describeEmail, type EmailProvider } from '@dealflow/email';
 import { loadEnv, type Env } from './env.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerCors } from './plugins/cors.js';
@@ -18,6 +19,12 @@ export interface BuildAppOptions {
   aiProvider?: AIProvider;
   /** Optional override of the chain description (name + model per provider). */
   aiChainDescription?: Array<{ name: string; model: string }>;
+  /** Optional override of the email provider. Used by email route tests. */
+  emailProvider?: EmailProvider;
+  /** Optional pre-formatted "Name <email>" From line. Used by email route tests. */
+  emailFrom?: string;
+  /** Optional override of the email enabled flag. Used by email route tests. */
+  emailEnabled?: boolean;
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -98,6 +105,26 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       db: opts.db,
       aiProvider,
       aiChainDescription,
+    });
+
+    // Email: tests may override provider + status fields. In production both
+    // are derived from env (RESEND_API_KEY + RESEND_FROM_EMAIL + RESEND_FROM_NAME).
+    const emailConfig = {
+      apiKey: env.RESEND_API_KEY,
+      from: env.RESEND_FROM_EMAIL,
+      name: env.RESEND_FROM_NAME,
+    };
+    const emailProvider = opts.emailProvider ?? buildEmailProvider(emailConfig);
+    const emailDescription = describeEmail(emailConfig);
+    const emailEnabled = opts.emailEnabled ?? emailDescription.provider !== 'none';
+    const emailFrom = opts.emailFrom ?? emailDescription.from;
+
+    const { registerEmailRoutes } = await import('./modules/emails/routes.js');
+    await registerEmailRoutes(app, {
+      db: opts.db,
+      emailProvider,
+      emailFrom,
+      emailEnabled,
     });
   }
 

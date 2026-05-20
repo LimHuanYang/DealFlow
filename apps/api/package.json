@@ -13,6 +13,7 @@
   "dependencies": {
     "@dealflow/ai": "workspace:*",
     "@dealflow/db": "workspace:*",
+    "@dealflow/email": "workspace:*",
     "@dealflow/shared": "workspace:*",
     "@fastify/cookie": "^11.0.1",
     "@fastify/cors": "^10.0.1",

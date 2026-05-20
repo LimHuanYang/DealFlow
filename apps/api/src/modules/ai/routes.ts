@@ -7,6 +7,7 @@ import {
   ERROR_CODES,
   summarizeActivityBodySchema,
   extractContactBodySchema,
+  draftEmailBodySchema,
 } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
@@ -153,6 +154,49 @@ export async function registerAIRoutes(app: FastifyInstance, deps: AIRoutesDeps)
     } catch (err) {
       if (err instanceof AIDisabledError) return aiDisabled(reply);
       req.log.error({ err }, 'extract-contact: all providers failed');
+      return aiUpstreamError(reply);
+    }
+  });
+
+  app.post('/api/v1/ai/draft-email', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = draftEmailBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Invalid draft-email payload',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
+    if (!enabled) return aiDisabled(reply);
+
+    const orgId = req.session!.currentOrgId!;
+    const ok = await parentExistsInOrg(deps.db, orgId, { contactId: parsed.data.contactId });
+    if (!ok) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' } });
+    }
+
+    const rows = await activities.listForParent(orgId, { contactId: parsed.data.contactId });
+    const context =
+      rows.length === 0
+        ? 'No prior activity with this contact yet.'
+        : rows
+            .slice(0, 50)
+            .map((a) => `[${a.createdAt.toISOString().slice(0, 10)}] [${a.kind}] ${a.body}`)
+            .join('\n');
+
+    try {
+      const out = await deps.aiProvider.draftEmail({
+        dealContext: { id: parsed.data.contactId, summary: context },
+        intent: parsed.data.intent,
+      });
+      return reply.send({ subject: out.subject, body: out.body });
+    } catch (err) {
+      if (err instanceof AIDisabledError) return aiDisabled(reply);
+      req.log.error({ err }, 'ai/draft-email: all providers failed');
       return aiUpstreamError(reply);
     }
   });

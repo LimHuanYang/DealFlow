@@ -250,3 +250,83 @@ describe('POST /api/v1/ai/extract-contact', () => {
     await testDb.stop();
   });
 });
+
+describe('POST /api/v1/ai/draft-email', () => {
+  it('returns 503 with AI_DISABLED when chain is empty', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContact(app, cookie, 'Alice');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/ai/draft-email',
+      payload: { contactId, intent: 'follow up' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(503);
+    expect((res.json() as { error: { code: string } }).error.code).toBe('AI_DISABLED');
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('200 with subject + body on success', async () => {
+    const testDb = await startTestPostgres();
+    const draftJson = JSON.stringify({ subject: 'Hello Alice', body: 'Hi Alice,\nFollowing up.' });
+    const app = await buildTestApp({
+      db: testDb.db,
+      aiProvider: new FallbackAIProvider([fakeAnthropic(draftJson)]),
+      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+    });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContact(app, cookie, 'Alice');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/ai/draft-email',
+      payload: { contactId, intent: 'follow up' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { subject: string; body: string };
+    expect(body.subject).toBe('Hello Alice');
+    expect(body.body).toMatch(/Alice/);
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('404 when contact not in org', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      aiProvider: new FallbackAIProvider([
+        fakeAnthropic(JSON.stringify({ subject: 's', body: 'b' })),
+      ]),
+      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+    });
+    const { cookie } = await signupTestUser(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/ai/draft-email',
+      payload: { contactId: '00000000-0000-0000-0000-000000000001', intent: 'x' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(404);
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('400 when intent is missing', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContact(app, cookie, 'Alice');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/ai/draft-email',
+      payload: { contactId },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+    await testDb.stop();
+  });
+});

@@ -2,6 +2,7 @@ import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
 import type { Database } from '@dealflow/db';
 import type { AIProvider } from '@dealflow/ai';
+import type { EmailProvider } from '@dealflow/email';
 
 export interface BuildTestAppOptions {
   envOverrides?: Partial<Env>;
@@ -10,6 +11,12 @@ export interface BuildTestAppOptions {
   aiProvider?: AIProvider;
   /** Optional description shown by GET /api/v1/ai/status. */
   aiChainDescription?: Array<{ name: string; model: string }>;
+  /** Optional override of the email provider — used by email route tests. */
+  emailProvider?: EmailProvider;
+  /** Pre-formatted "Name <email>" From line shown by GET /api/v1/email/status. */
+  emailFrom?: string;
+  /** Whether RESEND_API_KEY + RESEND_FROM_EMAIL are both set. */
+  emailEnabled?: boolean;
 }
 
 export async function buildTestApp(opts: BuildTestAppOptions = {}) {
@@ -35,6 +42,9 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     db: opts.db,
     aiProvider: opts.aiProvider,
     aiChainDescription: opts.aiChainDescription,
+    emailProvider: opts.emailProvider,
+    emailFrom: opts.emailFrom,
+    emailEnabled: opts.emailEnabled,
   });
   return app;
 }
