@@ -120,6 +120,33 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
       />
     );
   }
+  if (activity.kind === 'email') {
+    return (
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
+            ✉️ Email sent
+          </p>
+          {activity.subject && (
+            <p className="mt-0.5 text-sm font-medium text-neutral-900">{activity.subject}</p>
+          )}
+          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">{activity.body}</p>
+          <p className="mt-1 text-xs text-neutral-500">
+            {new Date(activity.createdAt).toLocaleString()}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void onDelete(activity.id)}
+          className="text-xs text-neutral-400 hover:text-red-600"
+          aria-label="Delete email"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+  // Default: note
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">

@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { Button } from '@/components/ui/button';
 import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { useContact, useUpdateContact } from '@/features/contacts/api';
+import { useEmailStatus } from '@/features/emails/api';
+import { ComposeEmailDialog } from '@/features/emails/compose-email-dialog';
 
 export const Route = createFileRoute('/app/contacts/$id')({
   component: ContactDetailPage,
@@ -11,6 +14,7 @@ function ContactDetailPage() {
   const { id } = Route.useParams();
   const { data, isPending, error } = useContact(id);
   const update = useUpdateContact(id);
+  const emailStatus = useEmailStatus();
 
   if (isPending) return <main className="p-6 text-sm text-neutral-500">Loading…</main>;
   if (error || !data) {
@@ -25,9 +29,24 @@ function ContactDetailPage() {
       <h1 className="mb-1 text-2xl font-semibold tracking-tight" data-testid="contact-name">
         {fullName}
       </h1>
-      <p className="mb-6 text-sm text-neutral-500">
+      <p className="mb-2 text-sm text-neutral-500">
         Contact · created {new Date(c.createdAt).toLocaleDateString()}
       </p>
+
+      {emailStatus.data?.enabled && c.email && (
+        <div className="mt-2 mb-4">
+          <ComposeEmailDialog
+            contactId={c.id}
+            recipientName={`${c.firstName}${c.lastName ? ' ' + c.lastName : ''}`}
+            recipientEmail={c.email}
+            trigger={
+              <Button variant="outline" size="sm" data-testid="email-contact">
+                ✉️ Email
+              </Button>
+            }
+          />
+        </div>
+      )}
 
       <dl className="grid grid-cols-[120px_1fr] gap-y-3 text-sm">
         <dt className="text-neutral-500">First name</dt>
