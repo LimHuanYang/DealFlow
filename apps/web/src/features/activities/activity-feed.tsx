@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PublicActivity } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
+import { useAIStatus, useSummarizeActivity } from '@/features/ai/api';
 import { useActivitiesFor, useDeleteActivity, useUpdateActivity } from './api';
 import { AddNoteForm } from './add-note-form';
 import { AddTaskForm } from './add-task-form';
@@ -19,6 +20,9 @@ export function ActivityFeed({ parent }: ActivityFeedProps) {
   const update = useUpdateActivity(parent);
   const del = useDeleteActivity(parent);
   const [composer, setComposer] = useState<Composer>('none');
+  const aiStatus = useAIStatus();
+  const summarize = useSummarizeActivity();
+  const summary = summarize.data?.summary ?? null;
 
   return (
     <section className="mt-8" data-testid="activity-feed">
@@ -39,6 +43,17 @@ export function ActivityFeed({ parent }: ActivityFeedProps) {
           >
             Task
           </Button>
+          {aiStatus.data?.enabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => summarize.mutate(parent)}
+              disabled={summarize.isPending}
+              data-testid="summarize-activity"
+            >
+              {summarize.isPending ? 'Summarizing…' : '✨ Summarize'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -51,6 +66,21 @@ export function ActivityFeed({ parent }: ActivityFeedProps) {
         <div className="mb-4 rounded-md border border-neutral-200 p-3">
           <AddTaskForm parent={parent} />
         </div>
+      )}
+
+      {summary && (
+        <div
+          className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+          data-testid="activity-summary"
+        >
+          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-amber-700">
+            AI summary
+          </p>
+          <p className="whitespace-pre-wrap">{summary}</p>
+        </div>
+      )}
+      {summarize.isError && (
+        <p className="mb-4 text-sm text-red-600">Couldn't summarize — please try again.</p>
       )}
 
       {list.isPending && <p className="text-sm text-neutral-500">Loading activity…</p>}
