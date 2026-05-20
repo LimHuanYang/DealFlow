@@ -15,6 +15,12 @@ const envSchema = z
     SESSION_COOKIE_NAME: z.string().default('dealflow_session'),
     SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     CSRF_SECRET: z.string().min(32).default('dev-csrf-secret-CHANGE-ME-in-production-please'),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'),
+    GEMINI_API_KEY: z.string().optional(),
+    GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+    XAI_API_KEY: z.string().optional(),
+    XAI_MODEL: z.string().default('grok-4'),
   })
   .superRefine((data, ctx) => {
     // DATABASE_URL is required outside of `test` mode where the test helper

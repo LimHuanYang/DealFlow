@@ -13,6 +13,9 @@ export async function buildTestApp(opts: { envOverrides?: Partial<Env>; db?: Dat
     SESSION_COOKIE_NAME: 'dealflow_session',
     SESSION_DURATION_DAYS: 30,
     CSRF_SECRET: 'test-csrf-secret-32-chars-minimum-xxxxx',
+    ANTHROPIC_MODEL: 'claude-haiku-4-5',
+    GEMINI_MODEL: 'gemini-2.5-flash',
+    XAI_MODEL: 'grok-4',
     ...opts.envOverrides,
   };
   const app = await buildApp({ env, logger: false, db: opts.db });
