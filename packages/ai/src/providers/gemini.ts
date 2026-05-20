@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import type { GoogleGenAI } from '@google/genai';
 import {
   AIDisabledError,
   type AIProvider,
