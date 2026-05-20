@@ -26,6 +26,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     ANTHROPIC_MODEL: 'claude-haiku-4-5',
     GEMINI_MODEL: 'gemini-2.5-flash',
     XAI_MODEL: 'grok-4',
+    RESEND_FROM_NAME: 'DealFlow',
     ...opts.envOverrides,
   };
   const app = await buildApp({

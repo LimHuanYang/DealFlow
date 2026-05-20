@@ -21,6 +21,9 @@ const envSchema = z
     GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
     XAI_API_KEY: z.string().optional(),
     XAI_MODEL: z.string().default('grok-4'),
+    RESEND_API_KEY: z.string().optional(),
+    RESEND_FROM_EMAIL: z.string().email().optional(),
+    RESEND_FROM_NAME: z.string().default('DealFlow'),
   })
   .superRefine((data, ctx) => {
     // DATABASE_URL is required outside of `test` mode where the test helper
