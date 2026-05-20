@@ -14,10 +14,9 @@ export const summarizeActivityBodySchema = z
     companyId: uuid.optional(),
     dealId: uuid.optional(),
   })
-  .refine(
-    (v) => (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0) === 1,
-    { message: 'Set exactly one of contactId, companyId, dealId' },
-  );
+  .refine((v) => (v.contactId ? 1 : 0) + (v.companyId ? 1 : 0) + (v.dealId ? 1 : 0) === 1, {
+    message: 'Set exactly one of contactId, companyId, dealId',
+  });
 export type SummarizeActivityInput = z.infer<typeof summarizeActivityBodySchema>;
 export interface SummarizeActivityResponse {
   summary: string;

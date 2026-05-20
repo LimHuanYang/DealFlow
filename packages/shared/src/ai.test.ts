@@ -13,9 +13,9 @@ describe('summarizeActivityBodySchema', () => {
     expect(summarizeActivityBodySchema.safeParse({}).success).toBe(false);
   });
   it('rejects two parents', () => {
-    expect(
-      summarizeActivityBodySchema.safeParse({ contactId: UUID, dealId: UUID }).success,
-    ).toBe(false);
+    expect(summarizeActivityBodySchema.safeParse({ contactId: UUID, dealId: UUID }).success).toBe(
+      false,
+    );
   });
   it('rejects bad uuid', () => {
     expect(summarizeActivityBodySchema.safeParse({ contactId: 'nope' }).success).toBe(false);

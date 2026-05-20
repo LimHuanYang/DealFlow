@@ -30,10 +30,7 @@ async function parentExistsInOrg(
       .select({ id: schema.contacts.id })
       .from(schema.contacts)
       .where(
-        and(
-          eq(schema.contacts.organizationId, orgId),
-          eq(schema.contacts.id, parent.contactId),
-        ),
+        and(eq(schema.contacts.organizationId, orgId), eq(schema.contacts.id, parent.contactId)),
       )
       .limit(1);
     return !!row;
@@ -43,10 +40,7 @@ async function parentExistsInOrg(
       .select({ id: schema.companies.id })
       .from(schema.companies)
       .where(
-        and(
-          eq(schema.companies.organizationId, orgId),
-          eq(schema.companies.id, parent.companyId),
-        ),
+        and(eq(schema.companies.organizationId, orgId), eq(schema.companies.id, parent.companyId)),
       )
       .limit(1);
     return !!row;
@@ -55,9 +49,7 @@ async function parentExistsInOrg(
     const [row] = await db
       .select({ id: schema.deals.id })
       .from(schema.deals)
-      .where(
-        and(eq(schema.deals.organizationId, orgId), eq(schema.deals.id, parent.dealId)),
-      )
+      .where(and(eq(schema.deals.organizationId, orgId), eq(schema.deals.id, parent.dealId)))
       .limit(1);
     return !!row;
   }
@@ -98,10 +90,7 @@ function aiUpstreamError(reply: FastifyReply) {
   });
 }
 
-export async function registerAIRoutes(
-  app: FastifyInstance,
-  deps: AIRoutesDeps,
-): Promise<void> {
+export async function registerAIRoutes(app: FastifyInstance, deps: AIRoutesDeps): Promise<void> {
   const activities = new ActivitiesRepo(deps.db);
   const enabled = deps.aiChainDescription.length > 0;
 
@@ -109,70 +98,62 @@ export async function registerAIRoutes(
     return reply.send({ enabled, providers: deps.aiChainDescription });
   });
 
-  app.post(
-    '/api/v1/ai/summarize-activity',
-    { preHandler: requireOrg },
-    async (req, reply) => {
-      const parsed = summarizeActivityBodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return reply.status(400).send({
-          error: {
-            code: ERROR_CODES.VALIDATION_FAILED,
-            message: 'Provide exactly one of contactId, companyId, dealId',
-            details: parsed.error.flatten().fieldErrors,
-          },
-        });
-      }
-      if (!enabled) return aiDisabled(reply);
+  app.post('/api/v1/ai/summarize-activity', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = summarizeActivityBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Provide exactly one of contactId, companyId, dealId',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
+    if (!enabled) return aiDisabled(reply);
 
-      const orgId = req.session!.currentOrgId!;
-      const ok = await parentExistsInOrg(deps.db, orgId, parsed.data);
-      if (!ok) {
-        return reply
-          .status(404)
-          .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Parent not found' } });
-      }
+    const orgId = req.session!.currentOrgId!;
+    const ok = await parentExistsInOrg(deps.db, orgId, parsed.data);
+    if (!ok) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Parent not found' } });
+    }
 
-      const rows = await activities.listForParent(orgId, parsed.data);
-      if (rows.length === 0) {
-        return reply.send({ summary: 'No activity yet.' });
-      }
-      const context = buildActivityContext(rows);
-      try {
-        const out = await deps.aiProvider.summarizeNote({ text: context });
-        return reply.send({ summary: out.summary });
-      } catch (err) {
-        if (err instanceof AIDisabledError) return aiDisabled(reply);
-        req.log.error({ err }, 'summarize-activity: all providers failed');
-        return aiUpstreamError(reply);
-      }
-    },
-  );
+    const rows = await activities.listForParent(orgId, parsed.data);
+    if (rows.length === 0) {
+      return reply.send({ summary: 'No activity yet.' });
+    }
+    const context = buildActivityContext(rows);
+    try {
+      const out = await deps.aiProvider.summarizeNote({ text: context });
+      return reply.send({ summary: out.summary });
+    } catch (err) {
+      if (err instanceof AIDisabledError) return aiDisabled(reply);
+      req.log.error({ err }, 'summarize-activity: all providers failed');
+      return aiUpstreamError(reply);
+    }
+  });
 
-  app.post(
-    '/api/v1/ai/extract-contact',
-    { preHandler: requireOrg },
-    async (req, reply) => {
-      const parsed = extractContactBodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return reply.status(400).send({
-          error: {
-            code: ERROR_CODES.VALIDATION_FAILED,
-            message: 'Invalid text',
-            details: parsed.error.flatten().fieldErrors,
-          },
-        });
-      }
-      if (!enabled) return aiDisabled(reply);
+  app.post('/api/v1/ai/extract-contact', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = extractContactBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Invalid text',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
+    if (!enabled) return aiDisabled(reply);
 
-      try {
-        const extracted = await deps.aiProvider.extractContact({ text: parsed.data.text });
-        return reply.send({ extracted });
-      } catch (err) {
-        if (err instanceof AIDisabledError) return aiDisabled(reply);
-        req.log.error({ err }, 'extract-contact: all providers failed');
-        return aiUpstreamError(reply);
-      }
-    },
-  );
+    try {
+      const extracted = await deps.aiProvider.extractContact({ text: parsed.data.text });
+      return reply.send({ extracted });
+    } catch (err) {
+      if (err instanceof AIDisabledError) return aiDisabled(reply);
+      req.log.error({ err }, 'extract-contact: all providers failed');
+      return aiUpstreamError(reply);
+    }
+  });
 }

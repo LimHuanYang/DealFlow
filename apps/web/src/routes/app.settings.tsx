@@ -115,8 +115,8 @@ function SettingsForm({ org }: SettingsFormProps) {
         {aiStatus.data?.enabled ? (
           <>
             <p className="mb-2 text-sm text-neutral-700">
-              <span className="font-medium text-green-700">Enabled</span> · fallback chain runs
-              in order.
+              <span className="font-medium text-green-700">Enabled</span> · fallback chain runs in
+              order.
             </p>
             <ol className="ml-4 list-decimal space-y-1 text-sm text-neutral-700">
               {aiStatus.data.providers.map((p) => (
@@ -132,15 +132,11 @@ function SettingsForm({ org }: SettingsFormProps) {
           aiStatus.data && (
             <p className="text-sm text-neutral-700">
               <span className="font-medium text-neutral-500">Disabled</span> — set any of{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
-                ANTHROPIC_API_KEY
-              </code>
-              ,{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">GEMINI_API_KEY</code>,
-              or{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">XAI_API_KEY</code>{' '}
-              in <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>{' '}
-              to enable.
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">ANTHROPIC_API_KEY</code>,{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">GEMINI_API_KEY</code>, or{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">XAI_API_KEY</code> in{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code> to
+              enable.
             </p>
           )
         )}
