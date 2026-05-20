@@ -29,4 +29,7 @@ export const queryKeys = {
   tasks: {
     list: (status: string, due: string) => ['tasks', 'list', { status, due }] as const,
   },
+  ai: {
+    status: ['ai', 'status'] as const,
+  },
 };
