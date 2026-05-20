@@ -31,6 +31,10 @@ export const activities = pgTable(
     dueAt: timestamp('due_at', { withTimezone: true }),
     completedAt: timestamp('completed_at', { withTimezone: true }),
 
+    // Email-only fields. NULL for notes/tasks.
+    subject: text('subject'),
+    externalId: text('external_id'),
+
     // Exactly one of these is set (enforced by CHECK).
     contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'cascade' }),
     companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),

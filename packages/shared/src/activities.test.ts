@@ -120,8 +120,8 @@ describe('listTasksQuerySchema', () => {
 });
 
 describe('ACTIVITY_KINDS / TASK_STATUSES', () => {
-  it('ACTIVITY_KINDS is exactly ["note","task"]', () => {
-    expect([...ACTIVITY_KINDS]).toEqual(['note', 'task']);
+  it('ACTIVITY_KINDS is exactly ["note","task","email"]', () => {
+    expect([...ACTIVITY_KINDS]).toEqual(['note', 'task', 'email']);
   });
   it('TASK_STATUSES is exactly ["open","done"]', () => {
     expect([...TASK_STATUSES]).toEqual(['open', 'done']);

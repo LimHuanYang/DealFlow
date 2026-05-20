@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ACTIVITY_KINDS = ['note', 'task'] as const;
+export const ACTIVITY_KINDS = ['note', 'task', 'email'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
 export const TASK_STATUSES = ['open', 'done'] as const;
@@ -69,6 +69,8 @@ export interface PublicActivity {
   id: string;
   kind: ActivityKind;
   body: string;
+  subject: string | null;
+  externalId: string | null;
   status: TaskStatus | null;
   dueAt: string | null; // ISO 8601 string when set
   completedAt: string | null;
