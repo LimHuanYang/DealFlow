@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAIStatus, useExtractContact } from '@/features/ai/api';
 import { useCreateContact } from './api';
 
 interface CreateContactDialogProps {
@@ -31,8 +32,26 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateContactInput>({ resolver: zodResolver(createContactBodySchema) });
+
+  const [mode, setMode] = useState<'form' | 'paste'>('form');
+  const [pasteText, setPasteText] = useState('');
+  const aiStatus = useAIStatus();
+  const extract = useExtractContact();
+
+  async function onExtract() {
+    const trimmed = pasteText.trim();
+    if (!trimmed) return;
+    const res = await extract.mutateAsync(trimmed);
+    const e = res.extracted;
+    if (e.firstName) setValue('firstName', e.firstName);
+    if (e.lastName) setValue('lastName', e.lastName);
+    if (e.email) setValue('email', e.email);
+    if (e.title) setValue('title', e.title);
+    setMode('form');
+  }
 
   async function onSubmit(values: CreateContactInput) {
     await mut.mutateAsync(values);
@@ -47,6 +66,51 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
         <DialogHeader>
           <DialogTitle>New contact</DialogTitle>
         </DialogHeader>
+        {aiStatus.data?.enabled && (
+          <div className="mb-3 flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setMode('form')}
+              className={mode === 'form' ? 'font-medium text-neutral-900' : 'text-neutral-500'}
+            >
+              Manual
+            </button>
+            <span className="text-neutral-300">·</span>
+            <button
+              type="button"
+              onClick={() => setMode('paste')}
+              className={mode === 'paste' ? 'font-medium text-neutral-900' : 'text-neutral-500'}
+            >
+              ✨ Paste from text
+            </button>
+          </div>
+        )}
+        {mode === 'paste' && (
+          <div className="mb-4 flex flex-col gap-2">
+            <Label htmlFor="paste-text">
+              Paste an email signature, LinkedIn snippet, or freeform text
+            </Label>
+            <textarea
+              id="paste-text"
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              rows={5}
+              className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm"
+              data-testid="paste-text"
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={onExtract}
+              disabled={!pasteText.trim() || extract.isPending}
+            >
+              {extract.isPending ? 'Extracting…' : 'Extract fields'}
+            </Button>
+            {extract.isError && (
+              <p className="text-sm text-red-600">Couldn't extract — please try again.</p>
+            )}
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-2">
