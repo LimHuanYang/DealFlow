@@ -8,6 +8,7 @@ import {
 } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { useAIStatus } from '@/features/ai/api';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
 
 export const Route = createFileRoute('/app/settings')({
@@ -42,6 +43,7 @@ function SettingsForm({ org }: SettingsFormProps) {
   );
   const [saved, setSaved] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
+  const aiStatus = useAIStatus();
 
   // Clear any pending "Saved" timer when the component unmounts so we don't
   // call setState on an unmounted instance.
@@ -105,6 +107,43 @@ function SettingsForm({ org }: SettingsFormProps) {
             )}
           </div>
         </div>
+      </section>
+
+      <section className="mt-4 rounded-md border border-neutral-200 p-4">
+        <h2 className="mb-3 text-base font-medium">AI features</h2>
+        {aiStatus.isPending && <p className="text-sm text-neutral-500">Checking…</p>}
+        {aiStatus.data?.enabled ? (
+          <>
+            <p className="mb-2 text-sm text-neutral-700">
+              <span className="font-medium text-green-700">Enabled</span> · fallback chain runs
+              in order.
+            </p>
+            <ol className="ml-4 list-decimal space-y-1 text-sm text-neutral-700">
+              {aiStatus.data.providers.map((p) => (
+                <li key={p.name}>
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">{p.name}</code>
+                  {' · model '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">{p.model}</code>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : (
+          aiStatus.data && (
+            <p className="text-sm text-neutral-700">
+              <span className="font-medium text-neutral-500">Disabled</span> — set any of{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
+                ANTHROPIC_API_KEY
+              </code>
+              ,{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">GEMINI_API_KEY</code>,
+              or{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">XAI_API_KEY</code>{' '}
+              in <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>{' '}
+              to enable.
+            </p>
+          )
+        )}
       </section>
     </main>
   );
