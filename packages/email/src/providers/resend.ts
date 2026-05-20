@@ -1,9 +1,5 @@
 import type { Resend } from 'resend';
-import {
-  type EmailProvider,
-  type SendEmailInput,
-  type SendEmailOutput,
-} from '../provider.js';
+import { type EmailProvider, type SendEmailInput, type SendEmailOutput } from '../provider.js';
 
 export interface ResendEmailProviderOptions {
   /** Resend SDK client. Tests pass a fake; the factory passes `new Resend(apiKey)`. */

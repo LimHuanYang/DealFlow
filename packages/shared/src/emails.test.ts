@@ -14,14 +14,14 @@ describe('sendEmailBodySchema', () => {
     ).toBe(true);
   });
   it('rejects empty subject', () => {
-    expect(
-      sendEmailBodySchema.safeParse({ contactId: UUID, subject: '', body: 'x' }).success,
-    ).toBe(false);
+    expect(sendEmailBodySchema.safeParse({ contactId: UUID, subject: '', body: 'x' }).success).toBe(
+      false,
+    );
   });
   it('rejects empty body', () => {
-    expect(
-      sendEmailBodySchema.safeParse({ contactId: UUID, subject: 's', body: '' }).success,
-    ).toBe(false);
+    expect(sendEmailBodySchema.safeParse({ contactId: UUID, subject: 's', body: '' }).success).toBe(
+      false,
+    );
   });
   it('rejects missing contactId', () => {
     expect(sendEmailBodySchema.safeParse({ subject: 's', body: 'b' }).success).toBe(false);

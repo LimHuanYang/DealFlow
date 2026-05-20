@@ -158,8 +158,7 @@ function SettingsForm({ org }: SettingsFormProps) {
           emailStatus.data && (
             <p className="text-sm text-neutral-700">
               <span className="font-medium text-neutral-500">Disabled</span> — set{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code>{' '}
-              and{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code> and{' '}
               <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_FROM_EMAIL</code>{' '}
               in <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>{' '}
               (and verify the domain in your Resend dashboard) to enable.

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ResendEmailProvider } from './resend.js';
 
-function fakeClient(returnValue: { data?: { id: string } | null; error?: { message: string } | null }) {
+function fakeClient(returnValue: {
+  data?: { id: string } | null;
+  error?: { message: string } | null;
+}) {
   return {
     emails: {
       send: vi.fn().mockResolvedValue(returnValue),

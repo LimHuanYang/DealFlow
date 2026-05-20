@@ -124,9 +124,7 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
     return (
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
-            ✉️ Email sent
-          </p>
+          <p className="text-xs font-medium uppercase tracking-wide text-blue-700">✉️ Email sent</p>
           {activity.subject && (
             <p className="mt-0.5 text-sm font-medium text-neutral-900">{activity.subject}</p>
           )}
