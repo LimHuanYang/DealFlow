@@ -32,4 +32,7 @@ export const queryKeys = {
   ai: {
     status: ['ai', 'status'] as const,
   },
+  emails: {
+    status: ['emails', 'status'] as const,
+  },
 };
