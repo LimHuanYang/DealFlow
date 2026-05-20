@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { PublicActivity } from './activities.js';
 
 const uuid = z.string().uuid();
 
@@ -10,7 +11,7 @@ export const sendEmailBodySchema = z.object({
 });
 export type SendEmailInput = z.infer<typeof sendEmailBodySchema>;
 export interface SendEmailResponse {
-  activity: import('./activities.js').PublicActivity;
+  activity: PublicActivity;
 }
 
 /** Body for POST /api/v1/ai/draft-email. */
