@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useAIStatus } from '@/features/ai/api';
+import { useEmailStatus } from '@/features/emails/api';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
 
 export const Route = createFileRoute('/app/settings')({
@@ -44,6 +45,7 @@ function SettingsForm({ org }: SettingsFormProps) {
   const [saved, setSaved] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
   const aiStatus = useAIStatus();
+  const emailStatus = useEmailStatus();
 
   // Clear any pending "Saved" timer when the component unmounts so we don't
   // call setState on an unmounted instance.
@@ -137,6 +139,30 @@ function SettingsForm({ org }: SettingsFormProps) {
               <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">XAI_API_KEY</code> in{' '}
               <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code> to
               enable.
+            </p>
+          )
+        )}
+      </section>
+
+      <section className="mt-4 rounded-md border border-neutral-200 p-4">
+        <h2 className="mb-3 text-base font-medium">Email</h2>
+        {emailStatus.isPending && <p className="text-sm text-neutral-500">Checking…</p>}
+        {emailStatus.data?.enabled ? (
+          <p className="text-sm text-neutral-700">
+            <span className="font-medium text-green-700">Enabled</span> · sending as{' '}
+            <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
+              {emailStatus.data.from}
+            </code>
+          </p>
+        ) : (
+          emailStatus.data && (
+            <p className="text-sm text-neutral-700">
+              <span className="font-medium text-neutral-500">Disabled</span> — set{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code>{' '}
+              and{' '}
+              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_FROM_EMAIL</code>{' '}
+              in <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>{' '}
+              (and verify the domain in your Resend dashboard) to enable.
             </p>
           )
         )}
