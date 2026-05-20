@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import type { Database } from '@dealflow/db';
+import { buildAIProvider, describeChain, type AIProvider } from '@dealflow/ai';
 import { loadEnv, type Env } from './env.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerCors } from './plugins/cors.js';
@@ -13,6 +14,10 @@ export interface BuildAppOptions {
   logger?: boolean;
   /** Optional injected db. In tests, the disposable DB is passed in here. */
   db?: Database;
+  /** Optional override of the AI provider chain. Used by AI route tests. */
+  aiProvider?: AIProvider;
+  /** Optional override of the chain description (name + model per provider). */
+  aiChainDescription?: Array<{ name: string; model: string }>;
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -57,6 +62,43 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
     const { registerActivitiesRoutes } = await import('./modules/activities/routes.js');
     await registerActivitiesRoutes(app, { db: opts.db });
+
+    // AI: tests may override either or both (provider chain and the public
+    // description). In production both are derived from env.
+    const aiConfig = {
+      anthropic: {
+        apiKey: env.ANTHROPIC_API_KEY,
+        model: env.ANTHROPIC_MODEL,
+      },
+      gemini: {
+        apiKey: env.GEMINI_API_KEY,
+        model: env.GEMINI_MODEL,
+      },
+      grok: {
+        apiKey: env.XAI_API_KEY,
+        model: env.XAI_MODEL,
+      },
+    };
+    const aiProvider =
+      opts.aiProvider ??
+      buildAIProvider(aiConfig, {
+        onAttempt: (a) => {
+          if (!a.ok) {
+            app.log.warn(
+              { provider: a.name, method: a.method, err: a.error?.message },
+              'AI fallback',
+            );
+          }
+        },
+      }).providers;
+    const aiChainDescription = opts.aiChainDescription ?? describeChain(aiConfig);
+
+    const { registerAIRoutes } = await import('./modules/ai/routes.js');
+    await registerAIRoutes(app, {
+      db: opts.db,
+      aiProvider,
+      aiChainDescription,
+    });
   }
 
   return app;

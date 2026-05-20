@@ -1,8 +1,18 @@
 import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
 import type { Database } from '@dealflow/db';
+import type { AIProvider } from '@dealflow/ai';
 
-export async function buildTestApp(opts: { envOverrides?: Partial<Env>; db?: Database } = {}) {
+export interface BuildTestAppOptions {
+  envOverrides?: Partial<Env>;
+  db?: Database;
+  /** Optional override of the AI chain — used by AI route tests. */
+  aiProvider?: AIProvider;
+  /** Optional description shown by GET /api/v1/ai/status. */
+  aiChainDescription?: Array<{ name: string; model: string }>;
+}
+
+export async function buildTestApp(opts: BuildTestAppOptions = {}) {
   const env: Env = {
     NODE_ENV: 'test',
     PORT: 0,
@@ -18,6 +28,12 @@ export async function buildTestApp(opts: { envOverrides?: Partial<Env>; db?: Dat
     XAI_MODEL: 'grok-4',
     ...opts.envOverrides,
   };
-  const app = await buildApp({ env, logger: false, db: opts.db });
+  const app = await buildApp({
+    env,
+    logger: false,
+    db: opts.db,
+    aiProvider: opts.aiProvider,
+    aiChainDescription: opts.aiChainDescription,
+  });
   return app;
 }
