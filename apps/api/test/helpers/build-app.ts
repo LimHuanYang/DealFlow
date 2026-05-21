@@ -34,6 +34,8 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     GEMINI_MODEL: 'gemini-2.5-flash',
     XAI_MODEL: 'grok-4',
     RESEND_FROM_NAME: 'DealFlow',
+    SMTP_PORT: 587,
+    SMTP_FROM_NAME: 'DealFlow',
     ...opts.envOverrides,
   };
   const app = await buildApp({

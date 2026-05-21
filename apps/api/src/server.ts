@@ -108,11 +108,21 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     });
 
     // Email: tests may override provider + status fields. In production both
-    // are derived from env (RESEND_API_KEY + RESEND_FROM_EMAIL + RESEND_FROM_NAME).
+    // are derived from env. Order of preference: Resend → SMTP → Noop.
     const emailConfig = {
-      apiKey: env.RESEND_API_KEY,
-      from: env.RESEND_FROM_EMAIL,
-      name: env.RESEND_FROM_NAME,
+      resend: {
+        apiKey: env.RESEND_API_KEY,
+        from: env.RESEND_FROM_EMAIL,
+        name: env.RESEND_FROM_NAME,
+      },
+      smtp: {
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+        from: env.SMTP_FROM_EMAIL,
+        name: env.SMTP_FROM_NAME,
+      },
     };
     const emailProvider = opts.emailProvider ?? buildEmailProvider(emailConfig);
     const emailDescription = describeEmail(emailConfig);
