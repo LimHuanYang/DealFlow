@@ -91,6 +91,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       encryptionKey,
       emailProviderForOrg: opts.emailProviderForOrg,
     });
+
+    const { registerIntegrationsRoutes } = await import('./modules/integrations/routes.js');
+    await registerIntegrationsRoutes(app, { db: opts.db, encryptionKey });
   }
 
   return app;
