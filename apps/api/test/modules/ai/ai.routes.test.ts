@@ -72,11 +72,13 @@ describe('GET /api/v1/ai/status (with chain wired)', () => {
     const providers = [fakeAnthropic('x'), fakeAnthropic('y')];
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider(providers),
-      aiChainDescription: [
-        { name: 'anthropic', model: 'claude-haiku-4-5' },
-        { name: 'gemini', model: 'gemini-2.5-flash' },
-      ],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider(providers),
+        chain: [
+          { name: 'anthropic', model: 'claude-haiku-4-5' },
+          { name: 'gemini', model: 'gemini-2.5-flash' },
+        ],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -129,8 +131,10 @@ describe('POST /api/v1/ai/summarize-activity', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([fakeAnthropic('CANNED SUMMARY')]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([fakeAnthropic('CANNED SUMMARY')]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Bob');
@@ -156,8 +160,10 @@ describe('POST /api/v1/ai/summarize-activity', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([fakeAnthropic('x')]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([fakeAnthropic('x')]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -187,8 +193,10 @@ describe('POST /api/v1/ai/summarize-activity', () => {
     });
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([failing]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([failing]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Carol');
@@ -217,8 +225,10 @@ describe('POST /api/v1/ai/extract-contact', () => {
     const json = JSON.stringify({ firstName: 'Dan', email: 'd@x.com' });
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([fakeAnthropic(json)]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([fakeAnthropic(json)]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -274,8 +284,10 @@ describe('POST /api/v1/ai/draft-email', () => {
     const draftJson = JSON.stringify({ subject: 'Hello Alice', body: 'Hi Alice,\nFollowing up.' });
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([fakeAnthropic(draftJson)]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([fakeAnthropic(draftJson)]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice');
@@ -297,10 +309,12 @@ describe('POST /api/v1/ai/draft-email', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      aiProvider: new FallbackAIProvider([
-        fakeAnthropic(JSON.stringify({ subject: 's', body: 'b' })),
-      ]),
-      aiChainDescription: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      aiProviderForOrg: async () => ({
+        provider: new FallbackAIProvider([
+          fakeAnthropic(JSON.stringify({ subject: 's', body: 'b' })),
+        ]),
+        chain: [{ name: 'anthropic', model: 'claude-haiku-4-5' }],
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({

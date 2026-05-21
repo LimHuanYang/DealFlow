@@ -1,3 +1,4 @@
+import type { AIProvider } from '@dealflow/ai';
 import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
 import type { Database } from '@dealflow/db';
@@ -5,6 +6,11 @@ import type { Database } from '@dealflow/db';
 export interface BuildTestAppOptions {
   envOverrides?: Partial<Env>;
   db?: Database;
+  /** Test-only injection — bypasses the org-integrations DB lookup. */
+  aiProviderForOrg?: (orgId: string) => Promise<{
+    provider: AIProvider;
+    chain: Array<{ name: string; model: string }>;
+  }>;
 }
 
 // 32 zero bytes encoded as base64 — deterministic, test-only encryption key.
@@ -29,6 +35,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     env,
     logger: false,
     db: opts.db,
+    aiProviderForOrg: opts.aiProviderForOrg,
   });
   return app;
 }

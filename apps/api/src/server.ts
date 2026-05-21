@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
+import type { AIProvider } from '@dealflow/ai';
 import type { Database } from '@dealflow/db';
 import { loadEnv, type Env } from './env.js';
 import { loadEncryptionKey } from './lib/crypto.js';
@@ -14,6 +15,11 @@ export interface BuildAppOptions {
   logger?: boolean;
   /** Optional injected db. In tests, the disposable DB is passed in here. */
   db?: Database;
+  /** Test-only override for the AI provider resolver. Bypasses org-integrations lookup. */
+  aiProviderForOrg?: (orgId: string) => Promise<{
+    provider: AIProvider;
+    chain: Array<{ name: string; model: string }>;
+  }>;
 }
 
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
@@ -67,7 +73,11 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     await registerActivitiesRoutes(app, { db: opts.db });
 
     const { registerAIRoutes } = await import('./modules/ai/routes.js');
-    await registerAIRoutes(app, { db: opts.db, encryptionKey });
+    await registerAIRoutes(app, {
+      db: opts.db,
+      encryptionKey,
+      aiProviderForOrg: opts.aiProviderForOrg,
+    });
 
     const { registerEmailRoutes } = await import('./modules/emails/routes.js');
     await registerEmailRoutes(app, { db: opts.db, encryptionKey });
