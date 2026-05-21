@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const organizations = pgTable('organizations', {
   id: uuid('id')
@@ -9,6 +9,7 @@ export const organizations = pgTable('organizations', {
   slug: text('slug').notNull().unique(),
   plan: text('plan').notNull().default('free'),
   defaultCurrency: text('default_currency').notNull().default('USD'),
+  integrations: jsonb('integrations').notNull().default({}).$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
