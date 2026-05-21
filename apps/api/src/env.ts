@@ -16,21 +16,6 @@ const envSchema = z
     SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     CSRF_SECRET: z.string().min(32).default('dev-csrf-secret-CHANGE-ME-in-production-please'),
     INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
-    ANTHROPIC_API_KEY: z.string().optional(),
-    ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'),
-    GEMINI_API_KEY: z.string().optional(),
-    GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
-    XAI_API_KEY: z.string().optional(),
-    XAI_MODEL: z.string().default('grok-4'),
-    RESEND_API_KEY: z.string().optional(),
-    RESEND_FROM_EMAIL: z.string().email().optional(),
-    RESEND_FROM_NAME: z.string().default('DealFlow'),
-    SMTP_HOST: z.string().optional(),
-    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
-    SMTP_USER: z.string().optional(),
-    SMTP_PASS: z.string().optional(),
-    SMTP_FROM_EMAIL: z.string().email().optional(),
-    SMTP_FROM_NAME: z.string().default('DealFlow'),
   })
   .superRefine((data, ctx) => {
     // DATABASE_URL is required outside of `test` mode where the test helper
