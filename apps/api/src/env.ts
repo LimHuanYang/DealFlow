@@ -15,6 +15,7 @@ const envSchema = z
     SESSION_COOKIE_NAME: z.string().default('dealflow_session'),
     SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     CSRF_SECRET: z.string().min(32).default('dev-csrf-secret-CHANGE-ME-in-production-please'),
+    INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
     ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'),
     GEMINI_API_KEY: z.string().optional(),
@@ -39,6 +40,15 @@ const envSchema = z
         code: 'custom',
         path: ['DATABASE_URL'],
         message: 'DATABASE_URL is required outside of test',
+      });
+    }
+    if (data.NODE_ENV !== 'test' && !data.INTEGRATION_ENCRYPTION_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['INTEGRATION_ENCRYPTION_KEY'],
+        message:
+          'INTEGRATION_ENCRYPTION_KEY is required outside of test. ' +
+          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"',
       });
     }
   });
