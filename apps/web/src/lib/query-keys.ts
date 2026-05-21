@@ -35,4 +35,7 @@ export const queryKeys = {
   emails: {
     status: ['emails', 'status'] as const,
   },
+  integrations: {
+    current: ['integrations', 'current'] as const,
+  },
 };
