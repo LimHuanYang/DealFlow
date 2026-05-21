@@ -8,8 +8,8 @@ import {
 } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useEmailStatus } from '@/features/emails/api';
 import { AIIntegrationsSection } from '@/features/integrations/ai-integrations-section';
+import { SmtpIntegrationSection } from '@/features/integrations/smtp-integration-section';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
 
 export const Route = createFileRoute('/app/settings')({
@@ -44,7 +44,6 @@ function SettingsForm({ org }: SettingsFormProps) {
   );
   const [saved, setSaved] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
-  const emailStatus = useEmailStatus();
 
   // Clear any pending "Saved" timer when the component unmounts so we don't
   // call setState on an unmounted instance.
@@ -112,97 +111,7 @@ function SettingsForm({ org }: SettingsFormProps) {
 
       <AIIntegrationsSection />
 
-      <section className="mt-4 rounded-md border border-neutral-200 p-4">
-        <h2 className="mb-3 text-base font-medium">Email</h2>
-        {emailStatus.isPending && <p className="text-sm text-neutral-500">Checking…</p>}
-        {emailStatus.data?.enabled ? (
-          <p className="text-sm text-neutral-700">
-            <span className="font-medium text-green-700">Enabled</span> · sending as{' '}
-            <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
-              {emailStatus.data.from}
-            </code>
-            <span className="ml-2 text-xs text-neutral-500">
-              (your account's name is added per-email)
-            </span>
-          </p>
-        ) : (
-          emailStatus.data && (
-            <div className="space-y-3 text-sm text-neutral-700">
-              <p>
-                <span className="font-medium text-neutral-500">Disabled</span> — set one of these in{' '}
-                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>,
-                then restart the dev server.
-              </p>
-
-              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Gmail
-                </p>
-                <p className="mb-2 text-xs text-neutral-500">
-                  Enable 2FA, then generate an{' '}
-                  <a
-                    href="https://myaccount.google.com/apppasswords"
-                    className="underline"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    App Password
-                  </a>
-                  .
-                </p>
-                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=you@gmail.com
-SMTP_PASS=your-16-char-app-password
-SMTP_FROM_EMAIL=you@gmail.com`}</pre>
-              </div>
-
-              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Outlook.com / Hotmail / Live
-                </p>
-                <p className="mb-2 text-xs text-neutral-500">
-                  Microsoft retired basic SMTP auth for personal accounts in Sept 2024 — only works
-                  if you have an App Password set up. Microsoft 365 (paid) requires admin enabling
-                  SMTP AUTH per-mailbox.
-                </p>
-                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp-mail.outlook.com
-SMTP_PORT=587
-SMTP_USER=you@outlook.com
-SMTP_PASS=your-app-password
-SMTP_FROM_EMAIL=you@outlook.com`}</pre>
-              </div>
-
-              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Yahoo
-                </p>
-                <p className="mb-2 text-xs text-neutral-500">
-                  Enable 2FA, then generate an App Password in Yahoo Account Security.
-                </p>
-                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp.mail.yahoo.com
-SMTP_PORT=587
-SMTP_USER=you@yahoo.com
-SMTP_PASS=your-app-password
-SMTP_FROM_EMAIL=you@yahoo.com`}</pre>
-              </div>
-
-              <p className="text-xs text-neutral-500">
-                Or use{' '}
-                <a href="https://resend.com" target="_blank" rel="noreferrer" className="underline">
-                  Resend
-                </a>{' '}
-                for production: set{' '}
-                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code> +{' '}
-                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
-                  RESEND_FROM_EMAIL
-                </code>{' '}
-                instead (requires verifying your domain in their dashboard).
-              </p>
-            </div>
-          )
-        )}
-      </section>
+      <SmtpIntegrationSection />
     </main>
   );
 }
