@@ -10,15 +10,13 @@ describe('buildEmailProvider — Resend path', () => {
   });
 
   it('returns NoopEmailProvider when Resend has key but no from', () => {
-    expect(
-      buildEmailProvider({ resend: { apiKey: 'k' } }),
-    ).toBeInstanceOf(NoopEmailProvider);
+    expect(buildEmailProvider({ resend: { apiKey: 'k' } })).toBeInstanceOf(NoopEmailProvider);
   });
 
   it('returns ResendEmailProvider when both apiKey + from set', () => {
-    expect(
-      buildEmailProvider({ resend: { apiKey: 'k', from: 'x@y' } }),
-    ).toBeInstanceOf(ResendEmailProvider);
+    expect(buildEmailProvider({ resend: { apiKey: 'k', from: 'x@y' } })).toBeInstanceOf(
+      ResendEmailProvider,
+    );
   });
 });
 
@@ -38,9 +36,9 @@ describe('buildEmailProvider — SMTP path', () => {
   });
 
   it('returns NoopEmailProvider when SMTP host present but user/pass missing', () => {
-    expect(
-      buildEmailProvider({ smtp: { host: 'smtp.gmail.com', from: 'a@b' } }),
-    ).toBeInstanceOf(NoopEmailProvider);
+    expect(buildEmailProvider({ smtp: { host: 'smtp.gmail.com', from: 'a@b' } })).toBeInstanceOf(
+      NoopEmailProvider,
+    );
   });
 });
 
@@ -77,9 +75,10 @@ describe('isEmailEnabled', () => {
 
 describe('describeEmail', () => {
   it('returns resend + from when Resend is configured', () => {
-    expect(
-      describeEmail({ resend: { apiKey: 'k', from: 'x@y', name: 'X' } }),
-    ).toEqual({ provider: 'resend', from: 'X <x@y>' });
+    expect(describeEmail({ resend: { apiKey: 'k', from: 'x@y', name: 'X' } })).toEqual({
+      provider: 'resend',
+      from: 'X <x@y>',
+    });
   });
 
   it('returns smtp + from when only SMTP is configured', () => {

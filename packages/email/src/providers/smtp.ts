@@ -1,9 +1,5 @@
 import type { Transporter } from 'nodemailer';
-import {
-  type EmailProvider,
-  type SendEmailInput,
-  type SendEmailOutput,
-} from '../provider.js';
+import { type EmailProvider, type SendEmailInput, type SendEmailOutput } from '../provider.js';
 
 export interface SmtpEmailProviderOptions {
   /** Nodemailer transporter (created by the factory from SMTP env vars). Tests pass a fake. */

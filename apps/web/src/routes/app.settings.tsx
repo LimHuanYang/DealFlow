@@ -156,13 +156,35 @@ function SettingsForm({ org }: SettingsFormProps) {
           </p>
         ) : (
           emailStatus.data && (
-            <p className="text-sm text-neutral-700">
-              <span className="font-medium text-neutral-500">Disabled</span> — set{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code> and{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_FROM_EMAIL</code>{' '}
-              in <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>{' '}
-              (and verify the domain in your Resend dashboard) to enable.
-            </p>
+            <div className="space-y-2 text-sm text-neutral-700">
+              <p>
+                <span className="font-medium text-neutral-500">Disabled</span> — pick one of these
+                two ways to enable in{' '}
+                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>:
+              </p>
+              <ol className="ml-4 list-decimal space-y-1">
+                <li>
+                  <span className="font-medium">Resend</span> (recommended for prod): set{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code>{' '}
+                  +{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
+                    RESEND_FROM_EMAIL
+                  </code>{' '}
+                  (and verify the domain in your Resend dashboard).
+                </li>
+                <li>
+                  <span className="font-medium">SMTP</span> (works with Gmail, Outlook, any SMTP
+                  server): set{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_HOST</code>,{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_USER</code>,{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_PASS</code> and{' '}
+                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
+                    SMTP_FROM_EMAIL
+                  </code>
+                  .
+                </li>
+              </ol>
+            </div>
           )
         )}
       </section>
