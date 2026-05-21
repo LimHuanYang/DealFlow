@@ -32,7 +32,7 @@ describe('encryptSecret / decryptSecret', () => {
 
   it('throws when ciphertext is tampered (auth tag fails)', () => {
     const ciphertext = encryptSecret('secret', TEST_KEY);
-    const [iv, ct, tag] = ciphertext.split(':');
+    const [iv, , tag] = ciphertext.split(':');
     const tampered = `${iv}:${Buffer.from('ZZZZZZZZZZZZ', 'utf8').toString('base64')}:${tag}`;
     expect(() => decryptSecret(tampered, TEST_KEY)).toThrow();
   });

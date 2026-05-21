@@ -122,9 +122,11 @@ describe('PATCH /api/v1/integrations', () => {
       url: '/api/v1/integrations',
       headers: { cookie },
     });
-    const smtp = (get.json() as {
-      smtp: { configured: boolean; host: string; user: string; passMask: string };
-    }).smtp;
+    const smtp = (
+      get.json() as {
+        smtp: { configured: boolean; host: string; user: string; passMask: string };
+      }
+    ).smtp;
     expect(smtp.configured).toBe(true);
     expect(smtp.host).toBe('smtp.gmail.com');
     expect(smtp.user).toBe('a@b.com');

@@ -12,21 +12,22 @@ interface RowState {
   model: string;
 }
 
-const PROVIDERS: { key: ProviderKey; label: string; defaultModel: string; placeholder: string }[] = [
-  {
-    key: 'anthropic',
-    label: 'Anthropic (Claude)',
-    defaultModel: 'claude-haiku-4-5',
-    placeholder: 'sk-ant-...',
-  },
-  {
-    key: 'gemini',
-    label: 'Google (Gemini)',
-    defaultModel: 'gemini-2.5-flash',
-    placeholder: 'AIza...',
-  },
-  { key: 'grok', label: 'xAI (Grok)', defaultModel: 'grok-4', placeholder: 'xai-...' },
-];
+const PROVIDERS: { key: ProviderKey; label: string; defaultModel: string; placeholder: string }[] =
+  [
+    {
+      key: 'anthropic',
+      label: 'Anthropic (Claude)',
+      defaultModel: 'claude-haiku-4-5',
+      placeholder: 'sk-ant-...',
+    },
+    {
+      key: 'gemini',
+      label: 'Google (Gemini)',
+      defaultModel: 'gemini-2.5-flash',
+      placeholder: 'AIza...',
+    },
+    { key: 'grok', label: 'xAI (Grok)', defaultModel: 'grok-4', placeholder: 'xai-...' },
+  ];
 
 export function AIIntegrationsSection() {
   const integrations = useIntegrations();
@@ -78,8 +79,8 @@ export function AIIntegrationsSection() {
     >
       <h2 className="mb-3 text-base font-medium">AI integrations</h2>
       <p className="mb-4 text-sm text-neutral-500">
-        Provide your own API keys for one or more providers. DealFlow tries them in order
-        Anthropic → Gemini → Grok; any provider without a key is skipped.
+        Provide your own API keys for one or more providers. DealFlow tries them in order Anthropic
+        → Gemini → Grok; any provider without a key is skipped.
       </p>
 
       {integrations.isPending && <p className="text-sm text-neutral-500">Loading…</p>}
@@ -89,8 +90,7 @@ export function AIIntegrationsSection() {
           {PROVIDERS.map((p) => {
             const row = rows[p.key];
             const view = integrations.data![p.key];
-            const lastTest =
-              test.variables?.provider === p.key && test.data ? test.data : null;
+            const lastTest = test.variables?.provider === p.key && test.data ? test.data : null;
             return (
               <div key={p.key} className="rounded-md border border-neutral-200 p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -155,9 +155,7 @@ export function AIIntegrationsSection() {
                     onClick={() => onTest(p.key)}
                     disabled={!view.configured || test.isPending}
                   >
-                    {test.isPending && test.variables?.provider === p.key
-                      ? 'Testing…'
-                      : 'Test'}
+                    {test.isPending && test.variables?.provider === p.key ? 'Testing…' : 'Test'}
                   </Button>
                   {view.configured && (
                     <Button

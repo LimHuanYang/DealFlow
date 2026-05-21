@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import {
   buildEmailProvider,
@@ -43,13 +43,13 @@ function publicActivity(row: typeof schemaType.activities.$inferSelect) {
   };
 }
 
-function emailDisabled(reply: import('fastify').FastifyReply) {
+function emailDisabled(reply: FastifyReply) {
   return reply.status(503).send({
     error: { code: 'EMAIL_DISABLED', message: 'Email is not configured for this organization.' },
   });
 }
 
-function emailUpstreamError(reply: import('fastify').FastifyReply) {
+function emailUpstreamError(reply: FastifyReply) {
   return reply.status(502).send({
     error: { code: 'EMAIL_UPSTREAM_ERROR', message: 'Email provider request failed.' },
   });

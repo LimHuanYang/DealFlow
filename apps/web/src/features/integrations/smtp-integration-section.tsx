@@ -78,8 +78,8 @@ export function SmtpIntegrationSection() {
     >
       <h2 className="mb-3 text-base font-medium">Email (SMTP)</h2>
       <p className="mb-4 text-sm text-neutral-500">
-        Send email from your own Gmail / Outlook / mail server. For Gmail, enable 2FA then
-        generate an{' '}
+        Send email from your own Gmail / Outlook / mail server. For Gmail, enable 2FA then generate
+        an{' '}
         <a
           href="https://myaccount.google.com/apppasswords"
           target="_blank"

@@ -4,11 +4,7 @@ import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import { buildAIProvider, type AIConfig, AIDisabledError } from '@dealflow/ai';
 import { buildEmailProvider, type EmailConfig, EmailDisabledError } from '@dealflow/email';
-import {
-  ERROR_CODES,
-  testAIBodySchema,
-  updateIntegrationsBodySchema,
-} from '@dealflow/shared';
+import { ERROR_CODES, testAIBodySchema, updateIntegrationsBodySchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { OrgIntegrationsRepo } from './repo.js';
 

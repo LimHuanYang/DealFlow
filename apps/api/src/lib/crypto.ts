@@ -21,11 +21,9 @@ export function encryptSecret(plaintext: string, key: Buffer): string {
   const cipher = createCipheriv(ALGORITHM, key, iv);
   const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
-  return [
-    iv.toString('base64'),
-    ciphertext.toString('base64'),
-    authTag.toString('base64'),
-  ].join(':');
+  return [iv.toString('base64'), ciphertext.toString('base64'), authTag.toString('base64')].join(
+    ':',
+  );
 }
 
 /**

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  updateIntegrationsBodySchema,
-  testAIBodySchema,
-} from './integrations.js';
+import { updateIntegrationsBodySchema, testAIBodySchema } from './integrations.js';
 
 describe('updateIntegrationsBodySchema', () => {
   it('accepts empty patch (no-op)', () => {
@@ -18,9 +15,7 @@ describe('updateIntegrationsBodySchema', () => {
   });
 
   it('accepts clearing Anthropic via null', () => {
-    expect(
-      updateIntegrationsBodySchema.safeParse({ anthropic: null }).success,
-    ).toBe(true);
+    expect(updateIntegrationsBodySchema.safeParse({ anthropic: null }).success).toBe(true);
   });
 
   it('accepts a full SMTP config', () => {

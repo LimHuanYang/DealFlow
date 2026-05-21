@@ -33,7 +33,7 @@ const envSchema = z
         path: ['INTEGRATION_ENCRYPTION_KEY'],
         message:
           'INTEGRATION_ENCRYPTION_KEY is required outside of test. ' +
-          'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"',
+          "Generate one with: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
       });
     }
   });

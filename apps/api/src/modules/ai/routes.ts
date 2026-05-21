@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import {
   buildAIProvider,
@@ -41,7 +41,9 @@ async function parentExistsInOrg(
     const [row] = await db
       .select({ id: schema.contacts.id })
       .from(schema.contacts)
-      .where(and(eq(schema.contacts.organizationId, orgId), eq(schema.contacts.id, parent.contactId)))
+      .where(
+        and(eq(schema.contacts.organizationId, orgId), eq(schema.contacts.id, parent.contactId)),
+      )
       .limit(1);
     return !!row;
   }
@@ -49,7 +51,9 @@ async function parentExistsInOrg(
     const [row] = await db
       .select({ id: schema.companies.id })
       .from(schema.companies)
-      .where(and(eq(schema.companies.organizationId, orgId), eq(schema.companies.id, parent.companyId)))
+      .where(
+        and(eq(schema.companies.organizationId, orgId), eq(schema.companies.id, parent.companyId)),
+      )
       .limit(1);
     return !!row;
   }
@@ -83,23 +87,22 @@ function buildActivityContext(
   return lines.join('\n');
 }
 
-function aiDisabled(reply: import('fastify').FastifyReply) {
+function aiDisabled(reply: FastifyReply) {
   return reply
     .status(503)
-    .send({ error: { code: 'AI_DISABLED', message: 'AI is not configured for this organization.' } });
+    .send({
+      error: { code: 'AI_DISABLED', message: 'AI is not configured for this organization.' },
+    });
 }
 
-function aiUpstreamError(reply: import('fastify').FastifyReply) {
+function aiUpstreamError(reply: FastifyReply) {
   return reply
     .status(502)
     .send({ error: { code: 'AI_UPSTREAM_ERROR', message: 'AI provider request failed.' } });
 }
 
 /** Build an AIConfig from the org's stored integrations. */
-async function loadAIConfig(
-  integrations: OrgIntegrationsRepo,
-  orgId: string,
-): Promise<AIConfig> {
+async function loadAIConfig(integrations: OrgIntegrationsRepo, orgId: string): Promise<AIConfig> {
   const dec = await integrations.getDecrypted(orgId);
   return {
     anthropic: dec.anthropic
@@ -108,16 +111,11 @@ async function loadAIConfig(
     gemini: dec.gemini
       ? { apiKey: dec.gemini.apiKey, model: dec.gemini.model ?? 'gemini-2.5-flash' }
       : undefined,
-    grok: dec.grok
-      ? { apiKey: dec.grok.apiKey, model: dec.grok.model ?? 'grok-4' }
-      : undefined,
+    grok: dec.grok ? { apiKey: dec.grok.apiKey, model: dec.grok.model ?? 'grok-4' } : undefined,
   };
 }
 
-export async function registerAIRoutes(
-  app: FastifyInstance,
-  deps: AIRoutesDeps,
-): Promise<void> {
+export async function registerAIRoutes(app: FastifyInstance, deps: AIRoutesDeps): Promise<void> {
   const activitiesRepo = new ActivitiesRepo(deps.db);
   const integrations = new OrgIntegrationsRepo(deps.db, deps.encryptionKey);
 
