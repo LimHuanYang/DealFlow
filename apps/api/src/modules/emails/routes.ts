@@ -10,9 +10,9 @@ import { ActivitiesRepo } from '../activities/activities.repo.js';
 export interface EmailRoutesDeps {
   db: Database;
   emailProvider: EmailProvider;
-  /** Pre-formatted "Name <email>" from line. Null when disabled. */
-  emailFrom: string | null;
-  /** Whether RESEND_API_KEY + RESEND_FROM_EMAIL are both set. */
+  /** Raw sender email address. Null when disabled. */
+  emailFromAddress: string | null;
+  /** Whether the provider has the minimum config to send. */
   emailEnabled: boolean;
 }
 
@@ -57,7 +57,7 @@ export async function registerEmailRoutes(
   const activities = new ActivitiesRepo(deps.db);
 
   app.get('/api/v1/email/status', { preHandler: requireOrg }, async (_req, reply) => {
-    return reply.send({ enabled: deps.emailEnabled, from: deps.emailFrom });
+    return reply.send({ enabled: deps.emailEnabled, from: deps.emailFromAddress });
   });
 
   app.post('/api/v1/emails', { preHandler: requireOrg }, async (req, reply) => {
@@ -71,7 +71,7 @@ export async function registerEmailRoutes(
         },
       });
     }
-    if (!deps.emailEnabled || !deps.emailFrom) return emailDisabled(reply);
+    if (!deps.emailEnabled || !deps.emailFromAddress) return emailDisabled(reply);
 
     const orgId = req.session!.currentOrgId!;
     const userId = req.user!.id;
@@ -111,8 +111,8 @@ export async function registerEmailRoutes(
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Sender not found' } });
     }
 
-    // Personalised from: "Alice via DealFlow <noreply@dealflow.app>".
-    const personalisedFrom = `${userRow.name} via ${deps.emailFrom}`;
+    // Personalised from: "Alice <noreply@dealflow.app>".
+    const personalisedFrom = `${userRow.name} <${deps.emailFromAddress}>`;
 
     try {
       const result = await deps.emailProvider.send({

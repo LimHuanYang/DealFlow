@@ -56,7 +56,7 @@ describe('GET /api/v1/email/status', () => {
       db: testDb.db,
       emailProvider: fakeResend(),
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -67,7 +67,7 @@ describe('GET /api/v1/email/status', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json() as { enabled: boolean; from: string };
     expect(body.enabled).toBe(true);
-    expect(body.from).toBe('DealFlow <noreply@dealflow.app>');
+    expect(body.from).toBe('noreply@dealflow.app');
     await app.close();
     await testDb.stop();
   });
@@ -97,7 +97,7 @@ describe('POST /api/v1/emails', () => {
       db: testDb.db,
       emailProvider: fakeResend(),
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const contactRes = await app.inject({
@@ -125,7 +125,7 @@ describe('POST /api/v1/emails', () => {
       db: testDb.db,
       emailProvider: fakeResend(),
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -149,7 +149,7 @@ describe('POST /api/v1/emails', () => {
       db: testDb.db,
       emailProvider: fakeResend('msg_canned_xyz'),
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');
@@ -186,7 +186,7 @@ describe('POST /api/v1/emails', () => {
       db: testDb.db,
       emailProvider: fakeResend(),
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');
@@ -218,7 +218,7 @@ describe('POST /api/v1/emails', () => {
       db: testDb.db,
       emailProvider: failingProvider,
       emailEnabled: true,
-      emailFrom: 'DealFlow <noreply@dealflow.app>',
+      emailFromAddress: 'noreply@dealflow.app',
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');

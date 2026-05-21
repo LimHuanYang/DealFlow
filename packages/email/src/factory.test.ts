@@ -74,14 +74,14 @@ describe('isEmailEnabled', () => {
 });
 
 describe('describeEmail', () => {
-  it('returns resend + from when Resend is configured', () => {
+  it('returns resend + raw address when Resend is configured', () => {
     expect(describeEmail({ resend: { apiKey: 'k', from: 'x@y', name: 'X' } })).toEqual({
       provider: 'resend',
-      from: 'X <x@y>',
+      fromAddress: 'x@y',
     });
   });
 
-  it('returns smtp + from when only SMTP is configured', () => {
+  it('returns smtp + raw address when only SMTP is configured', () => {
     expect(
       describeEmail({
         smtp: {
@@ -92,11 +92,11 @@ describe('describeEmail', () => {
           name: 'Alice',
         },
       }),
-    ).toEqual({ provider: 'smtp', from: 'Alice <alice@gmail.com>' });
+    ).toEqual({ provider: 'smtp', fromAddress: 'alice@gmail.com' });
   });
 
   it('returns none + null when nothing configured', () => {
-    expect(describeEmail({})).toEqual({ provider: 'none', from: null });
+    expect(describeEmail({})).toEqual({ provider: 'none', fromAddress: null });
   });
 
   it('prefers resend over smtp in the description', () => {
@@ -105,6 +105,6 @@ describe('describeEmail', () => {
         resend: { apiKey: 'k', from: 'r@y', name: 'R' },
         smtp: { host: 'h', user: 'u', pass: 'p', from: 's@y' },
       }),
-    ).toEqual({ provider: 'resend', from: 'R <r@y>' });
+    ).toEqual({ provider: 'resend', fromAddress: 'r@y' });
   });
 });

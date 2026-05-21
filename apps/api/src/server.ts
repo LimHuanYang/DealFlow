@@ -21,8 +21,8 @@ export interface BuildAppOptions {
   aiChainDescription?: Array<{ name: string; model: string }>;
   /** Optional override of the email provider. Used by email route tests. */
   emailProvider?: EmailProvider;
-  /** Optional pre-formatted "Name <email>" From line. Used by email route tests. */
-  emailFrom?: string;
+  /** Optional raw sender email address override. Used by email route tests. */
+  emailFromAddress?: string;
   /** Optional override of the email enabled flag. Used by email route tests. */
   emailEnabled?: boolean;
 }
@@ -127,13 +127,13 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     const emailProvider = opts.emailProvider ?? buildEmailProvider(emailConfig);
     const emailDescription = describeEmail(emailConfig);
     const emailEnabled = opts.emailEnabled ?? emailDescription.provider !== 'none';
-    const emailFrom = opts.emailFrom ?? emailDescription.from;
+    const emailFromAddress = opts.emailFromAddress ?? emailDescription.fromAddress;
 
     const { registerEmailRoutes } = await import('./modules/emails/routes.js');
     await registerEmailRoutes(app, {
       db: opts.db,
       emailProvider,
-      emailFrom,
+      emailFromAddress,
       emailEnabled,
     });
   }

@@ -43,24 +43,22 @@ export function isEmailEnabled(cfg: EmailConfig): boolean {
 
 /**
  * Public description used by `GET /api/v1/email/status`. Returns the active
- * provider + formatted From line so the UI can show the operator exactly what
- * recipients will see.
+ * provider + raw From email address. The route layer composes the personalised
+ * "{userName} <{fromAddress}>" From line per-email.
  *
  * Order of preference: resend → smtp → none.
  */
 export function describeEmail(cfg: EmailConfig): {
   provider: 'resend' | 'smtp' | 'none';
-  from: string | null;
+  fromAddress: string | null;
 } {
   if (cfg.resend?.apiKey && cfg.resend?.from) {
-    const fromLine = cfg.resend.name ? `${cfg.resend.name} <${cfg.resend.from}>` : cfg.resend.from;
-    return { provider: 'resend', from: fromLine };
+    return { provider: 'resend', fromAddress: cfg.resend.from };
   }
   if (cfg.smtp?.host && cfg.smtp?.user && cfg.smtp?.pass && cfg.smtp?.from) {
-    const fromLine = cfg.smtp.name ? `${cfg.smtp.name} <${cfg.smtp.from}>` : cfg.smtp.from;
-    return { provider: 'smtp', from: fromLine };
+    return { provider: 'smtp', fromAddress: cfg.smtp.from };
   }
-  return { provider: 'none', from: null };
+  return { provider: 'none', fromAddress: null };
 }
 
 /**

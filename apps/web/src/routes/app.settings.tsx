@@ -153,37 +153,84 @@ function SettingsForm({ org }: SettingsFormProps) {
             <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
               {emailStatus.data.from}
             </code>
+            <span className="ml-2 text-xs text-neutral-500">
+              (your account's name is added per-email)
+            </span>
           </p>
         ) : (
           emailStatus.data && (
-            <div className="space-y-2 text-sm text-neutral-700">
+            <div className="space-y-3 text-sm text-neutral-700">
               <p>
-                <span className="font-medium text-neutral-500">Disabled</span> — pick one of these
-                two ways to enable in{' '}
-                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>:
+                <span className="font-medium text-neutral-500">Disabled</span> — set one of these in{' '}
+                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">apps/api/.env</code>,
+                then restart the dev server.
               </p>
-              <ol className="ml-4 list-decimal space-y-1">
-                <li>
-                  <span className="font-medium">Resend</span> (recommended for prod): set{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code>{' '}
-                  +{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
-                    RESEND_FROM_EMAIL
-                  </code>{' '}
-                  (and verify the domain in your Resend dashboard).
-                </li>
-                <li>
-                  <span className="font-medium">SMTP</span> (works with Gmail, Outlook, any SMTP
-                  server): set{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_HOST</code>,{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_USER</code>,{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">SMTP_PASS</code> and{' '}
-                  <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
-                    SMTP_FROM_EMAIL
-                  </code>
+
+              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                  Gmail
+                </p>
+                <p className="mb-2 text-xs text-neutral-500">
+                  Enable 2FA, then generate an{' '}
+                  <a
+                    href="https://myaccount.google.com/apppasswords"
+                    className="underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    App Password
+                  </a>
                   .
-                </li>
-              </ol>
+                </p>
+                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-16-char-app-password
+SMTP_FROM_EMAIL=you@gmail.com`}</pre>
+              </div>
+
+              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                  Outlook.com / Hotmail / Live
+                </p>
+                <p className="mb-2 text-xs text-neutral-500">
+                  Microsoft retired basic SMTP auth for personal accounts in Sept 2024 — only works
+                  if you have an App Password set up. Microsoft 365 (paid) requires admin enabling
+                  SMTP AUTH per-mailbox.
+                </p>
+                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp-mail.outlook.com
+SMTP_PORT=587
+SMTP_USER=you@outlook.com
+SMTP_PASS=your-app-password
+SMTP_FROM_EMAIL=you@outlook.com`}</pre>
+              </div>
+
+              <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                  Yahoo
+                </p>
+                <p className="mb-2 text-xs text-neutral-500">
+                  Enable 2FA, then generate an App Password in Yahoo Account Security.
+                </p>
+                <pre className="overflow-x-auto rounded bg-neutral-900 p-2 text-xs text-neutral-100">{`SMTP_HOST=smtp.mail.yahoo.com
+SMTP_PORT=587
+SMTP_USER=you@yahoo.com
+SMTP_PASS=your-app-password
+SMTP_FROM_EMAIL=you@yahoo.com`}</pre>
+              </div>
+
+              <p className="text-xs text-neutral-500">
+                Or use{' '}
+                <a href="https://resend.com" target="_blank" rel="noreferrer" className="underline">
+                  Resend
+                </a>{' '}
+                for production: set{' '}
+                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">RESEND_API_KEY</code> +{' '}
+                <code className="rounded bg-neutral-100 px-1 py-0.5 text-xs">
+                  RESEND_FROM_EMAIL
+                </code>{' '}
+                instead (requires verifying your domain in their dashboard).
+              </p>
             </div>
           )
         )}

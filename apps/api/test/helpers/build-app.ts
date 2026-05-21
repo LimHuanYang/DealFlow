@@ -13,8 +13,8 @@ export interface BuildTestAppOptions {
   aiChainDescription?: Array<{ name: string; model: string }>;
   /** Optional override of the email provider — used by email route tests. */
   emailProvider?: EmailProvider;
-  /** Pre-formatted "Name <email>" From line shown by GET /api/v1/email/status. */
-  emailFrom?: string;
+  /** Raw sender email address override for tests. */
+  emailFromAddress?: string;
   /** Whether RESEND_API_KEY + RESEND_FROM_EMAIL are both set. */
   emailEnabled?: boolean;
 }
@@ -45,7 +45,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     aiProvider: opts.aiProvider,
     aiChainDescription: opts.aiChainDescription,
     emailProvider: opts.emailProvider,
-    emailFrom: opts.emailFrom,
+    emailFromAddress: opts.emailFromAddress,
     emailEnabled: opts.emailEnabled,
   });
   return app;

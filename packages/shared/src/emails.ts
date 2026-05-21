@@ -28,6 +28,6 @@ export interface DraftEmailResponse {
 /** Public response from GET /api/v1/email/status. */
 export interface PublicEmailStatus {
   enabled: boolean;
-  /** Formatted "Name <email>" string when enabled, else null. */
+  /** Raw sender email address when enabled, else null. The UI displays it as-is; the API layer wraps it as "{userName} <{from}>" per-email. */
   from: string | null;
 }
