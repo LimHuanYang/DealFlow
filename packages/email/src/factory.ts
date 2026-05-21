@@ -1,18 +1,7 @@
 import { createTransport, type Transporter } from 'nodemailer';
-import { Resend } from 'resend';
 import { type EmailProvider } from './provider.js';
 import { NoopEmailProvider } from './providers/noop.js';
-import { ResendEmailProvider } from './providers/resend.js';
 import { SmtpEmailProvider } from './providers/smtp.js';
-
-export interface ResendConfig {
-  /** Resend API key. */
-  apiKey?: string;
-  /** Envelope From address (must be a verified domain in Resend). */
-  from?: string;
-  /** Optional display name appended to the From line. */
-  name?: string;
-}
 
 export interface SmtpConfig {
   /** SMTP host, e.g. `smtp.gmail.com`. */
@@ -23,63 +12,46 @@ export interface SmtpConfig {
   user?: string;
   /** SMTP auth password or app password. */
   pass?: string;
-  /** Envelope From address (usually the same as `user`). */
-  from?: string;
-  /** Optional display name appended to the From line. */
-  name?: string;
+  /** Envelope From address. */
+  fromEmail?: string;
+  /** Optional display name (currently unused in the personal From-line style). */
+  fromName?: string;
 }
 
 export interface EmailConfig {
-  resend?: ResendConfig;
   smtp?: SmtpConfig;
 }
 
-/** True iff at least one provider has the minimal config to send. */
+/** True iff the SMTP config has the minimum required fields. */
 export function isEmailEnabled(cfg: EmailConfig): boolean {
-  if (cfg.resend?.apiKey && cfg.resend?.from) return true;
-  if (cfg.smtp?.host && cfg.smtp?.user && cfg.smtp?.pass && cfg.smtp?.from) return true;
-  return false;
+  const s = cfg.smtp;
+  return Boolean(s?.host && s?.user && s?.pass && s?.fromEmail);
 }
 
 /**
- * Public description used by `GET /api/v1/email/status`. Returns the active
- * provider + raw From email address. The route layer composes the personalised
- * "{userName} <{fromAddress}>" From line per-email.
- *
- * Order of preference: resend → smtp → none.
+ * Returns the active provider + raw From address for the status endpoint.
  */
 export function describeEmail(cfg: EmailConfig): {
-  provider: 'resend' | 'smtp' | 'none';
+  provider: 'smtp' | 'none';
   fromAddress: string | null;
 } {
-  if (cfg.resend?.apiKey && cfg.resend?.from) {
-    return { provider: 'resend', fromAddress: cfg.resend.from };
-  }
-  if (cfg.smtp?.host && cfg.smtp?.user && cfg.smtp?.pass && cfg.smtp?.from) {
-    return { provider: 'smtp', fromAddress: cfg.smtp.from };
+  if (isEmailEnabled(cfg)) {
+    return { provider: 'smtp', fromAddress: cfg.smtp!.fromEmail ?? null };
   }
   return { provider: 'none', fromAddress: null };
 }
 
 /**
- * Build the runtime EmailProvider. Order of preference:
- *   1. ResendEmailProvider if `resend.apiKey` + `resend.from` are set
- *   2. SmtpEmailProvider if `smtp.host`/`user`/`pass`/`from` are all set
- *   3. NoopEmailProvider otherwise (every send throws EmailDisabledError)
+ * Build the runtime EmailProvider. SmtpEmailProvider if SMTP config is complete,
+ * otherwise NoopEmailProvider.
  */
 export function buildEmailProvider(cfg: EmailConfig): EmailProvider {
-  if (cfg.resend?.apiKey && cfg.resend?.from) {
-    const client = new Resend(cfg.resend.apiKey);
-    return new ResendEmailProvider({ client });
-  }
-  if (cfg.smtp?.host && cfg.smtp?.user && cfg.smtp?.pass && cfg.smtp?.from) {
-    const transport: Transporter = createTransport({
-      host: cfg.smtp.host,
-      port: cfg.smtp.port ?? 587,
-      secure: (cfg.smtp.port ?? 587) === 465,
-      auth: { user: cfg.smtp.user, pass: cfg.smtp.pass },
-    });
-    return new SmtpEmailProvider({ transport });
-  }
-  return new NoopEmailProvider();
+  if (!isEmailEnabled(cfg)) return new NoopEmailProvider();
+  const transport: Transporter = createTransport({
+    host: cfg.smtp!.host!,
+    port: cfg.smtp!.port ?? 587,
+    secure: (cfg.smtp!.port ?? 587) === 465,
+    auth: { user: cfg.smtp!.user!, pass: cfg.smtp!.pass! },
+  });
+  return new SmtpEmailProvider({ transport });
 }
