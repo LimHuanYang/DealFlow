@@ -176,10 +176,11 @@ export function SmtpIntegrationSection() {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button
               type="button"
               size="sm"
+              className="whitespace-nowrap"
               onClick={onSave}
               disabled={
                 !form.host.trim() ||
@@ -195,29 +196,141 @@ export function SmtpIntegrationSection() {
               type="button"
               size="sm"
               variant="outline"
+              className="whitespace-nowrap"
               onClick={onTest}
               disabled={!view?.configured || test.isPending}
             >
-              {test.isPending ? 'Sending test…' : 'Send test email to me'}
+              {test.isPending ? 'Sending test…' : 'Send test email'}
             </Button>
             {view?.configured && (
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
+                className="whitespace-nowrap"
                 onClick={onClear}
                 disabled={update.isPending}
               >
                 Clear
               </Button>
             )}
-            {test.data?.ok && <span className="text-xs text-green-700">✓ Sent</span>}
-            {test.data && !test.data.ok && (
-              <span className="text-xs text-red-600">✗ {test.data.error}</span>
-            )}
           </div>
+
+          {/* Test result + smart-hint block. Lives BELOW the button row so long
+              SMTP error messages wrap cleanly instead of pushing buttons around. */}
+          {test.data && (
+            <div className="mt-3">
+              {test.data.ok ? (
+                <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                  ✓ Test email sent. Check your inbox at{' '}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">{view?.user}</code>.
+                </div>
+              ) : (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                  <p className="font-medium">✗ Test failed</p>
+                  <p className="mt-1 break-words font-mono text-xs">{test.data.error}</p>
+                  <SmartHint error={test.data.error ?? ''} fromEmail={view?.fromEmail ?? ''} />
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Decode common SMTP failure modes into actionable, copy-pasteable hints.
+ * Recognised patterns:
+ *  - Gmail 534-5.7.9 "Application-specific password required" — needs an App Password
+ *  - Gmail "Username and Password not accepted" — wrong password OR App Password expired
+ *  - Outlook/SmtpAuth disabled — needs SMTP AUTH enabled in tenant settings
+ *  - ENOTFOUND / getaddrinfo — bad SMTP_HOST
+ *  - Common typo: smtp.gmail.com paired with a non-gmail.com from-email
+ */
+function SmartHint({ error, fromEmail }: { error: string; fromEmail: string }) {
+  const hints: Array<{ key: string; node: React.ReactNode }> = [];
+
+  const lower = error.toLowerCase();
+
+  if (lower.includes('application-specific password') || lower.includes('5.7.9')) {
+    hints.push({
+      key: 'app-pw',
+      node: (
+        <>
+          Gmail needs an <strong>App Password</strong>, not your regular Google password. Generate one at{' '}
+          <a
+            className="underline"
+            href="https://myaccount.google.com/apppasswords"
+            target="_blank"
+            rel="noreferrer"
+          >
+            myaccount.google.com/apppasswords
+          </a>{' '}
+          (requires 2FA), then paste the 16-character code into the Password field above and Save again.
+        </>
+      ),
+    });
+  }
+
+  if (
+    lower.includes('username and password not accepted') ||
+    lower.includes('invalid login') ||
+    lower.includes('authentication failed')
+  ) {
+    hints.push({
+      key: 'wrong-creds',
+      node: (
+        <>
+          Username or password rejected by the SMTP server. Double-check there are no extra spaces,
+          and that 2FA-enabled accounts (Gmail / Outlook) are using an App Password rather than the
+          regular password.
+        </>
+      ),
+    });
+  }
+
+  if (lower.includes('enotfound') || lower.includes('getaddrinfo')) {
+    hints.push({
+      key: 'dns',
+      node: (
+        <>
+          Couldn't reach the SMTP host. Check the Host field — common values are{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-xs">smtp.gmail.com</code>,{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-xs">smtp-mail.outlook.com</code>,{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-xs">smtp.mail.yahoo.com</code>.
+        </>
+      ),
+    });
+  }
+
+  // Detect common Gmail-domain typos — gmai/gnail/gmial/gmal/gamil. Fires only on
+  // misspellings, not on legitimate @gmail.com.
+  const GMAIL_TYPOS = /@(?:gmai|gnail|gmial|gmal|gamil|gmaill)\.com$/i;
+  if (fromEmail && GMAIL_TYPOS.test(fromEmail)) {
+    hints.push({
+      key: 'typo',
+      node: (
+        <>
+          Your From email{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-xs">{fromEmail}</code> looks like a
+          typo of <code className="rounded bg-white px-1 py-0.5 text-xs">@gmail.com</code>. Update
+          both the Username and From email fields and Save again.
+        </>
+      ),
+    });
+  }
+
+  if (hints.length === 0) return null;
+
+  return (
+    <ul className="mt-2 space-y-1 text-xs text-red-900">
+      {hints.map((h) => (
+        <li key={h.key} className="rounded bg-white/60 p-2">
+          {h.node}
+        </li>
+      ))}
+    </ul>
   );
 }
