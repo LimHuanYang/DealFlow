@@ -150,3 +150,73 @@ describe('PATCH /api/v1/integrations', () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+describe('POST /api/v1/integrations/test-ai', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+  let cookie: string;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+    ({ cookie } = await signupTestUser(app));
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('returns ok=false when the provider has no key configured', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/integrations/test-ai',
+      payload: { provider: 'anthropic' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { ok: boolean; error?: string };
+    expect(body.ok).toBe(false);
+    expect(body.error).toBeDefined();
+  });
+
+  it('400 on bad provider name', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/integrations/test-ai',
+      payload: { provider: 'openai' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('POST /api/v1/integrations/test-email', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+  let cookie: string;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+    ({ cookie } = await signupTestUser(app));
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('returns ok=false when SMTP is not configured', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/integrations/test-email',
+      payload: {},
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { ok: boolean; error?: string };
+    expect(body.ok).toBe(false);
+    expect(body.error).toBeDefined();
+  });
+});
