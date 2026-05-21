@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { ResendEmailProvider } from '@dealflow/email';
+import { SmtpEmailProvider } from '@dealflow/email';
 import { startTestPostgres } from '../../helpers/postgres.js';
 import { buildTestApp } from '../../helpers/build-app.js';
 import { signupTestUser } from '../../helpers/auth.js';
@@ -20,15 +20,18 @@ async function createContact(
   return (res.json() as { contact: { id: string } }).contact.id;
 }
 
-function fakeResend(messageId = 'msg_test_123') {
-  const client = {
-    emails: {
-      send: async () => ({ data: { id: messageId }, error: null }),
-    },
+function fakeSmtp(messageId = '<msg_test@dealflow>') {
+  const transport = {
+    sendMail: async () => ({
+      messageId,
+      accepted: ['x'],
+      rejected: [],
+      response: '250 OK',
+    }),
   };
-  return new ResendEmailProvider({
+  return new SmtpEmailProvider({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    client: client as any,
+    transport: transport as any,
   });
 }
 
@@ -54,9 +57,10 @@ describe('GET /api/v1/email/status', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: fakeResend(),
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -95,9 +99,10 @@ describe('POST /api/v1/emails', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: fakeResend(),
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactRes = await app.inject({
@@ -123,9 +128,10 @@ describe('POST /api/v1/emails', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: fakeResend(),
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const res = await app.inject({
@@ -147,9 +153,10 @@ describe('POST /api/v1/emails', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: fakeResend('msg_canned_xyz'),
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp('msg_canned_xyz'),
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');
@@ -184,9 +191,10 @@ describe('POST /api/v1/emails', () => {
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: fakeResend(),
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');
@@ -202,23 +210,22 @@ describe('POST /api/v1/emails', () => {
   });
 
   it('502 EMAIL_UPSTREAM_ERROR when provider throws', async () => {
-    const failingClient = {
-      emails: {
-        send: async () => {
-          throw new Error('upstream boom');
-        },
+    const failingTransport = {
+      sendMail: async () => {
+        throw new Error('upstream boom');
       },
     };
-    const failingProvider = new ResendEmailProvider({
+    const failingProvider = new SmtpEmailProvider({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      client: failingClient as any,
+      transport: failingTransport as any,
     });
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,
-      emailProvider: failingProvider,
-      emailEnabled: true,
-      emailFromAddress: 'noreply@dealflow.app',
+      emailProviderForOrg: async () => ({
+        provider: failingProvider,
+        fromAddress: 'noreply@dealflow.app',
+      }),
     });
     const { cookie } = await signupTestUser(app);
     const contactId = await createContact(app, cookie, 'Alice', 'alice@example.com');

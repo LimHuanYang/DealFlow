@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import type { AIProvider } from '@dealflow/ai';
+import type { EmailProvider } from '@dealflow/email';
 import type { Database } from '@dealflow/db';
 import { loadEnv, type Env } from './env.js';
 import { loadEncryptionKey } from './lib/crypto.js';
@@ -19,6 +20,11 @@ export interface BuildAppOptions {
   aiProviderForOrg?: (orgId: string) => Promise<{
     provider: AIProvider;
     chain: Array<{ name: string; model: string }>;
+  }>;
+  /** Test-only override for the email provider resolver. Bypasses org-integrations lookup. */
+  emailProviderForOrg?: (orgId: string) => Promise<{
+    provider: EmailProvider;
+    fromAddress: string | null;
   }>;
 }
 
@@ -80,7 +86,11 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     });
 
     const { registerEmailRoutes } = await import('./modules/emails/routes.js');
-    await registerEmailRoutes(app, { db: opts.db, encryptionKey });
+    await registerEmailRoutes(app, {
+      db: opts.db,
+      encryptionKey,
+      emailProviderForOrg: opts.emailProviderForOrg,
+    });
   }
 
   return app;

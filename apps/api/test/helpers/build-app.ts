@@ -1,4 +1,5 @@
 import type { AIProvider } from '@dealflow/ai';
+import type { EmailProvider } from '@dealflow/email';
 import { buildApp } from '../../src/server.js';
 import type { Env } from '../../src/env.js';
 import type { Database } from '@dealflow/db';
@@ -10,6 +11,11 @@ export interface BuildTestAppOptions {
   aiProviderForOrg?: (orgId: string) => Promise<{
     provider: AIProvider;
     chain: Array<{ name: string; model: string }>;
+  }>;
+  /** Test-only injection — bypasses the org-integrations DB lookup. */
+  emailProviderForOrg?: (orgId: string) => Promise<{
+    provider: EmailProvider;
+    fromAddress: string | null;
   }>;
 }
 
@@ -36,6 +42,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     logger: false,
     db: opts.db,
     aiProviderForOrg: opts.aiProviderForOrg,
+    emailProviderForOrg: opts.emailProviderForOrg,
   });
   return app;
 }
