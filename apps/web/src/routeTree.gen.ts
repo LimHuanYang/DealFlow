@@ -20,6 +20,7 @@ import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppDealsIndexRouteImport } from './routes/app.deals.index'
 import { Route as AppContactsIndexRouteImport } from './routes/app.contacts.index'
 import { Route as AppCompaniesIndexRouteImport } from './routes/app.companies.index'
+import { Route as AppSettingsCustomFieldsRouteImport } from './routes/app.settings.custom-fields'
 import { Route as AppDealsIdRouteImport } from './routes/app.deals.$id'
 import { Route as AppContactsIdRouteImport } from './routes/app.contacts.$id'
 import { Route as AppCompaniesIdRouteImport } from './routes/app.companies.$id'
@@ -79,6 +80,11 @@ const AppCompaniesIndexRoute = AppCompaniesIndexRouteImport.update({
   path: '/companies/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsCustomFieldsRoute = AppSettingsCustomFieldsRouteImport.update({
+  id: '/custom-fields',
+  path: '/custom-fields',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppDealsIdRoute = AppDealsIdRouteImport.update({
   id: '/deals/$id',
   path: '/deals/$id',
@@ -101,12 +107,13 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/settings': typeof AppSettingsRoute
+  '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
+  '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
   '/app/deals/': typeof AppDealsIndexRoute
@@ -116,12 +123,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/settings': typeof AppSettingsRoute
+  '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
+  '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
   '/app/companies': typeof AppCompaniesIndexRoute
   '/app/contacts': typeof AppContactsIndexRoute
   '/app/deals': typeof AppDealsIndexRoute
@@ -133,12 +141,13 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
-  '/app/settings': typeof AppSettingsRoute
+  '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
+  '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
   '/app/deals/': typeof AppDealsIndexRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
+    | '/app/settings/custom-fields'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
+    | '/app/settings/custom-fields'
     | '/app/companies'
     | '/app/contacts'
     | '/app/deals'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
+    | '/app/settings/custom-fields'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
@@ -279,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings/custom-fields': {
+      id: '/app/settings/custom-fields'
+      path: '/custom-fields'
+      fullPath: '/app/settings/custom-fields'
+      preLoaderRoute: typeof AppSettingsCustomFieldsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/app/deals/$id': {
       id: '/app/deals/$id'
       path: '/deals/$id'
@@ -303,9 +322,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppSettingsRouteChildren {
+  AppSettingsCustomFieldsRoute: typeof AppSettingsCustomFieldsRoute
+}
+
+const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsCustomFieldsRoute: AppSettingsCustomFieldsRoute,
+}
+
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
+
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
-  AppSettingsRoute: typeof AppSettingsRoute
+  AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesIdRoute: typeof AppCompaniesIdRoute
@@ -318,7 +349,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
-  AppSettingsRoute: AppSettingsRoute,
+  AppSettingsRoute: AppSettingsRouteWithChildren,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
   AppCompaniesIdRoute: AppCompaniesIdRoute,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   CURRENCY_OPTIONS,
   isSupportedCurrency,
@@ -112,6 +112,16 @@ function SettingsForm({ org }: SettingsFormProps) {
       <AIIntegrationsSection />
 
       <SmtpIntegrationSection />
+
+      <section className="mt-4 rounded-md border border-neutral-200 p-4">
+        <h2 className="mb-1 text-base font-medium">Custom fields</h2>
+        <p className="mb-2 text-sm text-neutral-500">
+          Define structured fields beyond the built-in columns on contacts, companies, deals, notes, and tasks.
+        </p>
+        <Link to="/app/settings/custom-fields" className="text-sm text-neutral-900 underline">
+          Manage custom fields →
+        </Link>
+      </section>
     </main>
   );
 }
