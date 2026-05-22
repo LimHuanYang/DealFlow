@@ -1,7 +1,7 @@
-import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type { ActivityVolumeRow, DashboardKpis, DealsTrendRow, PipelineByStageRow } from '@dealflow/shared';
+import type { ActivityVolumeRow, DashboardKpis, DealsTrendRow, PipelineByStageRow, TopOpenDealRow } from '@dealflow/shared';
 
 export class ReportsRepo {
   constructor(private readonly db: Database) {}
@@ -202,6 +202,40 @@ export class ReportsRepo {
       if (b) b.count = r.count;
     }
     return buckets;
+  }
+
+  /**
+   * Top 5 open deals by value, descending. Includes stage name and (optional)
+   * company name for the UI list. `companyName` is null when the deal isn't
+   * attached to a company.
+   */
+  async getTopOpenDeals(organizationId: string): Promise<TopOpenDealRow[]> {
+    const rows = await this.db
+      .select({
+        id: schema.deals.id,
+        name: schema.deals.name,
+        value: schema.deals.value,
+        currency: schema.deals.currency,
+        stageName: schema.pipelineStages.name,
+        companyName: schema.companies.name,
+      })
+      .from(schema.deals)
+      .innerJoin(schema.pipelineStages, eq(schema.pipelineStages.id, schema.deals.stageId))
+      .leftJoin(schema.companies, eq(schema.companies.id, schema.deals.companyId))
+      .where(
+        and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')),
+      )
+      .orderBy(desc(schema.deals.value))
+      .limit(5);
+
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      value: normalizeMoney(r.value ?? '0'),
+      currency: r.currency,
+      stageName: r.stageName,
+      companyName: r.companyName,
+    }));
   }
 }
 

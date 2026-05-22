@@ -219,4 +219,32 @@ describe('ReportsRepo', () => {
       expect(await repo.getPipelineByStage(org!.id)).toEqual([]);
     });
   });
+
+  describe('getTopOpenDeals', () => {
+    it('returns up to 5 open deals sorted by value desc with stage and company joined', async () => {
+      const [org] = await testDb.db.insert(schema.organizations).values({ name: 'Co', slug: slug(), defaultCurrency: 'USD' }).returning();
+      const [pl] = await testDb.db.insert(schema.pipelines).values({ organizationId: org!.id, name: 'P' }).returning();
+      const [stage] = await testDb.db.insert(schema.pipelineStages).values({ organizationId: org!.id, pipelineId: pl!.id, name: 'Negotiation', orderIndex: 0 }).returning();
+      const [company] = await testDb.db.insert(schema.companies).values({ organizationId: org!.id, name: 'Acme' }).returning();
+
+      const baseDeal = { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, status: 'open' as const };
+      await testDb.db.insert(schema.deals).values([
+        { ...baseDeal, name: 'Top', value: '100000', companyId: company!.id },
+        { ...baseDeal, name: 'Mid1', value: '50000' },
+        { ...baseDeal, name: 'Mid2', value: '40000' },
+        { ...baseDeal, name: 'Mid3', value: '30000' },
+        { ...baseDeal, name: 'Mid4', value: '20000' },
+        { ...baseDeal, name: 'Skip', value: '10000' }, // 6th — should be cut
+        { ...baseDeal, name: 'Won', value: '99999', status: 'won' }, // excluded
+      ]);
+
+      const repo = new ReportsRepo(testDb.db);
+      const rows = await repo.getTopOpenDeals(org!.id);
+      expect(rows).toHaveLength(5);
+      expect(rows[0]).toMatchObject({ name: 'Top', value: '100000.00', stageName: 'Negotiation', companyName: 'Acme' });
+      expect(rows[1]!.name).toBe('Mid1');
+      expect(rows[4]!.name).toBe('Mid4');
+      expect(rows.find((r) => r.name === 'Skip')).toBeUndefined();
+    });
+  });
 });
