@@ -26,6 +26,7 @@ export class CompaniesRepo {
         size: input.size ?? null,
         website: input.website ?? null,
         description: input.description ?? null,
+        customFields: input.customFields ?? {},
       })
       .returning();
     if (!row) throw new Error('Failed to insert company');

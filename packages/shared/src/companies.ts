@@ -7,6 +7,7 @@ export const createCompanyBodySchema = z.object({
   size: z.string().min(1).max(50).optional(),
   website: z.string().url().max(500).optional(),
   description: z.string().max(5000).optional(),
+  customFields: z.record(z.unknown()).optional(),
 });
 
 export const updateCompanyBodySchema = createCompanyBodySchema.partial();
@@ -24,6 +25,7 @@ export interface PublicCompany {
   website: string | null;
   description: string | null;
   ownerUserId: string | null;
+  customFields: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

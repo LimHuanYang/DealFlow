@@ -107,3 +107,85 @@ describe('Companies routes', () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+describe('Companies customFields', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('PATCH /companies/:id merges valid customFields', async () => {
+    const { cookie } = await signupTestUser(app);
+    // Create a definition
+    const def = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload: { entityType: 'company', name: 'Industry Vertical', type: 'text' },
+    });
+    const fieldId = def.json().id;
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/companies',
+      headers: { cookie },
+      payload: { name: 'Acme' },
+    });
+    const companyId = created.json().company.id;
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/companies/${companyId}`,
+      headers: { cookie },
+      payload: { customFields: { [fieldId]: 'FinTech' } },
+    });
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().company.customFields).toEqual({ [fieldId]: 'FinTech' });
+  });
+
+  it('PATCH rejects unknown custom field key with 400', async () => {
+    const { cookie } = await signupTestUser(app);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/companies',
+      headers: { cookie },
+      payload: { name: 'Acme' },
+    });
+    const id = created.json().company.id;
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/companies/${id}`,
+      headers: { cookie },
+      payload: { customFields: { 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': 'x' } },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('GET /companies/:id returns customFields', async () => {
+    const { cookie } = await signupTestUser(app);
+    const def = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload: { entityType: 'company', name: 'Notes', type: 'text' },
+    });
+    const fieldId = def.json().id;
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/companies',
+      headers: { cookie },
+      payload: { name: 'Acme', customFields: { [fieldId]: 'hello' } },
+    });
+    const id = created.json().company.id;
+    const got = await app.inject({ method: 'GET', url: `/api/v1/companies/${id}`, headers: { cookie } });
+    expect(got.json().company.customFields).toEqual({ [fieldId]: 'hello' });
+  });
+});
