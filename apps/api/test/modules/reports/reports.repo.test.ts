@@ -125,6 +125,44 @@ describe('ReportsRepo', () => {
     });
   });
 
+  describe('getDealsTrend', () => {
+    it('groups won/lost deals by closedAt month, last 6 months', async () => {
+      const [org] = await testDb.db.insert(schema.organizations).values({ name: 'Co', slug: slug(), defaultCurrency: 'USD' }).returning();
+      const [pl] = await testDb.db.insert(schema.pipelines).values({ organizationId: org!.id, name: 'P' }).returning();
+      const [stage] = await testDb.db.insert(schema.pipelineStages).values({ organizationId: org!.id, pipelineId: pl!.id, name: 'S', orderIndex: 0 }).returning();
+
+      const thisMonth = new Date();
+      thisMonth.setDate(15);
+      const lastMonth = new Date(thisMonth);
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const sevenMonthsAgo = new Date(thisMonth);
+      sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
+
+      await testDb.db.insert(schema.deals).values([
+        { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, name: 'W1', value: '1000', status: 'won', closedAt: thisMonth },
+        { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, name: 'W2', value: '2000', status: 'won', closedAt: thisMonth },
+        { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, name: 'L1', value: '500', status: 'lost', closedAt: lastMonth },
+        { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, name: 'OldW', value: '9999', status: 'won', closedAt: sevenMonthsAgo }, // excluded
+        { organizationId: org!.id, pipelineId: pl!.id, stageId: stage!.id, name: 'OpenSkip', value: '8888', status: 'open' }, // excluded
+      ]);
+
+      const repo = new ReportsRepo(testDb.db);
+      const trend = await repo.getDealsTrend(org!.id);
+
+      expect(trend).toHaveLength(6);
+      const last = trend[5]!;
+      expect(last.won).toBe(2);
+      expect(last.wonValue).toBe('3000.00');
+      const second = trend[4]!;
+      expect(second.lost).toBe(1);
+      expect(second.lostValue).toBe('500.00');
+      // Older than 6 months should NOT appear — total wonValue across the 6
+      // buckets equals 3000.00 from this month only.
+      const totalWonValue = trend.reduce((acc, r) => acc + Number(r.wonValue), 0);
+      expect(totalWonValue).toBe(3000);
+    });
+  });
+
   describe('getPipelineByStage', () => {
     it('groups open deals by stage and sums value', async () => {
       const [org] = await testDb.db.insert(schema.organizations).values({ name: 'Co', slug: slug(), defaultCurrency: 'USD' }).returning();

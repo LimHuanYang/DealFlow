@@ -1,7 +1,7 @@
-import { and, eq, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type { DashboardKpis, PipelineByStageRow } from '@dealflow/shared';
+import type { DashboardKpis, DealsTrendRow, PipelineByStageRow } from '@dealflow/shared';
 
 export class ReportsRepo {
   constructor(private readonly db: Database) {}
@@ -96,6 +96,66 @@ export class ReportsRepo {
       value: normalizeMoney(r.value),
       dealCount: r.dealCount,
     }));
+  }
+  /**
+   * Returns 6 rows — one per month, oldest first — with won/lost counts
+   * and value sums. Months with no closes still appear (zero-filled) so the
+   * line chart has a continuous x-axis. Buckets are computed in JS rather
+   * than `generate_series` to stay portable across DB versions.
+   */
+  async getDealsTrend(organizationId: string): Promise<DealsTrendRow[]> {
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1); // first day of bucket 0
+
+    const rows = await this.db
+      .select({
+        month: sql<string>`to_char(date_trunc('month', ${schema.deals.closedAt}), 'YYYY-MM-DD')`,
+        status: schema.deals.status,
+        count: sql<number>`count(*)::int`,
+        value: sql<string>`coalesce(sum(${schema.deals.value}), 0)::text`,
+      })
+      .from(schema.deals)
+      .where(
+        and(
+          eq(schema.deals.organizationId, organizationId),
+          isNotNull(schema.deals.closedAt),
+          gte(schema.deals.closedAt, sixMonthsAgo),
+        ),
+      )
+      .groupBy(
+        sql`date_trunc('month', ${schema.deals.closedAt})`,
+        schema.deals.status,
+      );
+
+    // Zero-fill into a 6-bucket array indexed oldest → newest.
+    const buckets: DealsTrendRow[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = '01';
+      const yyyy = d.getFullYear();
+      buckets.push({
+        month: `${yyyy}-${mm}-${dd}`,
+        won: 0,
+        lost: 0,
+        wonValue: '0.00',
+        lostValue: '0.00',
+      });
+    }
+    const byMonth = new Map(buckets.map((b) => [b.month, b]));
+
+    for (const r of rows) {
+      const b = byMonth.get(r.month);
+      if (!b) continue; // dropped: outside the 6-month window
+      if (r.status === 'won') {
+        b.won = r.count;
+        b.wonValue = normalizeMoney(r.value);
+      } else if (r.status === 'lost') {
+        b.lost = r.count;
+        b.lostValue = normalizeMoney(r.value);
+      }
+    }
+    return buckets;
   }
 }
 
