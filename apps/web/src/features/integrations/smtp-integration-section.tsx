@@ -4,9 +4,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIntegrations, useTestEmail, useUpdateIntegrations } from './api';
 
+/**
+ * Supported SMTP providers. We restrict to these three because they're the
+ * only consumer-mail platforms with a stable App Password flow that pairs
+ * cleanly with username/password SMTP. Adding a custom-host escape hatch
+ * (corporate Exchange, self-hosted Postfix) is a Phase 2 concern.
+ */
+const PROVIDERS = {
+  gmail: {
+    label: 'Gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    appPasswordUrl: 'https://myaccount.google.com/apppasswords',
+    appPasswordHelp: 'Enable 2-Step Verification first, then generate a 16-character App Password.',
+    userPlaceholder: 'you@gmail.com',
+  },
+  outlook: {
+    label: 'Outlook.com / Hotmail',
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    appPasswordUrl: 'https://account.live.com/proofs/AppPassword',
+    appPasswordHelp:
+      'Enable two-step verification on your Microsoft account, then create an App Password.',
+    userPlaceholder: 'you@outlook.com',
+  },
+  yahoo: {
+    label: 'Yahoo Mail',
+    host: 'smtp.mail.yahoo.com',
+    port: 587,
+    appPasswordUrl: 'https://login.yahoo.com/account/security',
+    appPasswordHelp:
+      'Under Account Security, turn on 2-Step Verification, then click "Generate app password".',
+    userPlaceholder: 'you@yahoo.com',
+  },
+} as const;
+
+type ProviderKey = keyof typeof PROVIDERS;
+const PROVIDER_KEYS = Object.keys(PROVIDERS) as ProviderKey[];
+
+/**
+ * Match a stored SMTP host back to a supported provider. Returns 'gmail' as
+ * a safe default for unknown hosts (e.g., a config saved before we narrowed
+ * to three providers) so the form still renders something sensible.
+ */
+function detectProvider(host: string | undefined): ProviderKey {
+  if (!host) return 'gmail';
+  return PROVIDER_KEYS.find((k) => PROVIDERS[k].host === host) ?? 'gmail';
+}
+
 interface SmtpFormState {
-  host: string;
-  port: string;
+  provider: ProviderKey;
   user: string;
   pass: string;
   fromEmail: string;
@@ -14,8 +61,7 @@ interface SmtpFormState {
 }
 
 const EMPTY: SmtpFormState = {
-  host: '',
-  port: '587',
+  provider: 'gmail',
   user: '',
   pass: '',
   fromEmail: '',
@@ -30,13 +76,13 @@ export function SmtpIntegrationSection() {
   const [form, setForm] = useState<SmtpFormState>(EMPTY);
 
   // When integrations load, seed everything EXCEPT password (we never send it back).
+  // The stored host is mapped back to one of the three supported provider keys.
   useEffect(() => {
     const s = integrations.data?.smtp;
     if (!s || !s.configured) return;
     setForm((prev) => ({
       ...prev,
-      host: s.host ?? '',
-      port: String(s.port ?? 587),
+      provider: detectProvider(s.host ?? undefined),
       user: s.user ?? '',
       fromEmail: s.fromEmail ?? '',
       fromName: s.fromName ?? '',
@@ -44,13 +90,14 @@ export function SmtpIntegrationSection() {
   }, [integrations.data]);
 
   async function onSave() {
-    if (!form.host.trim() || !form.user.trim() || !form.fromEmail.trim() || !form.pass.trim()) {
+    if (!form.user.trim() || !form.fromEmail.trim() || !form.pass.trim()) {
       return;
     }
+    const cfg = PROVIDERS[form.provider];
     await update.mutateAsync({
       smtp: {
-        host: form.host.trim(),
-        port: Number(form.port),
+        host: cfg.host,
+        port: cfg.port,
         user: form.user.trim(),
         pass: form.pass,
         fromEmail: form.fromEmail.trim(),
@@ -70,6 +117,7 @@ export function SmtpIntegrationSection() {
   }
 
   const view = integrations.data?.smtp;
+  const providerCfg = PROVIDERS[form.provider];
 
   return (
     <section
@@ -78,17 +126,11 @@ export function SmtpIntegrationSection() {
     >
       <h2 className="mb-3 text-base font-medium">Email (SMTP)</h2>
       <p className="mb-4 text-sm text-neutral-500">
-        Send email from your own Gmail / Outlook / mail server. For Gmail, enable 2FA then generate
-        an{' '}
-        <a
-          href="https://myaccount.google.com/apppasswords"
-          target="_blank"
-          rel="noreferrer"
-          className="underline"
-        >
-          App Password
-        </a>{' '}
-        and use it as the password below.
+        Send email from your Gmail, Outlook, or Yahoo account. {providerCfg.appPasswordHelp} Paste
+        the App Password (not your regular password) into the field below.{' '}
+        <a href={providerCfg.appPasswordUrl} target="_blank" rel="noreferrer" className="underline">
+          Open {providerCfg.label} App Password settings →
+        </a>
       </p>
 
       {integrations.isPending && <p className="text-sm text-neutral-500">Loading…</p>}
@@ -104,28 +146,31 @@ export function SmtpIntegrationSection() {
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="smtp-host" className="text-xs">
-                Host
+            <div className="col-span-2">
+              <Label htmlFor="smtp-provider" className="text-xs">
+                Provider
               </Label>
-              <Input
-                id="smtp-host"
-                value={form.host}
-                onChange={(e) => setForm((p) => ({ ...p, host: e.target.value }))}
-                placeholder="smtp.gmail.com"
-                data-testid="smtp-host"
-              />
-            </div>
-            <div>
-              <Label htmlFor="smtp-port" className="text-xs">
-                Port
-              </Label>
-              <Input
-                id="smtp-port"
-                value={form.port}
-                onChange={(e) => setForm((p) => ({ ...p, port: e.target.value }))}
-                placeholder="587"
-              />
+              <select
+                id="smtp-provider"
+                value={form.provider}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, provider: e.target.value as ProviderKey }))
+                }
+                data-testid="smtp-provider"
+                className="flex h-10 w-full items-center justify-between rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:ring-offset-2"
+              >
+                {PROVIDER_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {PROVIDERS[k].label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-neutral-400">
+                Sends via{' '}
+                <code>
+                  {providerCfg.host}:{providerCfg.port}
+                </code>
+              </p>
             </div>
             <div>
               <Label htmlFor="smtp-user" className="text-xs">
@@ -135,13 +180,13 @@ export function SmtpIntegrationSection() {
                 id="smtp-user"
                 value={form.user}
                 onChange={(e) => setForm((p) => ({ ...p, user: e.target.value }))}
-                placeholder="you@gmail.com"
+                placeholder={providerCfg.userPlaceholder}
                 data-testid="smtp-user"
               />
             </div>
             <div>
               <Label htmlFor="smtp-pass" className="text-xs">
-                Password / App Password
+                App Password
               </Label>
               <Input
                 id="smtp-pass"
@@ -160,7 +205,7 @@ export function SmtpIntegrationSection() {
                 id="smtp-from-email"
                 value={form.fromEmail}
                 onChange={(e) => setForm((p) => ({ ...p, fromEmail: e.target.value }))}
-                placeholder="you@gmail.com"
+                placeholder={providerCfg.userPlaceholder}
               />
             </div>
             <div>
@@ -183,11 +228,7 @@ export function SmtpIntegrationSection() {
               className="whitespace-nowrap"
               onClick={onSave}
               disabled={
-                !form.host.trim() ||
-                !form.user.trim() ||
-                !form.fromEmail.trim() ||
-                !form.pass.trim() ||
-                update.isPending
+                !form.user.trim() || !form.fromEmail.trim() || !form.pass.trim() || update.isPending
               }
             >
               {update.isPending ? 'Saving…' : 'Save'}
