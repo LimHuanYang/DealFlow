@@ -145,7 +145,15 @@ export function SmtpIntegrationSection() {
 
   async function onTest() {
     const to = testTo.trim();
-    await test.mutateAsync(to ? { to } : {});
+    try {
+      await test.mutateAsync(to ? { to } : {});
+    } catch (err) {
+      // mutateAsync rejects on any non-2xx. test.isError + test.error already
+      // drive the UI; log here so DevTools shows the stack regardless of
+      // whether the user re-renders.
+      // eslint-disable-next-line no-console
+      console.error('[smtp test-email] request failed:', err);
+    }
   }
 
   const view = integrations.data?.smtp;
@@ -312,7 +320,24 @@ export function SmtpIntegrationSection() {
           )}
 
           {/* Test result + smart-hint block. Lives BELOW the button row so long
-              SMTP error messages wrap cleanly instead of pushing buttons around. */}
+              SMTP error messages wrap cleanly instead of pushing buttons around.
+              Three states:
+              1. Mutation threw (auth, network, validation): test.isError + test.error
+              2. Backend returned ok=false (SMTP error caught upstream): test.data
+              3. Backend returned ok=true: test.data
+              We render all three so failures are never silently swallowed. */}
+          {test.isError && !test.data && (
+            <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              <p className="font-medium">✗ Could not reach the server</p>
+              <p className="mt-1 break-words font-mono text-xs">
+                {test.error instanceof Error ? test.error.message : String(test.error)}
+              </p>
+              <p className="mt-2 text-xs">
+                Open the browser DevTools console / Network tab for the full request — paste any red
+                error so we can debug further.
+              </p>
+            </div>
+          )}
           {test.data && (
             <div className="mt-3">
               {test.data.ok ? (
