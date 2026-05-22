@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import { buildAIProvider, type AIConfig, AIDisabledError } from '@dealflow/ai';
@@ -7,6 +8,16 @@ import { buildEmailProvider, type EmailConfig, EmailDisabledError } from '@dealf
 import { ERROR_CODES, testAIBodySchema, updateIntegrationsBodySchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { OrgIntegrationsRepo } from './repo.js';
+
+/**
+ * Body schema for POST /test-email. The recipient is optional — if omitted,
+ * the test sends to the logged-in user's own email (legacy behaviour). The
+ * Settings UI now exposes a "Send test to:" input so users can verify the
+ * SMTP path works for arbitrary recipients without writing a full template.
+ */
+const testEmailBodySchema = z.object({
+  to: z.string().email().optional(),
+});
 
 export interface IntegrationsRoutesDeps {
   db: Database;
@@ -80,6 +91,16 @@ export async function registerIntegrationsRoutes(
   });
 
   app.post('/api/v1/integrations/test-email', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = testEmailBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: 'Invalid test-email body',
+          details: parsed.error.flatten().fieldErrors,
+        },
+      });
+    }
     const orgId = req.session!.currentOrgId!;
     const userId = req.user!.id;
     const dec = await repo.getDecrypted(orgId);
@@ -107,10 +128,14 @@ export async function registerIntegrationsRoutes(
     if (!userRow) {
       return reply.send({ ok: false, error: 'Sender not found.' });
     }
+    // Send to the caller-supplied recipient if given, otherwise to the
+    // logged-in user's own email. Either way `replyTo` stays the user's own
+    // mailbox so any reply lands somewhere they can read it.
+    const recipient = parsed.data.to ?? userRow.email;
     try {
       await provider.send({
         from: `${userRow.name} <${dec.smtp.fromEmail}>`,
-        to: userRow.email,
+        to: recipient,
         replyTo: userRow.email,
         subject: 'DealFlow SMTP test',
         text:

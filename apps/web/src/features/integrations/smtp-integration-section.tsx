@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getMe } from '@/lib/auth';
+import { queryKeys } from '@/lib/query-keys';
 import { useIntegrations, useTestEmail, useUpdateIntegrations } from './api';
 
 /**
@@ -73,13 +76,35 @@ export function SmtpIntegrationSection() {
   const update = useUpdateIntegrations();
   const test = useTestEmail();
 
+  // Registration email — used to pre-fill the From email field on first
+  // configuration (so a user landing on Settings without an SMTP config
+  // doesn't have to retype their address) and as the default recipient
+  // for the test-send button.
+  const meQuery = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
+  const myEmail = meQuery.data?.user?.email ?? '';
+
   const [form, setForm] = useState<SmtpFormState>(EMPTY);
+  const [testTo, setTestTo] = useState<string>('');
 
   // When integrations load, seed everything EXCEPT password (we never send it back).
   // The stored host is mapped back to one of the three supported provider keys.
+  // For brand-new orgs with no saved config, fall back to the registration
+  // email so the user can click Save without typing their address twice.
   useEffect(() => {
     const s = integrations.data?.smtp;
-    if (!s || !s.configured) return;
+    if (!s || !s.configured) {
+      // No saved config — pre-fill From email + username from the
+      // registration email so the form is one paste-of-app-password away
+      // from working.
+      if (myEmail) {
+        setForm((prev) => ({
+          ...prev,
+          user: prev.user || myEmail,
+          fromEmail: prev.fromEmail || myEmail,
+        }));
+      }
+      return;
+    }
     setForm((prev) => ({
       ...prev,
       provider: detectProvider(s.host ?? undefined),
@@ -87,7 +112,13 @@ export function SmtpIntegrationSection() {
       fromEmail: s.fromEmail ?? '',
       fromName: s.fromName ?? '',
     }));
-  }, [integrations.data]);
+  }, [integrations.data, myEmail]);
+
+  // Default the test recipient to the registration email once it loads. The
+  // user can edit it before pressing "Send test email".
+  useEffect(() => {
+    if (myEmail && !testTo) setTestTo(myEmail);
+  }, [myEmail, testTo]);
 
   async function onSave() {
     if (!form.user.trim() || !form.fromEmail.trim() || !form.pass.trim()) {
@@ -113,7 +144,8 @@ export function SmtpIntegrationSection() {
   }
 
   async function onTest() {
-    await test.mutateAsync();
+    const to = testTo.trim();
+    await test.mutateAsync(to ? { to } : {});
   }
 
   const view = integrations.data?.smtp;
@@ -233,16 +265,6 @@ export function SmtpIntegrationSection() {
             >
               {update.isPending ? 'Saving…' : 'Save'}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="whitespace-nowrap"
-              onClick={onTest}
-              disabled={!view?.configured || test.isPending}
-            >
-              {test.isPending ? 'Sending test…' : 'Send test email'}
-            </Button>
             {view?.configured && (
               <Button
                 type="button"
@@ -257,14 +279,49 @@ export function SmtpIntegrationSection() {
             )}
           </div>
 
+          {/* Test send. Hidden until a config is saved — you can't exercise an
+              SMTP server you haven't configured. Recipient defaults to the
+              registration email so the common "send to myself" case is one
+              click. */}
+          {view?.configured && (
+            <div className="mt-4 flex flex-wrap items-end gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-3">
+              <div className="min-w-[220px] flex-1">
+                <Label htmlFor="smtp-test-to" className="text-xs">
+                  Send test email to
+                </Label>
+                <Input
+                  id="smtp-test-to"
+                  type="email"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  placeholder={myEmail || 'recipient@example.com'}
+                  data-testid="smtp-test-to"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="whitespace-nowrap"
+                onClick={onTest}
+                disabled={!testTo.trim() || test.isPending}
+              >
+                {test.isPending ? 'Sending test…' : 'Send test email'}
+              </Button>
+            </div>
+          )}
+
           {/* Test result + smart-hint block. Lives BELOW the button row so long
               SMTP error messages wrap cleanly instead of pushing buttons around. */}
           {test.data && (
             <div className="mt-3">
               {test.data.ok ? (
                 <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                  ✓ Test email sent. Check your inbox at{' '}
-                  <code className="rounded bg-white px-1 py-0.5 text-xs">{view?.user}</code>.
+                  ✓ Test email sent to{' '}
+                  <code className="rounded bg-white px-1 py-0.5 text-xs">
+                    {testTo || view?.user}
+                  </code>
+                  . Check the inbox.
                 </div>
               ) : (
                 <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">

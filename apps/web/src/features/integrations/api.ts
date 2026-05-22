@@ -43,12 +43,16 @@ export function useTestAI() {
   });
 }
 
+/**
+ * Trigger a one-shot SMTP test send. Accepts an optional recipient; when
+ * omitted, the backend defaults to the caller's own email (legacy behaviour).
+ */
 export function useTestEmail() {
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (input: { to?: string } = {}) =>
       apiFetch<TestResultResponse>('/api/v1/integrations/test-email', {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify(input.to ? { to: input.to } : {}),
       }),
   });
 }
