@@ -38,4 +38,7 @@ export const queryKeys = {
   integrations: {
     current: ['integrations', 'current'] as const,
   },
+  reports: {
+    dashboard: ['reports', 'dashboard'] as const,
+  },
 };
