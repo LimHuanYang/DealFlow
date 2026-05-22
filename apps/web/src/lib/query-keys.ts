@@ -25,6 +25,7 @@ export const queryKeys = {
     forContact: (id: string) => ['activities', 'contact', id] as const,
     forCompany: (id: string) => ['activities', 'company', id] as const,
     forDeal: (id: string) => ['activities', 'deal', id] as const,
+    detail: (id: string) => ['activities', 'detail', id] as const,
   },
   tasks: {
     list: (status: string, due: string) => ['tasks', 'list', { status, due }] as const,
@@ -40,5 +41,8 @@ export const queryKeys = {
   },
   reports: {
     dashboard: ['reports', 'dashboard'] as const,
+  },
+  customFields: {
+    list: (entityType: string) => ['custom-fields', 'list', entityType] as const,
   },
 };

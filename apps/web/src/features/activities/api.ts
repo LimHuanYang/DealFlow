@@ -88,6 +88,18 @@ export function useTasks(query: ListTasksQuery) {
   });
 }
 
+/** Fetches a single activity by id for the /app/activities/$id detail page. */
+export function useActivity(id: string) {
+  return useQuery({
+    queryKey: queryKeys.activities.detail(id),
+    queryFn: async () => {
+      const res = await apiFetch<ActivityResponse>(`/api/v1/activities/${id}`);
+      return res.activity;
+    },
+    enabled: !!id,
+  });
+}
+
 /**
  * Mutations for the /app/tasks page where parent context isn't available.
  * Invalidates the tasks key (any filter) plus all activities keys so feeds
