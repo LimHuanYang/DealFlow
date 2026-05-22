@@ -1,4 +1,13 @@
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { DealsTrendRow } from '@dealflow/shared';
 
 const MONTH_FMT = new Intl.DateTimeFormat(undefined, { month: 'short' });

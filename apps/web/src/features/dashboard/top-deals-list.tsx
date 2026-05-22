@@ -32,5 +32,9 @@ export function TopDealsList({ rows }: { rows: TopOpenDealRow[] }) {
 }
 
 function formatMoney(v: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(v);
 }

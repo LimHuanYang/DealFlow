@@ -259,7 +259,8 @@ function SmartHint({ error, fromEmail }: { error: string; fromEmail: string }) {
       key: 'app-pw',
       node: (
         <>
-          Gmail needs an <strong>App Password</strong>, not your regular Google password. Generate one at{' '}
+          Gmail needs an <strong>App Password</strong>, not your regular Google password. Generate
+          one at{' '}
           <a
             className="underline"
             href="https://myaccount.google.com/apppasswords"
@@ -268,7 +269,8 @@ function SmartHint({ error, fromEmail }: { error: string; fromEmail: string }) {
           >
             myaccount.google.com/apppasswords
           </a>{' '}
-          (requires 2FA), then paste the 16-character code into the Password field above and Save again.
+          (requires 2FA), then paste the 16-character code into the Password field above and Save
+          again.
         </>
       ),
     });
@@ -313,10 +315,10 @@ function SmartHint({ error, fromEmail }: { error: string; fromEmail: string }) {
       key: 'typo',
       node: (
         <>
-          Your From email{' '}
-          <code className="rounded bg-white px-1 py-0.5 text-xs">{fromEmail}</code> looks like a
-          typo of <code className="rounded bg-white px-1 py-0.5 text-xs">@gmail.com</code>. Update
-          both the Username and From email fields and Save again.
+          Your From email <code className="rounded bg-white px-1 py-0.5 text-xs">{fromEmail}</code>{' '}
+          looks like a typo of{' '}
+          <code className="rounded bg-white px-1 py-0.5 text-xs">@gmail.com</code>. Update both the
+          Username and From email fields and Save again.
         </>
       ),
     });

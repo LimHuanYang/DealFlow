@@ -12,7 +12,12 @@ describe('dashboardResponseSchema', () => {
       currency: 'USD',
     },
     pipelineByStage: [
-      { stageId: '11111111-1111-1111-1111-111111111111', stageName: 'Lead', value: '40000.00', dealCount: 4 },
+      {
+        stageId: '11111111-1111-1111-1111-111111111111',
+        stageName: 'Lead',
+        value: '40000.00',
+        dealCount: 4,
+      },
     ],
     dealsTrend: [
       { month: '2026-01-01', won: 2, lost: 1, wonValue: '50000.00', lostValue: '12000.00' },

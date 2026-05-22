@@ -50,7 +50,11 @@ function DashboardPage() {
         <KpiTile label="Contacts" value={kpis.totalContacts} dim={kpis.totalContacts === 0} />
         <KpiTile label="Companies" value={kpis.totalCompanies} dim={kpis.totalCompanies === 0} />
         <KpiTile label="Open deals" value={kpis.openDeals} dim={kpis.openDeals === 0} />
-        <KpiTile label="Pipeline value" value={money(kpis.openPipelineValue)} dim={kpis.openDeals === 0} />
+        <KpiTile
+          label="Pipeline value"
+          value={money(kpis.openPipelineValue)}
+          dim={kpis.openDeals === 0}
+        />
         <KpiTile
           label="Overdue tasks"
           value={kpis.overdueTasks}

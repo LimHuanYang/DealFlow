@@ -14,14 +14,22 @@ export function PipelineValueChart({ rows, currency }: Props) {
       </div>
     );
   }
-  const data = rows.map((r) => ({ stage: r.stageName, value: Number(r.value), count: r.dealCount }));
+  const data = rows.map((r) => ({
+    stage: r.stageName,
+    value: Number(r.value),
+    count: r.dealCount,
+  }));
   return (
     <div className="h-56 w-full" data-testid="pipeline-value-chart">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#f3f4f6" vertical={false} />
           <XAxis dataKey="stage" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-          <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" tickFormatter={(v) => formatCompact(v, currency)} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            stroke="#9ca3af"
+            tickFormatter={(v) => formatCompact(v, currency)}
+          />
           <Tooltip
             formatter={(v: number) => formatMoney(v, currency)}
             labelClassName="text-xs"
@@ -35,7 +43,11 @@ export function PipelineValueChart({ rows, currency }: Props) {
 }
 
 function formatMoney(v: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(v);
 }
 function formatCompact(v: number, currency: string): string {
   return new Intl.NumberFormat(undefined, {

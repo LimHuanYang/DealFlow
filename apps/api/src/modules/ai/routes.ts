@@ -88,11 +88,9 @@ function buildActivityContext(
 }
 
 function aiDisabled(reply: FastifyReply) {
-  return reply
-    .status(503)
-    .send({
-      error: { code: 'AI_DISABLED', message: 'AI is not configured for this organization.' },
-    });
+  return reply.status(503).send({
+    error: { code: 'AI_DISABLED', message: 'AI is not configured for this organization.' },
+  });
 }
 
 function aiUpstreamError(reply: FastifyReply) {

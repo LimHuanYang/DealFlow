@@ -1,7 +1,13 @@
 import { and, desc, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type { ActivityVolumeRow, DashboardKpis, DealsTrendRow, PipelineByStageRow, TopOpenDealRow } from '@dealflow/shared';
+import type {
+  ActivityVolumeRow,
+  DashboardKpis,
+  DealsTrendRow,
+  PipelineByStageRow,
+  TopOpenDealRow,
+} from '@dealflow/shared';
 
 export class ReportsRepo {
   constructor(private readonly db: Database) {}
@@ -38,9 +44,7 @@ export class ReportsRepo {
         v: sql<string>`coalesce(sum(${schema.deals.value}), 0)::text`,
       })
       .from(schema.deals)
-      .where(
-        and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')),
-      );
+      .where(and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')));
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
@@ -84,10 +88,12 @@ export class ReportsRepo {
       })
       .from(schema.deals)
       .innerJoin(schema.pipelineStages, eq(schema.pipelineStages.id, schema.deals.stageId))
-      .where(
-        and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')),
+      .where(and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')))
+      .groupBy(
+        schema.pipelineStages.id,
+        schema.pipelineStages.name,
+        schema.pipelineStages.orderIndex,
       )
-      .groupBy(schema.pipelineStages.id, schema.pipelineStages.name, schema.pipelineStages.orderIndex)
       .orderBy(schema.pipelineStages.orderIndex);
 
     return rows.map((r) => ({
@@ -122,10 +128,7 @@ export class ReportsRepo {
           gte(schema.deals.closedAt, sixMonthsAgo),
         ),
       )
-      .groupBy(
-        sql`date_trunc('month', ${schema.deals.closedAt})`,
-        schema.deals.status,
-      );
+      .groupBy(sql`date_trunc('month', ${schema.deals.closedAt})`, schema.deals.status);
 
     // Zero-fill into a 6-bucket array indexed oldest → newest.
     const buckets: DealsTrendRow[] = [];
@@ -222,9 +225,7 @@ export class ReportsRepo {
       .from(schema.deals)
       .innerJoin(schema.pipelineStages, eq(schema.pipelineStages.id, schema.deals.stageId))
       .leftJoin(schema.companies, eq(schema.companies.id, schema.deals.companyId))
-      .where(
-        and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')),
-      )
+      .where(and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')))
       .orderBy(desc(schema.deals.value))
       .limit(5);
 

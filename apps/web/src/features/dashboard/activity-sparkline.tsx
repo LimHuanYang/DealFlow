@@ -12,7 +12,14 @@ export function ActivitySparkline({ rows }: { rows: ActivityVolumeRow[] }) {
             labelFormatter={(l: string) => `Week of ${l}`}
             contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb' }}
           />
-          <Area type="monotone" dataKey="count" stroke="#0f172a" fill="#0f172a" fillOpacity={0.15} strokeWidth={2} />
+          <Area
+            type="monotone"
+            dataKey="count"
+            stroke="#0f172a"
+            fill="#0f172a"
+            fillOpacity={0.15}
+            strokeWidth={2}
+          />
         </AreaChart>
       </ResponsiveContainer>
     </div>
