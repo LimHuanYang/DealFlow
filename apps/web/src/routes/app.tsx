@@ -40,6 +40,15 @@ function AppLayout() {
       <aside className="hidden w-48 shrink-0 border-r border-neutral-200 p-4 md:block">
         <nav className="flex flex-col gap-1 text-sm">
           <Link
+            to="/app/dashboard"
+            className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
+            activeProps={{
+              className: 'rounded px-2 py-1.5 bg-neutral-100 font-medium text-neutral-900',
+            }}
+          >
+            Dashboard
+          </Link>
+          <Link
             to="/app/contacts"
             className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
             activeProps={{
