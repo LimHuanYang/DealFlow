@@ -163,6 +163,31 @@ describe('ReportsRepo', () => {
     });
   });
 
+  describe('getActivityVolume', () => {
+    it('returns 8 weekly buckets, oldest → newest, zero-filled', async () => {
+      const [org] = await testDb.db.insert(schema.organizations).values({ name: 'Co', slug: slug(), defaultCurrency: 'USD' }).returning();
+      const [user] = await testDb.db.insert(schema.users).values({ email: `u${Date.now()}.${Math.random().toString(36).slice(2, 4)}@x.com`, name: 'U' }).returning();
+      const [contact] = await testDb.db.insert(schema.contacts).values({ organizationId: org!.id, firstName: 'Anchor' }).returning();
+
+      const now = new Date();
+      const lastWeek = new Date(now); lastWeek.setDate(now.getDate() - 4);
+      const tenWeeksAgo = new Date(now); tenWeeksAgo.setDate(now.getDate() - 70);
+
+      await testDb.db.insert(schema.activities).values([
+        { organizationId: org!.id, ownerUserId: user!.id, contactId: contact!.id, kind: 'note', body: 'a', createdAt: now },
+        { organizationId: org!.id, ownerUserId: user!.id, contactId: contact!.id, kind: 'note', body: 'b', createdAt: now },
+        { organizationId: org!.id, ownerUserId: user!.id, contactId: contact!.id, kind: 'note', body: 'c', createdAt: lastWeek },
+        { organizationId: org!.id, ownerUserId: user!.id, contactId: contact!.id, kind: 'note', body: 'd', createdAt: tenWeeksAgo }, // excluded
+      ]);
+
+      const repo = new ReportsRepo(testDb.db);
+      const buckets = await repo.getActivityVolume(org!.id);
+      expect(buckets).toHaveLength(8);
+      const total = buckets.reduce((acc, b) => acc + b.count, 0);
+      expect(total).toBe(3); // ten-weeks-ago dropped
+    });
+  });
+
   describe('getPipelineByStage', () => {
     it('groups open deals by stage and sums value', async () => {
       const [org] = await testDb.db.insert(schema.organizations).values({ name: 'Co', slug: slug(), defaultCurrency: 'USD' }).returning();

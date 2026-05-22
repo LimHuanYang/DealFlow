@@ -1,7 +1,7 @@
 import { and, eq, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type { DashboardKpis, DealsTrendRow, PipelineByStageRow } from '@dealflow/shared';
+import type { ActivityVolumeRow, DashboardKpis, DealsTrendRow, PipelineByStageRow } from '@dealflow/shared';
 
 export class ReportsRepo {
   constructor(private readonly db: Database) {}
@@ -154,6 +154,52 @@ export class ReportsRepo {
         b.lost = r.count;
         b.lostValue = normalizeMoney(r.value);
       }
+    }
+    return buckets;
+  }
+
+  /**
+   * Returns 8 weekly buckets (Monday-aligned), oldest first, zero-filled.
+   * `weekStart` is the ISO date string of that bucket's Monday so the
+   * sparkline can use it as both key and x-axis label.
+   */
+  async getActivityVolume(organizationId: string): Promise<ActivityVolumeRow[]> {
+    // Monday of "this week" — Postgres `date_trunc('week', ...)` is
+    // Monday-aligned, so we mirror that in JS.
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun..6=Sat
+    const daysSinceMonday = day === 0 ? 6 : day - 1;
+    const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
+    const oldestMonday = new Date(thisMonday);
+    oldestMonday.setDate(oldestMonday.getDate() - 7 * 7); // 7 weeks back = 8 buckets
+
+    const rows = await this.db
+      .select({
+        weekStart: sql<string>`to_char(date_trunc('week', ${schema.activities.createdAt}), 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(schema.activities)
+      .where(
+        and(
+          eq(schema.activities.organizationId, organizationId),
+          gte(schema.activities.createdAt, oldestMonday),
+        ),
+      )
+      .groupBy(sql`date_trunc('week', ${schema.activities.createdAt})`);
+
+    const buckets: ActivityVolumeRow[] = [];
+    for (let i = 0; i < 8; i++) {
+      const d = new Date(oldestMonday);
+      d.setDate(d.getDate() + 7 * i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      buckets.push({ weekStart: `${yyyy}-${mm}-${dd}`, count: 0 });
+    }
+    const byWeek = new Map(buckets.map((b) => [b.weekStart, b]));
+    for (const r of rows) {
+      const b = byWeek.get(r.weekStart);
+      if (b) b.count = r.count;
     }
     return buckets;
   }
