@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { check, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { organizations } from './organizations';
 import { users } from './users';
 import { contacts } from './contacts';
@@ -39,6 +39,7 @@ export const activities = pgTable(
     contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'cascade' }),
     companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
     dealId: uuid('deal_id').references(() => deals.id, { onDelete: 'cascade' }),
+    customFields: jsonb('custom_fields').notNull().default(sql`'{}'::jsonb`).$type<Record<string, unknown>>(),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

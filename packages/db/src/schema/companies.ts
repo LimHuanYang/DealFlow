@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { organizations } from './organizations';
 import { users } from './users';
 
@@ -19,6 +19,7 @@ export const companies = pgTable(
     website: text('website'),
     description: text('description'),
     ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+    customFields: jsonb('custom_fields').notNull().default(sql`'{}'::jsonb`).$type<Record<string, unknown>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

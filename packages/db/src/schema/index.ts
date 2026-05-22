@@ -10,3 +10,4 @@ export * from './pipelines';
 export * from './pipeline-stages';
 export * from './deals';
 export * from './activities';
+export * from './custom-field-definitions';
