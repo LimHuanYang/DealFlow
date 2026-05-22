@@ -19,6 +19,7 @@ export const createDealBodySchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  customFields: z.record(z.unknown()).optional(),
 });
 
 export const updateDealBodySchema = createDealBodySchema.partial();
@@ -45,6 +46,7 @@ export interface PublicDeal {
   expectedCloseDate: string | null;
   status: DealStatusValue;
   positionInStage: number;
+  customFields: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   closedAt: string | null;

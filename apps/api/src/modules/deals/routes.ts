@@ -9,6 +9,7 @@ import {
 } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { DealsRepo } from './deals.repo.js';
+import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 const listQuerySchema = z.object({
@@ -30,6 +31,7 @@ function publicDeal(row: typeof schema.deals.$inferSelect) {
     expectedCloseDate: row.expectedCloseDate,
     status: row.status as 'open' | 'won' | 'lost',
     positionInStage: row.positionInStage,
+    customFields: (row.customFields as Record<string, unknown>) ?? {},
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     closedAt: row.closedAt?.toISOString() ?? null,
@@ -64,7 +66,29 @@ export async function registerDealsRoutes(
         },
       });
     }
-    const created = await repo.create(req.session!.currentOrgId!, parsed.data);
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId: req.session!.currentOrgId!,
+        entityType: 'deal',
+        existing: {},
+        patch: parsed.data.customFields,
+        isCreate: true,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const created = await repo.create(req.session!.currentOrgId!, {
+      ...parsed.data,
+      customFields: merge.merged,
+    });
     return reply.status(201).send({ deal: publicDeal(created) });
   });
 
@@ -97,7 +121,35 @@ export async function registerDealsRoutes(
         .status(400)
         .send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid patch' } });
     }
-    const updated = await repo.update(req.session!.currentOrgId!, params.data.id, body.data);
+    const existing = await repo.findById(req.session!.currentOrgId!, params.data.id);
+    if (!existing) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Deal not found' } });
+    }
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId: req.session!.currentOrgId!,
+        entityType: 'deal',
+        existing: (existing.customFields as Record<string, unknown>) ?? {},
+        patch: body.data.customFields,
+        isCreate: false,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const updated = await repo.update(req.session!.currentOrgId!, params.data.id, {
+      ...body.data,
+      customFields: merge.merged,
+    });
     if (!updated) {
       return reply
         .status(404)

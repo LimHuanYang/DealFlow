@@ -42,6 +42,7 @@ export class DealsRepo {
         companyId: input.companyId ?? null,
         expectedCloseDate: input.expectedCloseDate ?? null,
         positionInStage,
+        customFields: input.customFields ?? {},
       })
       .returning();
     if (!row) throw new Error('Failed to insert deal');
@@ -92,6 +93,7 @@ export class DealsRepo {
     if (patch.primaryContactId !== undefined) next['primaryContactId'] = patch.primaryContactId;
     if (patch.companyId !== undefined) next['companyId'] = patch.companyId;
     if (patch.expectedCloseDate !== undefined) next['expectedCloseDate'] = patch.expectedCloseDate;
+    if (patch.customFields !== undefined) next['customFields'] = patch.customFields;
 
     const [row] = await this.db
       .update(schema.deals)
