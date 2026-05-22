@@ -113,3 +113,85 @@ describe('Contacts routes', () => {
     expect(res.statusCode).toBe(401);
   });
 });
+
+describe('Contacts customFields', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('PATCH /contacts/:id merges valid customFields', async () => {
+    const { cookie } = await signupTestUser(app);
+    // Create a definition
+    const def = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload: { entityType: 'contact', name: 'Lead Source', type: 'text' },
+    });
+    const fieldId = def.json().id;
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: { cookie },
+      payload: { firstName: 'Sarah' },
+    });
+    const contactId = created.json().contact.id;
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/contacts/${contactId}`,
+      headers: { cookie },
+      payload: { customFields: { [fieldId]: 'Referral' } },
+    });
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().contact.customFields).toEqual({ [fieldId]: 'Referral' });
+  });
+
+  it('PATCH rejects unknown custom field key with 400', async () => {
+    const { cookie } = await signupTestUser(app);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: { cookie },
+      payload: { firstName: 'X' },
+    });
+    const id = created.json().contact.id;
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/contacts/${id}`,
+      headers: { cookie },
+      payload: { customFields: { 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': 'x' } },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('GET /contacts/:id returns customFields', async () => {
+    const { cookie } = await signupTestUser(app);
+    const def = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload: { entityType: 'contact', name: 'Notes', type: 'text' },
+    });
+    const fieldId = def.json().id;
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: { cookie },
+      payload: { firstName: 'X', customFields: { [fieldId]: 'hello' } },
+    });
+    const id = created.json().contact.id;
+    const got = await app.inject({ method: 'GET', url: `/api/v1/contacts/${id}`, headers: { cookie } });
+    expect(got.json().contact.customFields).toEqual({ [fieldId]: 'hello' });
+  });
+});

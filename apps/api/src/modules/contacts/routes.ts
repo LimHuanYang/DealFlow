@@ -9,6 +9,7 @@ import {
 } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ContactsRepo } from './contacts.repo.js';
+import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -22,6 +23,7 @@ function publicContact(row: typeof schema.contacts.$inferSelect) {
     title: row.title,
     companyId: row.companyId,
     ownerUserId: row.ownerUserId,
+    customFields: (row.customFields as Record<string, unknown>) ?? {},
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -63,7 +65,29 @@ export async function registerContactsRoutes(
         },
       });
     }
-    const created = await repo.create(req.session!.currentOrgId!, parsed.data);
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId: req.session!.currentOrgId!,
+        entityType: 'contact',
+        existing: {},
+        patch: parsed.data.customFields,
+        isCreate: true,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const created = await repo.create(req.session!.currentOrgId!, {
+      ...parsed.data,
+      customFields: merge.merged,
+    });
     return reply.status(201).send({ contact: publicContact(created) });
   });
 
@@ -96,7 +120,35 @@ export async function registerContactsRoutes(
         error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid patch' },
       });
     }
-    const updated = await repo.update(req.session!.currentOrgId!, params.data.id, body.data);
+    const existing = await repo.findById(req.session!.currentOrgId!, params.data.id);
+    if (!existing) {
+      return reply.status(404).send({
+        error: { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' },
+      });
+    }
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId: req.session!.currentOrgId!,
+        entityType: 'contact',
+        existing: (existing.customFields as Record<string, unknown>) ?? {},
+        patch: body.data.customFields,
+        isCreate: false,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const updated = await repo.update(req.session!.currentOrgId!, params.data.id, {
+      ...body.data,
+      customFields: merge.merged,
+    });
     if (!updated) {
       return reply.status(404).send({
         error: { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' },

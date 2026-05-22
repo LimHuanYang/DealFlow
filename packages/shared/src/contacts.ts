@@ -7,6 +7,7 @@ export const createContactBodySchema = z.object({
   phone: z.string().min(1).max(50).optional(),
   title: z.string().min(1).max(200).optional(),
   companyId: z.string().uuid().optional(),
+  customFields: z.record(z.unknown()).optional(),
 });
 
 export const updateContactBodySchema = createContactBodySchema.partial();
@@ -23,6 +24,7 @@ export interface PublicContact {
   title: string | null;
   companyId: string | null;
   ownerUserId: string | null;
+  customFields: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

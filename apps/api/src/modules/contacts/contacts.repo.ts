@@ -27,6 +27,7 @@ export class ContactsRepo {
         phone: input.phone ?? null,
         title: input.title ?? null,
         companyId: input.companyId ?? null,
+        customFields: input.customFields ?? {},
       })
       .returning();
     if (!row) throw new Error('Failed to insert contact');
