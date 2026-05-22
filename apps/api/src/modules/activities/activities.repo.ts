@@ -34,6 +34,7 @@ export class ActivitiesRepo {
         contactId: input.contactId ?? null,
         companyId: input.companyId ?? null,
         dealId: input.dealId ?? null,
+        customFields: input.customFields ?? {},
       })
       .returning();
     if (!row) throw new Error('Failed to insert activity');
@@ -125,6 +126,9 @@ export class ActivitiesRepo {
     if (patch.status !== undefined) {
       set.status = patch.status;
       set.completedAt = patch.status === 'done' ? new Date() : null;
+    }
+    if (patch.customFields !== undefined) {
+      set.customFields = patch.customFields;
     }
 
     const [row] = await this.db

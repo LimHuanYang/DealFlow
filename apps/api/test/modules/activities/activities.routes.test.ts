@@ -295,3 +295,130 @@ describe('DELETE /api/v1/activities/:id', () => {
     expect(again.statusCode).toBe(404);
   });
 });
+
+describe('Activities customFields', () => {
+  it('PATCH a note uses note custom field definitions', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const { cookie } = await signupTestUser(app);
+      const def = await app.inject({
+        method: 'POST',
+        url: '/api/v1/custom-fields',
+        headers: { cookie },
+        payload: { entityType: 'note', name: 'Outcome', type: 'text' },
+      });
+      const noteFieldId = def.json().id;
+
+      const contact = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contacts',
+        headers: { cookie },
+        payload: { firstName: 'X' },
+      });
+      const note = await app.inject({
+        method: 'POST',
+        url: '/api/v1/activities',
+        headers: { cookie },
+        payload: { kind: 'note', body: 'Met today', contactId: contact.json().contact.id },
+      });
+      const id = note.json().activity.id;
+
+      const updated = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/activities/${id}`,
+        headers: { cookie },
+        payload: { customFields: { [noteFieldId]: 'Qualified' } },
+      });
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json().activity.customFields).toEqual({ [noteFieldId]: 'Qualified' });
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+
+  it('a task field is invalid on a note', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const { cookie } = await signupTestUser(app);
+      const def = await app.inject({
+        method: 'POST',
+        url: '/api/v1/custom-fields',
+        headers: { cookie },
+        payload: { entityType: 'task', name: 'Effort', type: 'number' },
+      });
+      const taskFieldId = def.json().id;
+
+      const contact = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contacts',
+        headers: { cookie },
+        payload: { firstName: 'X' },
+      });
+      const note = await app.inject({
+        method: 'POST',
+        url: '/api/v1/activities',
+        headers: { cookie },
+        payload: { kind: 'note', body: 'n', contactId: contact.json().contact.id },
+      });
+      const id = note.json().activity.id;
+      const updated = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/activities/${id}`,
+        headers: { cookie },
+        payload: { customFields: { [taskFieldId]: 3 } },
+      });
+      expect(updated.statusCode).toBe(400);
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+
+  it('GET /api/v1/activities/:id returns the activity (new endpoint)', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const { cookie } = await signupTestUser(app);
+      const contact = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contacts',
+        headers: { cookie },
+        payload: { firstName: 'X' },
+      });
+      const note = await app.inject({
+        method: 'POST',
+        url: '/api/v1/activities',
+        headers: { cookie },
+        payload: { kind: 'note', body: 'one', contactId: contact.json().contact.id },
+      });
+      const id = note.json().activity.id;
+      const got = await app.inject({ method: 'GET', url: `/api/v1/activities/${id}`, headers: { cookie } });
+      expect(got.statusCode).toBe(200);
+      expect(got.json().activity.id).toBe(id);
+      expect(got.json().activity.body).toBe('one');
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+
+  it('GET /api/v1/activities/:id 404s for unknown id', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const { cookie } = await signupTestUser(app);
+      const got = await app.inject({
+        method: 'GET',
+        url: '/api/v1/activities/00000000-0000-0000-0000-000000000000',
+        headers: { cookie },
+      });
+      expect(got.statusCode).toBe(404);
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+});

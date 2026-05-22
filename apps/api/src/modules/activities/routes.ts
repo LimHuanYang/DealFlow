@@ -10,6 +10,7 @@ import {
   updateActivityBodySchema,
 } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
+import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
 import { ActivitiesRepo } from './activities.repo.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
@@ -36,6 +37,7 @@ function publicActivity(row: typeof schemaType.activities.$inferSelect) {
     companyId: row.companyId,
     dealId: row.dealId,
     ownerUserId: row.ownerUserId,
+    customFields: (row.customFields as Record<string, unknown>) ?? {},
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -106,7 +108,30 @@ export async function registerActivitiesRoutes(
         .status(404)
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Parent entity not found' } });
     }
-    const created = await repo.create(orgId, req.user!.id, parsed.data);
+    const noteOrTask: 'note' | 'task' = parsed.data.kind === 'task' ? 'task' : 'note';
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId,
+        entityType: noteOrTask,
+        existing: {},
+        patch: parsed.data.customFields,
+        isCreate: true,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const created = await repo.create(orgId, req.user!.id, {
+      ...parsed.data,
+      customFields: merge.merged,
+    });
     return reply.status(201).send({ activity: publicActivity(created) });
   });
 
@@ -125,6 +150,23 @@ export async function registerActivitiesRoutes(
     return reply.send({ items: rows.map(publicActivity) });
   });
 
+  app.get('/api/v1/activities/:id', { preHandler: requireOrg }, async (req, reply) => {
+    const params = idParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.status(400).send({
+        error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid id' },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    const row = await repo.findById(orgId, params.data.id);
+    if (!row) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
+    }
+    return reply.send({ activity: publicActivity(row) });
+  });
+
   app.patch('/api/v1/activities/:id', { preHandler: requireOrg }, async (req, reply) => {
     const params = idParamSchema.safeParse(req.params);
     if (!params.success) {
@@ -139,7 +181,36 @@ export async function registerActivitiesRoutes(
       });
     }
     const orgId = req.session!.currentOrgId!;
-    const updated = await repo.update(orgId, params.data.id, body.data);
+    const existing = await repo.findById(orgId, params.data.id);
+    if (!existing) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
+    }
+    const noteOrTask: 'note' | 'task' = existing.kind === 'task' ? 'task' : 'note';
+    const merge = await validateAndMergeCustomFields(
+      { db: deps.db },
+      {
+        orgId,
+        entityType: noteOrTask,
+        existing: (existing.customFields ?? {}) as Record<string, unknown>,
+        patch: body.data.customFields,
+        isCreate: false,
+      },
+    );
+    if (!merge.ok) {
+      return reply.status(merge.status).send({
+        error: {
+          code: ERROR_CODES.VALIDATION_FAILED,
+          message: merge.error,
+          details: merge.fieldErrors,
+        },
+      });
+    }
+    const updated = await repo.update(orgId, params.data.id, {
+      ...body.data,
+      customFields: merge.merged,
+    });
     if (!updated) {
       return reply
         .status(404)

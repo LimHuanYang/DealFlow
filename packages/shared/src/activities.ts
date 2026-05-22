@@ -28,6 +28,7 @@ export const createActivityBodySchema = z
     companyId: uuid.optional(),
     dealId: uuid.optional(),
     dueAt: dueAtInput.optional(),
+    customFields: z.record(z.unknown()).optional(),
   })
   .refine(
     (v) => {
@@ -51,6 +52,7 @@ export const updateActivityBodySchema = z.object({
   body: z.string().min(1).max(8000).optional(),
   status: z.enum(TASK_STATUSES).optional(),
   dueAt: dueAtInput.nullable().optional(),
+  customFields: z.record(z.unknown()).optional(),
 });
 export type UpdateActivityInput = z.infer<typeof updateActivityBodySchema>;
 
@@ -78,6 +80,7 @@ export interface PublicActivity {
   companyId: string | null;
   dealId: string | null;
   ownerUserId: string | null;
+  customFields: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
