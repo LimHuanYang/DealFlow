@@ -97,6 +97,9 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
     const { registerReportsRoutes } = await import('./modules/reports/routes.js');
     await registerReportsRoutes(app, { db: opts.db });
+
+    const { registerCustomFieldsRoutes } = await import('./modules/custom-fields/routes.js');
+    await registerCustomFieldsRoutes(app, { db: opts.db });
   }
 
   return app;
