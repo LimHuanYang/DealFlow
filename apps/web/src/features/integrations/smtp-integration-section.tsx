@@ -46,6 +46,16 @@ type ProviderKey = keyof typeof PROVIDERS;
 const PROVIDER_KEYS = Object.keys(PROVIDERS) as ProviderKey[];
 
 /**
+ * Light email-shape check for the recipient input. The server still does
+ * the authoritative `z.string().email()` validation — this just catches
+ * obvious typos (missing @, comma instead of dot in the TLD, trailing
+ * whitespace) before we round-trip a doomed request to the API.
+ */
+function isEmailLike(raw: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@.,]{2,}$/.test(raw.trim());
+}
+
+/**
  * Match a stored SMTP host back to a supported provider. Returns 'gmail' as
  * a safe default for unknown hosts (e.g., a config saved before we narrowed
  * to three providers) so the form still renders something sensible.
@@ -304,7 +314,18 @@ export function SmtpIntegrationSection() {
                   onChange={(e) => setTestTo(e.target.value)}
                   placeholder={myEmail || 'recipient@example.com'}
                   data-testid="smtp-test-to"
+                  className={
+                    testTo.trim() && !isEmailLike(testTo)
+                      ? 'border-red-300 ring-red-200'
+                      : undefined
+                  }
                 />
+                {testTo.trim() && !isEmailLike(testTo) && (
+                  <p className="mt-1 text-[11px] text-red-600">
+                    Looks like a typo — check for stray commas, missing <code>@</code>, or a bad
+                    TLD. Should look like <code>name@domain.com</code>.
+                  </p>
+                )}
               </div>
               <Button
                 type="button"
@@ -312,7 +333,7 @@ export function SmtpIntegrationSection() {
                 variant="outline"
                 className="whitespace-nowrap"
                 onClick={onTest}
-                disabled={!testTo.trim() || test.isPending}
+                disabled={!isEmailLike(testTo) || test.isPending}
               >
                 {test.isPending ? 'Sending test…' : 'Send test email'}
               </Button>
@@ -328,13 +349,14 @@ export function SmtpIntegrationSection() {
               We render all three so failures are never silently swallowed. */}
           {test.isError && !test.data && (
             <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-              <p className="font-medium">✗ Could not reach the server</p>
+              <p className="font-medium">✗ Test request failed before sending</p>
               <p className="mt-1 break-words font-mono text-xs">
                 {test.error instanceof Error ? test.error.message : String(test.error)}
               </p>
               <p className="mt-2 text-xs">
-                Open the browser DevTools console / Network tab for the full request — paste any red
-                error so we can debug further.
+                This usually means the recipient address didn't validate (check the field above for
+                typos) or your session expired (sign out + back in). Browser DevTools console will
+                show the full network error.
               </p>
             </div>
           )}
