@@ -12,3 +12,4 @@ export * from './ai.js';
 export * from './emails.js';
 export * from './integrations.js';
 export * from './reports.js';
+export * from './custom-fields.js';
