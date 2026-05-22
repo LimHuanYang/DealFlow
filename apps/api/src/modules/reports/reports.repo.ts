@@ -1,7 +1,7 @@
 import { and, eq, isNotNull, lt, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import type { DashboardKpis } from '@dealflow/shared';
+import type { DashboardKpis, PipelineByStageRow } from '@dealflow/shared';
 
 export class ReportsRepo {
   constructor(private readonly db: Database) {}
@@ -66,6 +66,36 @@ export class ReportsRepo {
       overdueTasks: tasksRow?.c ?? 0,
       currency,
     };
+  }
+
+  /**
+   * Returns one row per stage that has at least one open deal in this org,
+   * with the stage name, total open-deal value, and deal count. Sorted by
+   * the stage's pipeline `orderIndex` so the UI can render left-to-right.
+   */
+  async getPipelineByStage(organizationId: string): Promise<PipelineByStageRow[]> {
+    const rows = await this.db
+      .select({
+        stageId: schema.pipelineStages.id,
+        stageName: schema.pipelineStages.name,
+        orderIndex: schema.pipelineStages.orderIndex,
+        value: sql<string>`coalesce(sum(${schema.deals.value}), 0)::text`,
+        dealCount: sql<number>`count(${schema.deals.id})::int`,
+      })
+      .from(schema.deals)
+      .innerJoin(schema.pipelineStages, eq(schema.pipelineStages.id, schema.deals.stageId))
+      .where(
+        and(eq(schema.deals.organizationId, organizationId), eq(schema.deals.status, 'open')),
+      )
+      .groupBy(schema.pipelineStages.id, schema.pipelineStages.name, schema.pipelineStages.orderIndex)
+      .orderBy(schema.pipelineStages.orderIndex);
+
+    return rows.map((r) => ({
+      stageId: r.stageId,
+      stageName: r.stageName,
+      value: normalizeMoney(r.value),
+      dealCount: r.dealCount,
+    }));
   }
 }
 
