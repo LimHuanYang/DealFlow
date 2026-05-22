@@ -12,16 +12,17 @@ Let an org's users define arbitrary structured fields on Contacts, Companies, De
 
 ## Scope
 
-Custom fields are supported on **all four** entity types:
+Custom fields are supported on **five** entity types:
 
 - `contact`
 - `company`
 - `deal`
-- `activity` (both notes and tasks share one definition set)
+- `note`    — note-kind rows in the `activities` table
+- `task`    — task-kind rows in the `activities` table
 
-Each entity has an independent set of definitions per org. A Contacts "Lead Source" field is distinct from a Deals "Lead Source" field — they share no storage and need separate definitions.
+Each entity has an independent set of definitions per org. A Contacts "Lead Source" field is distinct from a Deals "Lead Source" field. Notes and Tasks are also independent — a "Call outcome" field on notes does not appear on tasks (and vice versa). This matches the semantic: notes are conversation logs, tasks are work items, the same metadata rarely fits both.
 
-**Note on activities:** notes and tasks both live in the `activities` table and share the `activity` entity type for custom fields. A definition named "Call outcome" therefore appears on both notes and tasks. If users later want note-only or task-only definitions, splitting `activity` → `note` | `task` is a v2 schema change (cheap — just a constant rename + UI tab split, no data migration since the entity_type column already exists in the definitions table).
+**Why split notes vs tasks at the entity-type level:** the activities table stores both in one physical table (`kind: 'note' | 'task'`), but their *workflow* is different — tasks have due dates and statuses, notes are timestamps + body. Forcing a single definition set would be a leaky abstraction. Splitting at the definition level lets each one carry the metadata that makes sense for its workflow.
 
 ## Field types (10)
 
@@ -48,7 +49,7 @@ The 10 types share most rendering logic — type is just a discriminator on the 
 CREATE TABLE custom_field_definitions (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  entity_type     text NOT NULL,         -- 'contact' | 'company' | 'deal' | 'activity'
+  entity_type     text NOT NULL,         -- 'contact' | 'company' | 'deal' | 'note' | 'task'
   name            text NOT NULL,         -- display label, editable
   type            text NOT NULL,         -- one of the 10 type keys above
   options         jsonb,                 -- nullable; { values: [{key,label}] } for select/multi_select
@@ -61,6 +62,10 @@ CREATE TABLE custom_field_definitions (
 
 CREATE INDEX custom_field_definitions_org_entity_idx
   ON custom_field_definitions (organization_id, entity_type, position);
+
+-- entity_type CHECK: enforced via the application layer rather than DB CHECK
+-- so adding a 6th type later doesn't require a migration. The Zod schema in
+-- @dealflow/shared is the source of truth.
 ```
 
 - Org-scoped tenant isolation via `organization_id`. Every read filters on it.
@@ -77,6 +82,8 @@ ALTER TABLE deals      ADD COLUMN custom_fields jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE activities ADD COLUMN custom_fields jsonb NOT NULL DEFAULT '{}';
 ```
 
+Only one JSONB column on `activities`, even though notes and tasks have separate definition sets. The runtime helper that validates `customFields` picks the right definition set based on the row's `kind`. A note's `custom_fields` only ever holds keys from `entity_type='note'` definitions, and a task's only holds `entity_type='task'` keys — enforced by the merge helper, not by separate columns.
+
 **Shape:** `{ "<field-definition-uuid>": <typed-value> }`. The key is the definition's UUID (stable across renames). The value matches the "Stored shape" column in the field-types table above.
 
 **Why field UUIDs as keys, not slugs or names:** renaming "Lead Source" → "Source" must not orphan existing values. UUID is the only key that's robust against rename, re-case, and reorder.
@@ -89,7 +96,7 @@ All routes are org-scoped via `requireOrg` preHandler. Schemas live in `@dealflo
 
 ### Definitions CRUD
 
-- `GET /api/v1/custom-fields?entity=<contact|company|deal|activity>` — list definitions for that entity type. Response: `CustomFieldDefinition[]` sorted by `position`.
+- `GET /api/v1/custom-fields?entity=<contact|company|deal|note|task>` — list definitions for that entity type. Response: `CustomFieldDefinition[]` sorted by `position`.
 - `POST /api/v1/custom-fields` — body: `{ entityType, name, type, options?, required?, position? }`. Returns the created definition.
 - `PATCH /api/v1/custom-fields/:id` — partial: `{ name?, options?, required?, position? }`. `type` and `entityType` are immutable post-create (would invalidate stored values).
 - `DELETE /api/v1/custom-fields/:id` — hard delete. Orphan JSONB values are NOT touched.
@@ -100,22 +107,38 @@ Existing endpoints extended:
 
 - **GET / list endpoints** for `/contacts`, `/companies`, `/deals`, `/activities` — response shape gains `customFields: Record<string, unknown>`. Frontend cross-references with the definitions list to render.
 - **POST (create) and PATCH (update)** for the same four entities accept an optional `customFields` body field. Server-side flow:
-  1. Load active definitions for the requesting org + entity type.
-  2. Validate every supplied key against a definition (unknown keys → 400).
-  3. Type-coerce + validate each value against its definition's type (out-of-range → 400 with per-field error).
-  4. If `required: true` on any definition and the entity is being created (or has no current value), enforce non-null.
-  5. Merge into the existing JSONB column (`existing || patched`).
+  1. Resolve the effective `entity_type` for the definition lookup. For contacts/companies/deals this is fixed (`'contact'` / `'company'` / `'deal'`). For activities the helper takes the row's `kind` (`'note'` or `'task'`) and maps it to the matching definition entity type.
+  2. Load active definitions for the requesting org + effective entity type.
+  3. Validate every supplied key against a definition (unknown keys → 400).
+  4. Type-coerce + validate each value against its definition's type (out-of-range → 400 with per-field error).
+  5. If `required: true` on any definition and the entity is being created (or has no current value), enforce non-null.
+  6. Merge into the existing JSONB column (`existing || patched`).
 
-The merge happens in a shared helper (`packages/api/src/lib/custom-fields-merge.ts` or similar) — reused across all four entity repos to avoid drift.
+The merge happens in a shared helper (`apps/api/src/lib/custom-fields-merge.ts`) — reused across all four entity repos to avoid drift. Signature roughly:
+
+```ts
+async function validateAndMergeCustomFields(
+  deps: { db: Database },
+  args: {
+    orgId: string;
+    entityType: 'contact' | 'company' | 'deal' | 'note' | 'task';
+    existing: Record<string, unknown>;
+    patch: Record<string, unknown> | undefined;
+    isCreate: boolean;
+  },
+): Promise<Record<string, unknown>>;  // returns the merged JSONB
+```
+
+Activity routes call it with `entityType: activityRow.kind === 'task' ? 'task' : 'note'`.
 
 ## UI
 
 ### New Settings page: `/app/settings/custom-fields`
 
-Linked from the main Settings page. Layout (from approved mockup):
+Linked from the main Settings page. Layout:
 
 - Top: breadcrumb `Settings → Custom Fields`.
-- 4 tabs: Contacts · Companies · Deals · Activities. Active tab styling matches existing nav patterns.
+- **5 tabs**: Contacts · Companies · Deals · Notes · Tasks. Active tab styling matches existing nav patterns.
 - Per-tab: sortable list of definitions with `⠿` drag handle, name, type label, "Required" badge, `✎ Edit` and `🗑 Delete` row actions.
 - `[+ Add field]` button top-right opens the editor dialog.
 - Empty state: "No custom fields yet — click + Add field to create one."
@@ -156,13 +179,54 @@ Behaviour:
 | Contact detail page                      | Add `<CustomFieldsBlock entityType="contact" />` below built-in fields |
 | Company detail page                      | Add `<CustomFieldsBlock entityType="company" />`             |
 | Deal detail page                         | Add `<CustomFieldsBlock entityType="deal" />`                |
-| ActivityFeed item (in `<ActivityComposer>`)  | When an activity row enters edit mode, expand to show `<CustomFieldsBlock entityType="activity" />` below the body editor. Read-only display shows custom field values inline under the activity body. |
+| ActivityFeed item (in `<ActivityComposer>`)  | When an activity row enters edit mode, expand to show `<CustomFieldsBlock entityType={activity.kind === 'task' ? 'task' : 'note'} />` below the body editor. Read-only display shows custom field values inline under the activity body. |
 | `<CreateContactDialog>`                  | Embed block; submit includes `customFields` in POST body     |
 | `<CreateCompanyDialog>`                  | Same                                                         |
 | `<CreateDealDialog>`                     | Same                                                         |
-| Activity create flow (`<ActivityComposer>`)  | Embed block before the Submit button; submit includes `customFields` |
+| Activity create flow (`<ActivityComposer>`)  | Embed block before the Submit button. The composer already knows which kind it's creating, so it passes `entityType={kind === 'task' ? 'task' : 'note'}`. Submit includes `customFields`. |
+| **NEW** Activity detail page             | New route — see "Activity detail page" below.                |
 
-**Activities-specific note:** activities are created and edited inline within `<ActivityFeed>` / `<ActivityComposer>` — there's no dedicated `/app/activities/$id` detail route. The custom-fields surface for activities is therefore the composer (for create) and the inline editor (for edit). The implementer should locate the existing composer + edit affordance in `apps/web/src/features/activities/` and embed `<CustomFieldsBlock>` in both places.
+### NEW: Activity detail page (`/app/activities/$id`)
+
+A dedicated detail page for individual notes and tasks. Today there's no such route — activities are inline in feeds and the tasks list. Adding it gives users a focused workspace for an activity (especially valuable for tasks with long discussions in their body, due dates, and now custom fields).
+
+**Route:** `/app/activities/$id` — single route for both notes and tasks. Detects `kind` from the loaded activity record and renders the right header.
+
+**Layout (text mockup):**
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  ← Back to {Tasks | Contact: Sarah Lim | Deal: Acme renewal}│
+│                                                            │
+│  Task · Due May 25                              [Mark done]│
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │ Follow up with Sarah re: Q3 contract draft.          │  │
+│  │ Send the v2 with new pricing tier.                   │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                            │
+│  Linked to:                                                │
+│  • Contact: Sarah Lim                                      │
+│  • Deal: Acme Q3 renewal                                   │
+│                                                            │
+│  ─── Custom fields ─────────────────────────────────────   │
+│  Effort estimate    [3 ▾] hours                            │
+│  Priority           [High ▾]                               │
+│  Blocked by         [Waiting on legal feedback           ] │
+│                                                            │
+│  ─── History ───────────────────────────────────────────   │
+│  • Created May 22 · 10:14  (you)                           │
+│  • Status: open                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+For notes the header is "Note · {createdAt}" with no due-date / status / done-button. Custom fields render under the body in both cases; the entity-type for the block is `'task'` or `'note'` based on the activity's `kind`.
+
+Navigation entry points:
+- ActivityFeed rows get a link icon → `/app/activities/$id` (existing inline-edit still works).
+- `/app/tasks` rows: clicking the task title navigates to its detail.
+- The "Back to" breadcrumb tries to be smart: if the activity has exactly one parent (contact/company/deal), back goes there; otherwise back goes to `/app/tasks` (for tasks) or to the originating ActivityFeed parent.
+
+**Out of scope for v1:** an activity history audit log (the "History" block in the mockup is just the existing `createdAt` + status). A real change history is v2.
 
 ## Validation & edge cases
 
@@ -216,21 +280,23 @@ No automatic JSONB cleanup. The orphan keys are harmless (don't render) and let 
 - `<CustomFieldsBlock>` — renders one row per definition, inline-save round-trip.
 - Smoke test: create a Contact custom field via Settings, then save a value on a contact detail page, then see it persist after refresh.
 
-## Task estimate (~13 tasks)
+## Task estimate (~15 tasks)
 
-1. Shared schemas (`packages/shared/src/custom-fields.ts`) — definition shape + value-validation helpers.
+1. Shared schemas (`packages/shared/src/custom-fields.ts`) — definition shape + value-validation helpers. `entityType` is `'contact' | 'company' | 'deal' | 'note' | 'task'`.
 2. Drizzle migration: `custom_field_definitions` table + 4 JSONB columns + indexes.
 3. Backend `CustomFieldsRepo` + CRUD routes (`/api/v1/custom-fields`).
-4. Backend shared helper: `validateAndMergeCustomFields()` used by all 4 entity update paths.
-5. Backend: extend `contacts`, `companies`, `deals`, `activities` PATCH + POST to validate & merge `customFields`. Extend their GET / list to return the column.
-6. Frontend API hooks: `useCustomFields(entityType)`, `useCreateCustomField`, `useUpdateCustomField`, `useDeleteCustomField`.
-7. New page `/app/settings/custom-fields` — 4 tabs + sortable table.
-8. `<CustomFieldEditor>` dialog.
-9. `<CustomFieldsBlock>` component (read + inline-save).
-10. Wire `<CustomFieldsBlock>` into the 4 detail pages.
-11. Wire `<CustomFieldsBlock>` into the 4 create-dialogs.
-12. Cross-package typecheck + lint + format + manual smoke.
-13. Tag `v0.1-custom-fields` + push.
+4. Backend shared helper: `validateAndMergeCustomFields()` used by contacts/companies/deals/activities update paths (with `kind`-aware entity-type resolution for activities).
+5. Backend: extend `contacts`, `companies`, `deals` PATCH + POST + GET/list to handle `customFields`.
+6. Backend: extend `activities` PATCH + POST + GET/list to handle `customFields` (mapping `kind` → `'note'` or `'task'` for definition lookup). Add a new endpoint `GET /api/v1/activities/:id` returning a single activity for the new detail page.
+7. Frontend API hooks for custom fields: `useCustomFields(entityType)`, `useCreateCustomField`, `useUpdateCustomField`, `useDeleteCustomField`.
+8. Frontend API hook: `useActivity(id)` for the new detail route.
+9. New page `/app/settings/custom-fields` — 5 tabs + sortable table.
+10. `<CustomFieldEditor>` dialog.
+11. `<CustomFieldsBlock>` component (read + inline-save).
+12. Wire `<CustomFieldsBlock>` into the 3 entity detail pages (contact / company / deal).
+13. Wire `<CustomFieldsBlock>` into the create-dialogs (contact / company / deal) and the `<ActivityComposer>`.
+14. New route `/app/activities/$id` — single page handling both note and task kinds, with `<CustomFieldsBlock>` embedded. Add link icons in `ActivityFeed` rows and the `/app/tasks` list pointing to it.
+15. Cross-package typecheck + lint + format + manual smoke. Tag `v0.1-custom-fields` + push.
 
 ## Out of scope (deferred to v2)
 
