@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAIStatus, useExtractContact } from '@/features/ai/api';
 import { useCreateContact } from './api';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 
 interface CreateContactDialogProps {
   trigger?: React.ReactNode;
@@ -36,6 +37,8 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
     formState: { errors, isSubmitting },
   } = useForm<CreateContactInput>({ resolver: zodResolver(createContactBodySchema) });
 
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
+
   const [mode, setMode] = useState<'form' | 'paste'>('form');
   const [pasteText, setPasteText] = useState('');
   const aiStatus = useAIStatus();
@@ -54,8 +57,9 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
   }
 
   async function onSubmit(values: CreateContactInput) {
-    await mut.mutateAsync(values);
+    await mut.mutateAsync({ ...values, customFields });
     reset();
+    setCustomFields({});
     setOpen(false);
   }
 
@@ -134,6 +138,11 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register('title')} placeholder="e.g., CEO" />
           </div>
+          <CustomFieldsBlock
+            entityType="contact"
+            values={customFields}
+            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+          />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create contact'}
           </Button>

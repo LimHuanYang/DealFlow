@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateActivity } from './api';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 
 type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
@@ -12,6 +13,7 @@ interface AddTaskFormProps {
 export function AddTaskForm({ parent }: AddTaskFormProps) {
   const [body, setBody] = useState('');
   const [dueAt, setDueAt] = useState('');
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const create = useCreateActivity(parent);
 
   async function onSubmit(e: React.FormEvent) {
@@ -22,10 +24,12 @@ export function AddTaskForm({ parent }: AddTaskFormProps) {
       kind: 'task',
       body: trimmed,
       ...(dueAt ? { dueAt } : {}),
+      customFields,
       ...parent,
     });
     setBody('');
     setDueAt('');
+    setCustomFields({});
   }
 
   return (
@@ -35,6 +39,11 @@ export function AddTaskForm({ parent }: AddTaskFormProps) {
         onChange={(e) => setBody(e.target.value)}
         placeholder="What needs doing?"
         data-testid="add-task-input"
+      />
+      <CustomFieldsBlock
+        entityType="task"
+        values={customFields}
+        onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
       />
       <div className="flex items-center gap-2">
         <Input

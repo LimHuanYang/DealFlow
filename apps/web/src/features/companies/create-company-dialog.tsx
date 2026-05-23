@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateCompany } from './api';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 
 interface CreateCompanyDialogProps {
   trigger?: React.ReactNode;
@@ -27,6 +28,8 @@ export function CreateCompanyDialog({ trigger, open, onOpenChange }: CreateCompa
   const isOpen = isControlled ? open : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
+
   const mut = useCreateCompany();
   const {
     register,
@@ -36,8 +39,9 @@ export function CreateCompanyDialog({ trigger, open, onOpenChange }: CreateCompa
   } = useForm<CreateCompanyInput>({ resolver: zodResolver(createCompanyBodySchema) });
 
   async function onSubmit(values: CreateCompanyInput) {
-    await mut.mutateAsync(values);
+    await mut.mutateAsync({ ...values, customFields });
     reset();
+    setCustomFields({});
     setOpen(false);
   }
 
@@ -58,6 +62,11 @@ export function CreateCompanyDialog({ trigger, open, onOpenChange }: CreateCompa
             <Label htmlFor="domain">Domain</Label>
             <Input id="domain" {...register('domain')} placeholder="example.com" />
           </div>
+          <CustomFieldsBlock
+            entityType="company"
+            values={customFields}
+            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+          />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create company'}
           </Button>

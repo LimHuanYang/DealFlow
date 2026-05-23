@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateDeal } from './api';
 import { useCurrentOrg } from '@/features/organizations/api';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 
 interface CreateDealDialogProps {
   pipeline: PublicPipeline;
@@ -40,6 +41,8 @@ export function CreateDealDialog({
   const isControlled = open !== undefined;
   const isOpen = isControlled ? open : internalOpen;
   const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
+
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
 
   const orgQuery = useCurrentOrg();
   const orgCurrency = orgQuery.data?.organization.defaultCurrency;
@@ -73,8 +76,9 @@ export function CreateDealDialog({
   }, [orgCurrency, setValue]);
 
   async function onSubmit(values: CreateDealInput) {
-    await mut.mutateAsync(values);
+    await mut.mutateAsync({ ...values, customFields });
     reset();
+    setCustomFields({});
     setOpen(false);
   }
 
@@ -125,6 +129,11 @@ export function CreateDealDialog({
               ))}
             </select>
           </div>
+          <CustomFieldsBlock
+            entityType="deal"
+            values={customFields}
+            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+          />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create deal'}
           </Button>
