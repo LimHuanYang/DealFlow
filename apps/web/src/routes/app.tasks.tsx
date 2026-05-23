@@ -83,7 +83,11 @@ function TasksPage() {
       <ul className="divide-y divide-neutral-200">
         {tasks.data?.items.map((task) => (
           <li key={task.id}>
-            <TaskItem task={task} onToggleDone={(id, patch) => update.mutateAsync({ id, patch })} />
+            <TaskItem
+              task={task}
+              onToggleDone={(id, patch) => update.mutateAsync({ id, patch })}
+              detailId={task.id}
+            />
           </li>
         ))}
       </ul>

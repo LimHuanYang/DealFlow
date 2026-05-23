@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import type { PublicActivity, UpdateActivityInput } from '@dealflow/shared';
 
 interface TaskItemProps {
@@ -6,6 +7,8 @@ interface TaskItemProps {
   onDelete?: (id: string) => Promise<unknown>;
   /** Optional context label rendered after the body (e.g. contact name). */
   contextLabel?: React.ReactNode;
+  /** When provided, wraps the task body text in a link to the detail page. */
+  detailId?: string;
 }
 
 /**
@@ -13,7 +16,7 @@ interface TaskItemProps {
  * `/app/tasks` page. The checkbox toggles status='done'/'open'; the row also
  * highlights overdue tasks in red.
  */
-export function TaskItem({ task, onToggleDone, onDelete, contextLabel }: TaskItemProps) {
+export function TaskItem({ task, onToggleDone, onDelete, contextLabel, detailId }: TaskItemProps) {
   const done = task.status === 'done';
   const overdue = !done && task.dueAt !== null && new Date(task.dueAt).getTime() < startOfToday();
 
@@ -30,7 +33,17 @@ export function TaskItem({ task, onToggleDone, onDelete, contextLabel }: TaskIte
       />
       <div className="min-w-0 flex-1">
         <p className={done ? 'text-sm text-neutral-400 line-through' : 'text-sm text-neutral-900'}>
-          {task.body}
+          {detailId ? (
+            <Link
+              to="/app/activities/$id"
+              params={{ id: detailId }}
+              className="font-medium hover:underline"
+            >
+              {task.body}
+            </Link>
+          ) : (
+            task.body
+          )}
         </p>
         <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
           {task.dueAt && (

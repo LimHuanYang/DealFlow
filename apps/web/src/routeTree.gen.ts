@@ -24,6 +24,7 @@ import { Route as AppSettingsCustomFieldsRouteImport } from './routes/app.settin
 import { Route as AppDealsIdRouteImport } from './routes/app.deals.$id'
 import { Route as AppContactsIdRouteImport } from './routes/app.contacts.$id'
 import { Route as AppCompaniesIdRouteImport } from './routes/app.companies.$id'
+import { Route as AppActivitiesIdRouteImport } from './routes/app.activities.$id'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -100,6 +101,11 @@ const AppCompaniesIdRoute = AppCompaniesIdRouteImport.update({
   path: '/companies/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppActivitiesIdRoute = AppActivitiesIdRouteImport.update({
+  id: '/activities/$id',
+  path: '/activities/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
+  '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app': typeof AppIndexRoute
+  '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
+  '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/app/'
+    | '/app/activities/$id'
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/app'
+    | '/app/activities/$id'
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/tasks'
     | '/app/'
+    | '/app/activities/$id'
     | '/app/companies/$id'
     | '/app/contacts/$id'
     | '/app/deals/$id'
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/activities/$id': {
+      id: '/app/activities/$id'
+      path: '/activities/$id'
+      fullPath: '/app/activities/$id'
+      preLoaderRoute: typeof AppActivitiesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -339,6 +358,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppActivitiesIdRoute: typeof AppActivitiesIdRoute
   AppCompaniesIdRoute: typeof AppCompaniesIdRoute
   AppContactsIdRoute: typeof AppContactsIdRoute
   AppDealsIdRoute: typeof AppDealsIdRoute
@@ -352,6 +372,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRouteWithChildren,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,
+  AppActivitiesIdRoute: AppActivitiesIdRoute,
   AppCompaniesIdRoute: AppCompaniesIdRoute,
   AppContactsIdRoute: AppContactsIdRoute,
   AppDealsIdRoute: AppDealsIdRoute,

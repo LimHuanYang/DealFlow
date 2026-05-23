@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PublicActivity } from '@dealflow/shared';
+import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { useAIStatus, useSummarizeActivity } from '@/features/ai/api';
 import { useActivitiesFor, useDeleteActivity, useUpdateActivity } from './api';
@@ -113,11 +114,22 @@ interface ActivityRowProps {
 function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
   if (activity.kind === 'task') {
     return (
-      <TaskItem
-        task={activity}
-        onToggleDone={(id, patch) => onToggleDone(id, patch as { status: 'open' | 'done' })}
-        onDelete={onDelete}
-      />
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <TaskItem
+            task={activity}
+            onToggleDone={(id, patch) => onToggleDone(id, patch as { status: 'open' | 'done' })}
+            onDelete={onDelete}
+          />
+        </div>
+        <Link
+          to="/app/activities/$id"
+          params={{ id: activity.id }}
+          className="shrink-0 text-xs text-neutral-400 hover:text-neutral-700"
+        >
+          Open ↗
+        </Link>
+      </div>
     );
   }
   if (activity.kind === 'email') {
@@ -133,14 +145,23 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
             {new Date(activity.createdAt).toLocaleString()}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void onDelete(activity.id)}
-          className="text-xs text-neutral-400 hover:text-red-600"
-          aria-label="Delete email"
-        >
-          ✕
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            to="/app/activities/$id"
+            params={{ id: activity.id }}
+            className="text-xs text-neutral-400 hover:text-neutral-700"
+          >
+            Open ↗
+          </Link>
+          <button
+            type="button"
+            onClick={() => void onDelete(activity.id)}
+            className="text-xs text-neutral-400 hover:text-red-600"
+            aria-label="Delete email"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     );
   }
@@ -153,14 +174,23 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
           Note · {new Date(activity.createdAt).toLocaleString()}
         </p>
       </div>
-      <button
-        type="button"
-        onClick={() => void onDelete(activity.id)}
-        className="text-xs text-neutral-400 hover:text-red-600"
-        aria-label="Delete note"
-      >
-        ✕
-      </button>
+      <div className="flex shrink-0 items-center gap-2">
+        <Link
+          to="/app/activities/$id"
+          params={{ id: activity.id }}
+          className="text-xs text-neutral-400 hover:text-neutral-700"
+        >
+          Open ↗
+        </Link>
+        <button
+          type="button"
+          onClick={() => void onDelete(activity.id)}
+          className="text-xs text-neutral-400 hover:text-red-600"
+          aria-label="Delete note"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
