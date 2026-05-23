@@ -201,7 +201,9 @@ describe('Deals customFields', () => {
       payload: { customFields: { [fieldId]: 'Referral' } },
     });
     expect(updated.statusCode).toBe(200);
-    expect(updated.json<{ deal: { customFields: Record<string, unknown> } }>().deal.customFields).toEqual({ [fieldId]: 'Referral' });
+    expect(
+      updated.json<{ deal: { customFields: Record<string, unknown> } }>().deal.customFields,
+    ).toEqual({ [fieldId]: 'Referral' });
   });
 
   it('PATCH rejects unknown custom field key with 400', async () => {
@@ -233,10 +235,21 @@ describe('Deals customFields', () => {
       method: 'POST',
       url: '/api/v1/deals',
       headers: { cookie },
-      payload: { name: 'CF Deal', pipelineId, stageId: leadStageId, customFields: { [fieldId]: 'High' } },
+      payload: {
+        name: 'CF Deal',
+        pipelineId,
+        stageId: leadStageId,
+        customFields: { [fieldId]: 'High' },
+      },
     });
     const id = created.json<{ deal: { id: string } }>().deal.id;
-    const got = await app.inject({ method: 'GET', url: `/api/v1/deals/${id}`, headers: { cookie } });
-    expect(got.json<{ deal: { customFields: Record<string, unknown> } }>().deal.customFields).toEqual({ [fieldId]: 'High' });
+    const got = await app.inject({
+      method: 'GET',
+      url: `/api/v1/deals/${id}`,
+      headers: { cookie },
+    });
+    expect(
+      got.json<{ deal: { customFields: Record<string, unknown> } }>().deal.customFields,
+    ).toEqual({ [fieldId]: 'High' });
   });
 });

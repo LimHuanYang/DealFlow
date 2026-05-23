@@ -56,9 +56,7 @@ export function CustomFieldEditor({ open, onClose, entityType, existing }: Props
     if (open) {
       setName(existing?.name ?? '');
       setType(existing?.type ?? 'text');
-      setOptionsText(
-        (existing?.options?.values ?? []).map((v) => v.label).join('\n'),
-      );
+      setOptionsText((existing?.options?.values ?? []).map((v) => v.label).join('\n'));
       setRequired(existing?.required ?? false);
     }
   }, [open, existing]);
@@ -92,17 +90,28 @@ export function CustomFieldEditor({ open, onClose, entityType, existing }: Props
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit custom field' : `Add a custom field for ${entityType}s`}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? 'Edit custom field' : `Add a custom field for ${entityType}s`}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cf-name" className="text-xs">Field name</Label>
-            <Input id="cf-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Lead Source" />
+            <Label htmlFor="cf-name" className="text-xs">
+              Field name
+            </Label>
+            <Input
+              id="cf-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Lead Source"
+            />
           </div>
 
           <div>
-            <Label htmlFor="cf-type" className="text-xs">Type</Label>
+            <Label htmlFor="cf-type" className="text-xs">
+              Type
+            </Label>
             <select
               id="cf-type"
               disabled={isEdit}
@@ -111,7 +120,9 @@ export function CustomFieldEditor({ open, onClose, entityType, existing }: Props
               className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:opacity-50"
             >
               {CUSTOM_FIELD_TYPES.map((t) => (
-                <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+                <option key={t} value={t}>
+                  {TYPE_LABELS[t]}
+                </option>
               ))}
             </select>
             {isEdit && (
@@ -121,7 +132,9 @@ export function CustomFieldEditor({ open, onClose, entityType, existing }: Props
 
           {needsOptions && (
             <div>
-              <Label htmlFor="cf-options" className="text-xs">Options (one per line)</Label>
+              <Label htmlFor="cf-options" className="text-xs">
+                Options (one per line)
+              </Label>
               <textarea
                 id="cf-options"
                 rows={5}
@@ -134,13 +147,19 @@ export function CustomFieldEditor({ open, onClose, entityType, existing }: Props
           )}
 
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={required} onChange={(e) => setRequired(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={required}
+              onChange={(e) => setRequired(e.target.checked)}
+            />
             Required
           </label>
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
           <Button size="sm" onClick={onSubmit} disabled={!name.trim() || submitting}>
             {submitting ? 'Saving…' : 'Save field'}
           </Button>

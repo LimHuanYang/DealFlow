@@ -191,7 +191,11 @@ describe('Contacts customFields', () => {
       payload: { firstName: 'X', customFields: { [fieldId]: 'hello' } },
     });
     const id = created.json().contact.id;
-    const got = await app.inject({ method: 'GET', url: `/api/v1/contacts/${id}`, headers: { cookie } });
+    const got = await app.inject({
+      method: 'GET',
+      url: `/api/v1/contacts/${id}`,
+      headers: { cookie },
+    });
     expect(got.json().contact.customFields).toEqual({ [fieldId]: 'hello' });
   });
 });

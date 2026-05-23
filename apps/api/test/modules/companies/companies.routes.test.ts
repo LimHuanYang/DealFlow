@@ -185,7 +185,11 @@ describe('Companies customFields', () => {
       payload: { name: 'Acme', customFields: { [fieldId]: 'hello' } },
     });
     const id = created.json().company.id;
-    const got = await app.inject({ method: 'GET', url: `/api/v1/companies/${id}`, headers: { cookie } });
+    const got = await app.inject({
+      method: 'GET',
+      url: `/api/v1/companies/${id}`,
+      headers: { cookie },
+    });
     expect(got.json().company.customFields).toEqual({ [fieldId]: 'hello' });
   });
 });

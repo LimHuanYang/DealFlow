@@ -70,7 +70,10 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  * (in custom-fields-merge.ts) and client-side (inline form feedback).
  */
 export function validateCustomFieldValue(
-  def: Pick<CustomFieldDefinition, 'type' | 'options'>,
+  def: {
+    type: CustomFieldType;
+    options: { values: ReadonlyArray<{ key: string; label: string }> } | null;
+  },
   value: unknown,
 ): { ok: true } | { ok: false; error: string } {
   if (value === null || value === undefined) return { ok: true };

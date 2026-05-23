@@ -1,10 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import {
-  type CustomFieldEntityType,
-  validateCustomFieldValue,
-} from '@dealflow/shared';
+import { type CustomFieldEntityType, validateCustomFieldValue } from '@dealflow/shared';
 
 export interface MergeArgs {
   orgId: string;

@@ -43,7 +43,10 @@ export const deals = pgTable(
     expectedCloseDate: date('expected_close_date'),
     status: text('status').notNull().default('open'),
     positionInStage: doublePrecision('position_in_stage').notNull().default(0),
-    customFields: jsonb('custom_fields').notNull().default(sql`'{}'::jsonb`).$type<Record<string, unknown>>(),
+    customFields: jsonb('custom_fields')
+      .notNull()
+      .default(sql`'{}'::jsonb`)
+      .$type<Record<string, unknown>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     closedAt: timestamp('closed_at', { withTimezone: true }),

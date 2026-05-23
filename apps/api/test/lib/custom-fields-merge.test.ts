@@ -39,7 +39,12 @@ describe('validateAndMergeCustomFields', () => {
         entityType: 'contact',
         name: 'Lead Source',
         type: 'select',
-        options: { values: [{ key: 'referral', label: 'Referral' }, { key: 'web', label: 'Web' }] },
+        options: {
+          values: [
+            { key: 'referral', label: 'Referral' },
+            { key: 'web', label: 'Web' },
+          ],
+        },
         required: false,
         position: 1,
       })
@@ -64,13 +69,16 @@ describe('validateAndMergeCustomFields', () => {
   afterAll(() => testDb.stop());
 
   it('merges a valid patch into the existing JSONB', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: { [textFieldId]: 'old' },
-      patch: { [selectFieldId]: 'referral' },
-      isCreate: false,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: { [textFieldId]: 'old' },
+        patch: { [selectFieldId]: 'referral' },
+        isCreate: false,
+      },
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.merged).toEqual({
@@ -80,70 +88,88 @@ describe('validateAndMergeCustomFields', () => {
   });
 
   it('rejects an unknown field key', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: {},
-      patch: { 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': 'x' },
-      isCreate: false,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: {},
+        patch: { 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': 'x' },
+        isCreate: false,
+      },
+    );
     expect(result.ok).toBe(false);
   });
 
   it('rejects a value that fails type validation', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: {},
-      patch: { [selectFieldId]: 'bogus' },  // not in options
-      isCreate: false,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: {},
+        patch: { [selectFieldId]: 'bogus' }, // not in options
+        isCreate: false,
+      },
+    );
     expect(result.ok).toBe(false);
   });
 
   it('rejects creation when a required field is missing', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: {},
-      patch: { [textFieldId]: 'hi' },  // required Priority absent
-      isCreate: true,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: {},
+        patch: { [textFieldId]: 'hi' }, // required Priority absent
+        isCreate: true,
+      },
+    );
     expect(result.ok).toBe(false);
   });
 
   it('allows update without touching the required field', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: { [requiredFieldId]: 5 },
-      patch: { [textFieldId]: 'updated' },
-      isCreate: false,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: { [requiredFieldId]: 5 },
+        patch: { [textFieldId]: 'updated' },
+        isCreate: false,
+      },
+    );
     expect(result.ok).toBe(true);
   });
 
   it('passes through when patch is undefined', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: { [textFieldId]: 'keep' },
-      patch: undefined,
-      isCreate: false,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: { [textFieldId]: 'keep' },
+        patch: undefined,
+        isCreate: false,
+      },
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.merged).toEqual({ [textFieldId]: 'keep' });
   });
 
   it('rejects null on a required field at create time', async () => {
-    const result = await validateAndMergeCustomFields({ db: testDb.db }, {
-      orgId,
-      entityType: 'contact',
-      existing: {},
-      patch: { [requiredFieldId]: null },
-      isCreate: true,
-    });
+    const result = await validateAndMergeCustomFields(
+      { db: testDb.db },
+      {
+        orgId,
+        entityType: 'contact',
+        existing: {},
+        patch: { [requiredFieldId]: null },
+        isCreate: true,
+      },
+    );
     expect(result.ok).toBe(false);
   });
 });

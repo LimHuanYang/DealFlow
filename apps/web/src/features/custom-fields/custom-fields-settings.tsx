@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CUSTOM_FIELD_ENTITY_TYPES, type CustomFieldDefinition, type CustomFieldEntityType } from '@dealflow/shared';
+import {
+  CUSTOM_FIELD_ENTITY_TYPES,
+  type CustomFieldDefinition,
+  type CustomFieldEntityType,
+} from '@dealflow/shared';
 import { CustomFieldEditor } from './custom-field-editor';
 import { useCustomFields, useDeleteCustomField } from './api';
 
 const TABS: { key: CustomFieldEntityType; label: string }[] = [
-  { key: 'contact',  label: 'Contacts'   },
-  { key: 'company',  label: 'Companies'  },
-  { key: 'deal',     label: 'Deals'      },
-  { key: 'note',     label: 'Notes'      },
-  { key: 'task',     label: 'Tasks'      },
+  { key: 'contact', label: 'Contacts' },
+  { key: 'company', label: 'Companies' },
+  { key: 'deal', label: 'Deals' },
+  { key: 'note', label: 'Notes' },
+  { key: 'task', label: 'Tasks' },
 ];
 
 export function CustomFieldsSettings() {
@@ -24,7 +28,9 @@ export function CustomFieldsSettings() {
     <main className="p-8">
       <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Custom fields</h1>
-        <p className="text-sm text-neutral-500">Define your own fields per entity. Up to 50 chars per name.</p>
+        <p className="text-sm text-neutral-500">
+          Define your own fields per entity. Up to 50 chars per name.
+        </p>
       </header>
 
       <div className="mb-3 flex items-center justify-between border-b border-neutral-200">
@@ -44,14 +50,22 @@ export function CustomFieldsSettings() {
             </button>
           ))}
         </div>
-        <Button size="sm" onClick={() => { setEditing(undefined); setEditorOpen(true); }}>
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditing(undefined);
+            setEditorOpen(true);
+          }}
+        >
           + Add field
         </Button>
       </div>
 
       {list.isPending && <p className="text-sm text-neutral-500">Loading…</p>}
       {list.data && list.data.length === 0 && (
-        <p className="text-sm text-neutral-400">No custom fields yet — click + Add field to create one.</p>
+        <p className="text-sm text-neutral-400">
+          No custom fields yet — click + Add field to create one.
+        </p>
       )}
 
       {list.data && list.data.length > 0 && (
@@ -61,18 +75,31 @@ export function CustomFieldsSettings() {
               <div className="min-w-0">
                 <div className="truncate font-medium text-neutral-900">{def.name}</div>
                 <div className="text-xs text-neutral-500">
-                  {def.type}{def.required ? ' · required' : ''}
+                  {def.type}
+                  {def.required ? ' · required' : ''}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setEditing(def); setEditorOpen(true); }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditing(def);
+                    setEditorOpen(true);
+                  }}
+                >
                   Edit
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    if (!confirm(`Delete "${def.name}"? Values stored on existing ${tab}s will be hidden but not erased.`)) return;
+                    if (
+                      !confirm(
+                        `Delete "${def.name}"? Values stored on existing ${tab}s will be hidden but not erased.`,
+                      )
+                    )
+                      return;
                     await del.mutateAsync({ id: def.id, entityType: tab });
                   }}
                 >

@@ -28,7 +28,12 @@ describe('Custom fields CRUD', () => {
       method: 'POST',
       url: '/api/v1/custom-fields',
       headers: { cookie },
-      payload: { entityType: 'contact', name: 'Lead Source', type: 'select', options: { values: [{ key: 'web', label: 'Web' }] } },
+      payload: {
+        entityType: 'contact',
+        name: 'Lead Source',
+        type: 'select',
+        options: { values: [{ key: 'web', label: 'Web' }] },
+      },
     });
     expect(create.statusCode).toBe(201);
     const created = create.json();
@@ -71,9 +76,19 @@ describe('Custom fields CRUD', () => {
   it('rejects duplicate (org, entityType, name)', async () => {
     const { cookie } = await signupTestUser(app);
     const payload = { entityType: 'deal' as const, name: 'Source', type: 'text' as const };
-    const a = await app.inject({ method: 'POST', url: '/api/v1/custom-fields', headers: { cookie }, payload });
+    const a = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload,
+    });
     expect(a.statusCode).toBe(201);
-    const b = await app.inject({ method: 'POST', url: '/api/v1/custom-fields', headers: { cookie }, payload });
+    const b = await app.inject({
+      method: 'POST',
+      url: '/api/v1/custom-fields',
+      headers: { cookie },
+      payload,
+    });
     expect(b.statusCode).toBe(409);
   });
 
@@ -101,14 +116,18 @@ describe('Custom fields CRUD', () => {
       method: 'POST',
       url: '/api/v1/custom-fields',
       headers: { cookie },
-      payload: { entityType: 'note', name: 'Outcome', type: 'select', options: { values: [{ key: 'a', label: 'A' }] } },
+      payload: {
+        entityType: 'note',
+        name: 'Outcome',
+        type: 'select',
+        options: { values: [{ key: 'a', label: 'A' }] },
+      },
     });
     const id = create.json().id;
     const patch = await app.inject({
       method: 'PATCH',
       url: `/api/v1/custom-fields/${id}`,
       headers: { cookie },
-      // @ts-expect-error type is intentionally not in the schema
       payload: { type: 'text' },
     });
     // Either 400 (Zod strips/rejects) or 200 + type unchanged. The route must

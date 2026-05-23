@@ -26,7 +26,9 @@ export async function registerCustomFieldsRoutes(
   app.get('/api/v1/custom-fields', { preHandler: requireOrg }, async (req, reply) => {
     const parsed = listQuerySchema.safeParse(req.query);
     if (!parsed.success) {
-      return reply.status(400).send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'entity query required' } });
+      return reply
+        .status(400)
+        .send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'entity query required' } });
     }
     const rows = await repo.list(req.session!.currentOrgId!, parsed.data.entity);
     return reply.send(rows);
@@ -49,7 +51,10 @@ export async function registerCustomFieldsRoutes(
     } catch (err) {
       if (err instanceof Error && /duplicate key/i.test(err.message)) {
         return reply.status(409).send({
-          error: { code: ERROR_CODES.CONFLICT, message: 'Field name already exists for this entity' },
+          error: {
+            code: ERROR_CODES.CONFLICT,
+            message: 'Field name already exists for this entity',
+          },
         });
       }
       throw err;
@@ -60,18 +65,25 @@ export async function registerCustomFieldsRoutes(
     const params = idParamSchema.safeParse(req.params);
     const body = updateCustomFieldBodySchema.safeParse(req.body);
     if (!params.success || !body.success) {
-      return reply.status(400).send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid update' } });
+      return reply
+        .status(400)
+        .send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid update' } });
     }
     const updated = await repo.update(req.session!.currentOrgId!, params.data.id, body.data);
-    if (!updated) return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Field not found' } });
+    if (!updated)
+      return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Field not found' } });
     return reply.send(updated);
   });
 
   app.delete('/api/v1/custom-fields/:id', { preHandler: requireOrg }, async (req, reply) => {
     const params = idParamSchema.safeParse(req.params);
-    if (!params.success) return reply.status(400).send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Bad id' } });
+    if (!params.success)
+      return reply
+        .status(400)
+        .send({ error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Bad id' } });
     const ok = await repo.delete(req.session!.currentOrgId!, params.data.id);
-    if (!ok) return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Field not found' } });
+    if (!ok)
+      return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Field not found' } });
     return reply.status(204).send();
   });
 }

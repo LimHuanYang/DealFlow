@@ -395,7 +395,11 @@ describe('Activities customFields', () => {
         payload: { kind: 'note', body: 'one', contactId: contact.json().contact.id },
       });
       const id = note.json().activity.id;
-      const got = await app.inject({ method: 'GET', url: `/api/v1/activities/${id}`, headers: { cookie } });
+      const got = await app.inject({
+        method: 'GET',
+        url: `/api/v1/activities/${id}`,
+        headers: { cookie },
+      });
       expect(got.statusCode).toBe(200);
       expect(got.json().activity.id).toBe(id);
       expect(got.json().activity.body).toBe('one');

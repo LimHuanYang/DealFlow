@@ -11,8 +11,7 @@ import { queryKeys } from '@/lib/query-keys';
 export function useCustomFields(entityType: CustomFieldEntityType) {
   return useQuery({
     queryKey: queryKeys.customFields.list(entityType),
-    queryFn: () =>
-      apiFetch<CustomFieldDefinition[]>(`/api/v1/custom-fields?entity=${entityType}`),
+    queryFn: () => apiFetch<CustomFieldDefinition[]>(`/api/v1/custom-fields?entity=${entityType}`),
     staleTime: 60_000,
   });
 }

@@ -16,7 +16,18 @@ describe('customFieldEntityTypeSchema', () => {
 });
 
 describe('customFieldTypeSchema', () => {
-  const TYPES = ['text','long_text','number','date','boolean','select','multi_select','url','email','phone'];
+  const TYPES = [
+    'text',
+    'long_text',
+    'number',
+    'date',
+    'boolean',
+    'select',
+    'multi_select',
+    'url',
+    'email',
+    'phone',
+  ];
   it.each(TYPES)('accepts %s', (t) => {
     expect(() => customFieldTypeSchema.parse(t)).not.toThrow();
   });
@@ -77,7 +88,15 @@ describe('validateCustomFieldValue', () => {
   });
 
   it('accepts a valid option key for select', () => {
-    const def = { type: 'select', options: { values: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }] } } as const;
+    const def = {
+      type: 'select',
+      options: {
+        values: [
+          { key: 'a', label: 'A' },
+          { key: 'b', label: 'B' },
+        ],
+      },
+    } as const;
     expect(validateCustomFieldValue(def, 'a').ok).toBe(true);
   });
   it('rejects unknown option key for select', () => {
@@ -86,7 +105,15 @@ describe('validateCustomFieldValue', () => {
   });
 
   it('accepts array of valid option keys for multi_select', () => {
-    const def = { type: 'multi_select', options: { values: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }] } } as const;
+    const def = {
+      type: 'multi_select',
+      options: {
+        values: [
+          { key: 'a', label: 'A' },
+          { key: 'b', label: 'B' },
+        ],
+      },
+    } as const;
     expect(validateCustomFieldValue(def, ['a', 'b']).ok).toBe(true);
   });
   it('rejects multi_select with unknown key', () => {

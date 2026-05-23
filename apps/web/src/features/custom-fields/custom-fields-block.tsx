@@ -29,7 +29,12 @@ export function CustomFieldsBlock({ entityType, values, onChange, showHeader = t
         <div className="text-xs uppercase tracking-wide text-neutral-400">Custom fields</div>
       )}
       {defs.map((def) => (
-        <FieldRow key={def.id} def={def} value={values[def.id]} onChange={(v) => onChange(def.id, v)} />
+        <FieldRow
+          key={def.id}
+          def={def}
+          value={values[def.id]}
+          onChange={(v) => onChange(def.id, v)}
+        />
       ))}
     </section>
   );
@@ -98,7 +103,9 @@ function FieldInput({
       >
         <option value="">— Select —</option>
         {def.options?.values.map((o) => (
-          <option key={o.key} value={o.key}>{o.label}</option>
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
         ))}
       </select>
     );
@@ -123,7 +130,18 @@ function FieldInput({
       </div>
     );
   }
-  const htmlType = t === 'number' ? 'number' : t === 'date' ? 'date' : t === 'email' ? 'email' : t === 'url' ? 'url' : t === 'phone' ? 'tel' : 'text';
+  const htmlType =
+    t === 'number'
+      ? 'number'
+      : t === 'date'
+        ? 'date'
+        : t === 'email'
+          ? 'email'
+          : t === 'url'
+            ? 'url'
+            : t === 'phone'
+              ? 'tel'
+              : 'text';
   return (
     <Input
       id={id}

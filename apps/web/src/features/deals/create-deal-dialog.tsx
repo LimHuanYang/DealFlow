@@ -132,7 +132,9 @@ export function CreateDealDialog({
           <CustomFieldsBlock
             entityType="deal"
             values={customFields}
-            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+            onChange={(fieldId, value) =>
+              setCustomFields((prev) => ({ ...prev, [fieldId]: value }))
+            }
           />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create deal'}

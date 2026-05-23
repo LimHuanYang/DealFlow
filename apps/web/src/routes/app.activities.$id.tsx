@@ -22,7 +22,8 @@ function ActivityDetailPage() {
   }, [q.data?.customFields]);
 
   if (q.isPending) return <main className="p-8 text-sm text-neutral-500">Loading…</main>;
-  if (q.isError || !q.data) return <main className="p-8 text-sm text-red-600">Activity not found.</main>;
+  if (q.isError || !q.data)
+    return <main className="p-8 text-sm text-red-600">Activity not found.</main>;
 
   const a = q.data;
   const entityType = a.kind === 'task' ? 'task' : 'note';
@@ -47,14 +48,22 @@ function ActivityDetailPage() {
   return (
     <main className="space-y-6 p-8">
       <header>
-        <Link to="/app/tasks" className="text-sm text-neutral-500 hover:underline">← Back</Link>
+        <Link to="/app/tasks" className="text-sm text-neutral-500 hover:underline">
+          ← Back
+        </Link>
         <h1 className="mt-2 flex items-center justify-between text-2xl font-semibold tracking-tight">
           <span>
             {a.kind === 'task' ? 'Task' : 'Note'}
-            {a.dueAt && <span className="ml-2 text-sm font-normal text-neutral-500">· Due {a.dueAt.slice(0, 10)}</span>}
+            {a.dueAt && (
+              <span className="ml-2 text-sm font-normal text-neutral-500">
+                · Due {a.dueAt.slice(0, 10)}
+              </span>
+            )}
           </span>
           {a.kind === 'task' && a.status !== 'done' && (
-            <Button size="sm" onClick={onMarkDone}>Mark done</Button>
+            <Button size="sm" onClick={onMarkDone}>
+              Mark done
+            </Button>
           )}
         </h1>
         <pre className="mt-3 whitespace-pre-wrap rounded-md border border-neutral-200 bg-white p-3 text-sm">

@@ -65,7 +65,9 @@ export function CreateCompanyDialog({ trigger, open, onOpenChange }: CreateCompa
           <CustomFieldsBlock
             entityType="company"
             values={customFields}
-            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+            onChange={(fieldId, value) =>
+              setCustomFields((prev) => ({ ...prev, [fieldId]: value }))
+            }
           />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create company'}

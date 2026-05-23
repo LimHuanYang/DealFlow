@@ -141,7 +141,9 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
           <CustomFieldsBlock
             entityType="contact"
             values={customFields}
-            onChange={(fieldId, value) => setCustomFields((prev) => ({ ...prev, [fieldId]: value }))}
+            onChange={(fieldId, value) =>
+              setCustomFields((prev) => ({ ...prev, [fieldId]: value }))
+            }
           />
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating…' : 'Create contact'}
