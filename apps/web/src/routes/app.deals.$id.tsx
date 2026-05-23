@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { CURRENCY_OPTIONS, isSupportedCurrency } from '@dealflow/shared';
 import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useDeal, useUpdateDeal } from '@/features/deals/api';
 import { formatCurrency } from '@/lib/format';
 
@@ -83,6 +84,15 @@ function DealDetailPage() {
           />
         </dd>
       </dl>
+      <section className="mt-6">
+        <CustomFieldsBlock
+          entityType="deal"
+          values={d.customFields ?? {}}
+          onChange={(fieldId, value) => {
+            void update.mutateAsync({ customFields: { [fieldId]: value } });
+          }}
+        />
+      </section>
       <ActivityFeed parent={{ dealId: d.id }} />
     </main>
   );

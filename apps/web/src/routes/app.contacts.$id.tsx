@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useContact, useUpdateContact } from '@/features/contacts/api';
 import { useEmailStatus } from '@/features/emails/api';
 import { ComposeEmailDialog } from '@/features/emails/compose-email-dialog';
@@ -103,6 +104,15 @@ function ContactDetailPage() {
           />
         </dd>
       </dl>
+      <section className="mt-6">
+        <CustomFieldsBlock
+          entityType="contact"
+          values={c.customFields ?? {}}
+          onChange={(fieldId, value) => {
+            void update.mutateAsync({ customFields: { [fieldId]: value } });
+          }}
+        />
+      </section>
       <ActivityFeed parent={{ contactId: c.id }} />
     </main>
   );

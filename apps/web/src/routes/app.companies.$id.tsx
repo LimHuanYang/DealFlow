@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
+import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useCompany, useUpdateCompany } from '@/features/companies/api';
 
 export const Route = createFileRoute('/app/companies/$id')({
@@ -83,6 +84,15 @@ function CompanyDetailPage() {
           />
         </dd>
       </dl>
+      <section className="mt-6">
+        <CustomFieldsBlock
+          entityType="company"
+          values={c.customFields ?? {}}
+          onChange={(fieldId, value) => {
+            void update.mutateAsync({ customFields: { [fieldId]: value } });
+          }}
+        />
+      </section>
       <ActivityFeed parent={{ companyId: c.id }} />
     </main>
   );
