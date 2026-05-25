@@ -9,7 +9,7 @@ import {
 } from '@dealflow/email';
 import type { Database, schema as schemaType } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import { ERROR_CODES, sendEmailBodySchema, emailDashboardQuerySchema } from '@dealflow/shared';
+import { ERROR_CODES, sendEmailBodySchema, emailDashboardQuerySchema, emailRollupEntityTypeSchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
 import { OrgIntegrationsRepo } from '../integrations/repo.js';
@@ -310,4 +310,60 @@ export async function registerEmailRoutes(
       hasMore && sliced.length > 0 ? sliced[sliced.length - 1]!.sentAt.toISOString() : null;
     return reply.send({ items, nextCursor });
   });
+
+  app.get(
+    '/api/v1/emails/engagement/:entityType/:id',
+    { preHandler: requireOrg },
+    async (req, reply) => {
+      const params = req.params as { entityType: string; id: string };
+      const entityType = emailRollupEntityTypeSchema.safeParse(params.entityType);
+      if (!entityType.success) {
+        return reply.status(400).send({
+          error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Bad entity type' },
+        });
+      }
+      const orgId = req.session!.currentOrgId!;
+      const fkColumn =
+        entityType.data === 'contact'
+          ? schema.activities.contactId
+          : entityType.data === 'company'
+            ? schema.activities.companyId
+            : schema.activities.dealId;
+
+      const [agg] = await deps.db
+        .select({
+          sent: sql<number>`COUNT(*)::int`,
+          opened: sql<number>`(COUNT(*) FILTER (WHERE ${schema.activities.openCount} > 0))::int`,
+          clickedWith: sql<number>`(COUNT(*) FILTER (WHERE ${schema.activities.clickCount} > 0))::int`,
+          lastActivityAt: sql<Date | null>`MAX(${schema.activities.createdAt})`,
+        })
+        .from(schema.activities)
+        .where(
+          and(
+            eq(schema.activities.organizationId, orgId),
+            eq(schema.activities.kind, 'email'),
+            eq(fkColumn, params.id),
+          ),
+        );
+
+      const sent = agg?.sent ?? 0;
+      const opened = agg?.opened ?? 0;
+      const clickedWith = agg?.clickedWith ?? 0;
+      const rawLastAt = agg?.lastActivityAt ?? null;
+      const lastActivityAt =
+        rawLastAt instanceof Date
+          ? rawLastAt.toISOString()
+          : typeof rawLastAt === 'string'
+            ? rawLastAt
+            : null;
+      return reply.send({
+        sent,
+        opened,
+        openedPct: sent > 0 ? opened / sent : 0,
+        clickedWith,
+        clickedWithPct: sent > 0 ? clickedWith / sent : 0,
+        lastActivityAt,
+      });
+    },
+  );
 }

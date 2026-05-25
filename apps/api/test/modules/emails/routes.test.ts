@@ -298,3 +298,80 @@ describe('GET /api/v1/emails (dashboard list)', () => {
     expect(hits.some((i: { subject: string }) => i.subject.toLowerCase().includes('proposal'))).toBe(true);
   });
 });
+
+describe('GET /api/v1/emails/engagement/:entityType/:id', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('returns a zero rollup when entity has no sent emails', async () => {
+    const { cookie, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/emails/engagement/contact/${contact!.id}`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const r = res.json();
+    expect(r.sent).toBe(0);
+    expect(r.opened).toBe(0);
+    expect(r.openedPct).toBe(0);
+    expect(r.clickedWith).toBe(0);
+    expect(r.lastActivityAt).toBeNull();
+  });
+
+  it('computes counts and percentages correctly', async () => {
+    const { cookie, userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    // 4 emails: 2 opened (1 also clicked), 2 untouched.
+    await testDb.db.insert(schema.activities).values([
+      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'a', contactId: contact!.id, openCount: 2, clickCount: 1 },
+      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'b', contactId: contact!.id, openCount: 1, clickCount: 0 },
+      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'c', contactId: contact!.id, openCount: 0, clickCount: 0 },
+      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'd', contactId: contact!.id, openCount: 0, clickCount: 0 },
+    ]);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/emails/engagement/contact/${contact!.id}`,
+      headers: { cookie },
+    });
+    const r = res.json();
+    expect(r.sent).toBe(4);
+    expect(r.opened).toBe(2);
+    expect(r.openedPct).toBeCloseTo(0.5, 5);
+    expect(r.clickedWith).toBe(1);
+    expect(r.clickedWithPct).toBeCloseTo(0.25, 5);
+  });
+
+  it('400s on an unknown entity type', async () => {
+    const { cookie, orgId } = await signupTestUser(app);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/emails/engagement/widget/${orgId}`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
