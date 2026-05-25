@@ -154,7 +154,9 @@ export function ComposeEmailDialog({
           {showCcBcc && (
             <>
               <div className="mb-2">
-                <Label htmlFor="cc" className="text-xs">Cc</Label>
+                <Label htmlFor="cc" className="text-xs">
+                  Cc
+                </Label>
                 <Input
                   id="cc"
                   value={cc}
@@ -163,7 +165,9 @@ export function ComposeEmailDialog({
                 />
               </div>
               <div className="mb-2">
-                <Label htmlFor="bcc" className="text-xs">Bcc</Label>
+                <Label htmlFor="bcc" className="text-xs">
+                  Bcc
+                </Label>
                 <Input
                   id="bcc"
                   value={bcc}

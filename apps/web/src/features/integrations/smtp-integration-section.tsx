@@ -161,7 +161,6 @@ export function SmtpIntegrationSection() {
       // mutateAsync rejects on any non-2xx. test.isError + test.error already
       // drive the UI; log here so DevTools shows the stack regardless of
       // whether the user re-renders.
-      // eslint-disable-next-line no-console
       console.error('[smtp test-email] request failed:', err);
     }
   }

@@ -91,9 +91,9 @@ describe('POST /api/v1/emails — tracking + cc/bcc', () => {
       headers: { cookie },
       payload: { contactId, subject: 'Hi', body: 'b' },
     });
-    expect((res.json() as { activity: { trackingEnabled: boolean } }).activity.trackingEnabled).toBe(
-      true,
-    );
+    expect(
+      (res.json() as { activity: { trackingEnabled: boolean } }).activity.trackingEnabled,
+    ).toBe(true);
     await app.close();
     await testDb.stop();
   });
@@ -272,7 +272,9 @@ describe('GET /api/v1/emails (dashboard list)', () => {
       url: '/api/v1/emails?status=failed&range=all',
       headers: { cookie },
     });
-    expect(res.json().items.every((i: { deliveryStatus: string }) => i.deliveryStatus === 'failed')).toBe(true);
+    expect(
+      res.json().items.every((i: { deliveryStatus: string }) => i.deliveryStatus === 'failed'),
+    ).toBe(true);
   });
 
   it('q searches subject case-insensitively', async () => {
@@ -295,7 +297,9 @@ describe('GET /api/v1/emails (dashboard list)', () => {
       headers: { cookie },
     });
     const hits = res.json().items;
-    expect(hits.some((i: { subject: string }) => i.subject.toLowerCase().includes('proposal'))).toBe(true);
+    expect(
+      hits.some((i: { subject: string }) => i.subject.toLowerCase().includes('proposal')),
+    ).toBe(true);
   });
 });
 
@@ -347,10 +351,42 @@ describe('GET /api/v1/emails/engagement/:entityType/:id', () => {
       .returning();
     // 4 emails: 2 opened (1 also clicked), 2 untouched.
     await testDb.db.insert(schema.activities).values([
-      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'a', contactId: contact!.id, openCount: 2, clickCount: 1 },
-      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'b', contactId: contact!.id, openCount: 1, clickCount: 0 },
-      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'c', contactId: contact!.id, openCount: 0, clickCount: 0 },
-      { organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'd', contactId: contact!.id, openCount: 0, clickCount: 0 },
+      {
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'a',
+        contactId: contact!.id,
+        openCount: 2,
+        clickCount: 1,
+      },
+      {
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'b',
+        contactId: contact!.id,
+        openCount: 1,
+        clickCount: 0,
+      },
+      {
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'c',
+        contactId: contact!.id,
+        openCount: 0,
+        clickCount: 0,
+      },
+      {
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'd',
+        contactId: contact!.id,
+        openCount: 0,
+        clickCount: 0,
+      },
     ]);
     const res = await app.inject({
       method: 'GET',

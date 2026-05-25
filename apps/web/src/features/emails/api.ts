@@ -59,13 +59,17 @@ interface EmailEventsResponse {
 export function useEmailEvents(activityId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.activities.events(activityId ?? ''),
-    queryFn: () =>
-      apiFetch<EmailEventsResponse>(`/api/v1/activities/${activityId}/events`),
+    queryFn: () => apiFetch<EmailEventsResponse>(`/api/v1/activities/${activityId}/events`),
     enabled: !!activityId,
   });
 }
 
-export function useEmailsList(params: { status?: string; range?: string; q?: string; cursor?: string | null }) {
+export function useEmailsList(params: {
+  status?: string;
+  range?: string;
+  q?: string;
+  cursor?: string | null;
+}) {
   const qs = new URLSearchParams();
   if (params.status) qs.set('status', params.status);
   if (params.range) qs.set('range', params.range);
@@ -77,11 +81,13 @@ export function useEmailsList(params: { status?: string; range?: string; q?: str
   });
 }
 
-export function useEmailEngagement(entityType: 'contact' | 'company' | 'deal', id: string | undefined) {
+export function useEmailEngagement(
+  entityType: 'contact' | 'company' | 'deal',
+  id: string | undefined,
+) {
   return useQuery({
     queryKey: queryKeys.emails.engagement(entityType, id ?? ''),
-    queryFn: () =>
-      apiFetch<EmailEngagementRollup>(`/api/v1/emails/engagement/${entityType}/${id}`),
+    queryFn: () => apiFetch<EmailEngagementRollup>(`/api/v1/emails/engagement/${entityType}/${id}`),
     enabled: !!id,
   });
 }

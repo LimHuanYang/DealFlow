@@ -181,10 +181,7 @@ export async function registerActivitiesRoutes(
       .select({ id: schema.activities.id })
       .from(schema.activities)
       .where(
-        and(
-          eq(schema.activities.organizationId, orgId),
-          eq(schema.activities.id, params.data.id),
-        ),
+        and(eq(schema.activities.organizationId, orgId), eq(schema.activities.id, params.data.id)),
       )
       .limit(1);
     if (!act) {

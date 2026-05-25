@@ -50,9 +50,7 @@ export function EmailTrackingBadge({ activity }: Props) {
           🖱 Clicked {activity.clickCount}×
         </span>
       )}
-      {lastAt && (
-        <span className="text-[11px] text-neutral-400">· last {timeAgo(lastAt)}</span>
-      )}
+      {lastAt && <span className="text-[11px] text-neutral-400">· last {timeAgo(lastAt)}</span>}
     </div>
   );
 }

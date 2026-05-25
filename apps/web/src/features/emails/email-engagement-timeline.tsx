@@ -13,7 +13,9 @@ export function EmailEngagementTimeline({ activity }: Props) {
     return (
       <section>
         <h2 className="text-xs uppercase tracking-wide text-neutral-400">Engagement</h2>
-        <p className="mt-2 text-sm text-red-600">⚠ This email failed to send. No engagement events recorded.</p>
+        <p className="mt-2 text-sm text-red-600">
+          ⚠ This email failed to send. No engagement events recorded.
+        </p>
       </section>
     );
   }
@@ -30,8 +32,12 @@ export function EmailEngagementTimeline({ activity }: Props) {
     <section>
       <h2 className="text-xs uppercase tracking-wide text-neutral-400">Engagement</h2>
       <div className="mt-2 flex gap-4 text-sm">
-        <div>👁 <strong>{activity.openCount}</strong> opens</div>
-        <div>🖱 <strong>{activity.clickCount}</strong> clicks</div>
+        <div>
+          👁 <strong>{activity.openCount}</strong> opens
+        </div>
+        <div>
+          🖱 <strong>{activity.clickCount}</strong> clicks
+        </div>
       </div>
       {q.isPending && <p className="mt-3 text-sm text-neutral-500">Loading…</p>}
       {q.data && q.data.items.length === 0 && (
@@ -53,21 +59,26 @@ export function EmailEngagementTimeline({ activity }: Props) {
               <div>
                 <div>
                   {e.eventType === 'click' ? (
-                    <>Clicked → <span className="text-neutral-600">{e.url ?? ''}</span></>
+                    <>
+                      Clicked → <span className="text-neutral-600">{e.url ?? ''}</span>
+                    </>
                   ) : e.eventType === 'open' ? (
                     'Opened'
                   ) : (
                     'Sent'
                   )}
                 </div>
-                <div className="text-xs text-neutral-400">{new Date(e.occurredAt).toLocaleString()}</div>
+                <div className="text-xs text-neutral-400">
+                  {new Date(e.occurredAt).toLocaleString()}
+                </div>
               </div>
             </li>
           ))}
         </ol>
       )}
       <p className="mt-3 text-[11px] text-neutral-400">
-        Note: some opens may be auto-fetches by privacy-protecting email clients (Apple Mail Privacy, corporate scanners).
+        Note: some opens may be auto-fetches by privacy-protecting email clients (Apple Mail
+        Privacy, corporate scanners).
       </p>
     </section>
   );

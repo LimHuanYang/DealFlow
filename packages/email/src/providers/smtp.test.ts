@@ -74,8 +74,10 @@ describe('SmtpEmailProvider.send', () => {
 
 describe('SmtpEmailProvider — cc/bcc/html extensions', () => {
   it('passes cc and bcc arrays through to the transporter', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calls: any[] = [];
     const fakeTransporter = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sendMail: async (opts: any) => {
         calls.push(opts);
         return { messageId: 'm-1' };
@@ -96,8 +98,10 @@ describe('SmtpEmailProvider — cc/bcc/html extensions', () => {
   });
 
   it('passes html when provided (alongside text)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calls: any[] = [];
     const fakeTransporter = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sendMail: async (opts: any) => {
         calls.push(opts);
         return { messageId: 'm-2' };

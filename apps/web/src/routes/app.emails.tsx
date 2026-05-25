@@ -16,7 +16,9 @@ function EmailsDashboardPage() {
     <main className="p-8">
       <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Emails</h1>
-        <p className="text-sm text-neutral-500">Track sent emails, opens, and clicks across your org.</p>
+        <p className="text-sm text-neutral-500">
+          Track sent emails, opens, and clicks across your org.
+        </p>
       </header>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -68,15 +70,9 @@ function EmailsDashboardPage() {
                 <td className="whitespace-nowrap px-3 py-2 text-neutral-500">
                   {new Date(e.sentAt).toLocaleDateString()}
                 </td>
+                <td className="px-3 py-2">{e.recipientName ?? e.recipientEmail ?? '—'}</td>
                 <td className="px-3 py-2">
-                  {e.recipientName ?? e.recipientEmail ?? '—'}
-                </td>
-                <td className="px-3 py-2">
-                  <Link
-                    to="/app/activities/$id"
-                    params={{ id: e.id }}
-                    className="hover:underline"
-                  >
+                  <Link to="/app/activities/$id" params={{ id: e.id }} className="hover:underline">
                     {e.subject ?? '(no subject)'}
                   </Link>
                 </td>
@@ -85,12 +81,8 @@ function EmailsDashboardPage() {
                   {e.deliveryStatus === 'sent' && e.openCount === 0 && e.clickCount === 0 && (
                     <span className="text-neutral-400">📤 sent</span>
                   )}
-                  {e.openCount > 0 && (
-                    <span className="mr-2 text-green-700">👁 {e.openCount}</span>
-                  )}
-                  {e.clickCount > 0 && (
-                    <span className="text-blue-700">🖱 {e.clickCount}</span>
-                  )}
+                  {e.openCount > 0 && <span className="mr-2 text-green-700">👁 {e.openCount}</span>}
+                  {e.clickCount > 0 && <span className="text-blue-700">🖱 {e.clickCount}</span>}
                 </td>
               </tr>
             ))}

@@ -9,7 +9,12 @@ import {
 } from '@dealflow/email';
 import type { Database, schema as schemaType } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import { ERROR_CODES, sendEmailBodySchema, emailDashboardQuerySchema, emailRollupEntityTypeSchema } from '@dealflow/shared';
+import {
+  ERROR_CODES,
+  sendEmailBodySchema,
+  emailDashboardQuerySchema,
+  emailRollupEntityTypeSchema,
+} from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
 import { OrgIntegrationsRepo } from '../integrations/repo.js';
@@ -232,7 +237,10 @@ export async function registerEmailRoutes(
           .set({ deliveryStatus: 'failed', updatedAt: new Date() })
           .where(eq(schema.activities.id, created.id));
       } catch (updateErr) {
-        req.log.error({ err: updateErr, activityId: created.id }, 'Failed to mark activity as failed');
+        req.log.error(
+          { err: updateErr, activityId: created.id },
+          'Failed to mark activity as failed',
+        );
       }
       if (err instanceof EmailDisabledError) return emailDisabled(reply);
       req.log.error({ err }, 'POST /emails failed');
