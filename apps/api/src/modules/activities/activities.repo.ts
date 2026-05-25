@@ -8,6 +8,7 @@ export interface CreateActivityEmailExtras {
   bccEmails?: string[] | null;
   trackingEnabled?: boolean;
   deliveryStatus?: 'sent' | 'failed';
+  subject?: string | null;
 }
 
 export interface ListForParentQuery {
@@ -42,6 +43,7 @@ export class ActivitiesRepo {
         companyId: input.companyId ?? null,
         dealId: input.dealId ?? null,
         customFields: input.customFields ?? {},
+        subject: input.subject ?? null,
         ccEmails: input.ccEmails ?? null,
         bccEmails: input.bccEmails ?? null,
         trackingEnabled: input.trackingEnabled ?? true,

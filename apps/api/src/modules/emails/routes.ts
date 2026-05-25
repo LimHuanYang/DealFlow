@@ -166,9 +166,11 @@ export async function registerEmailRoutes(
     const trackingActive = trackEnabled && !!resolvedEnv.EMAIL_TRACKING_SECRET;
 
     // 1. Pre-create the activity row so we have an ID to embed in tracking URLs.
+    //    subject is stamped here so concurrent reads don't see a subject-less row.
     const created = await activitiesRepo.create(orgId, userId, {
       kind: 'email',
       body: parsed.data.body,
+      subject: parsed.data.subject,
       contactId: parsed.data.contactId,
       ccEmails: parsed.data.cc ?? null,
       bccEmails: parsed.data.bcc ?? null,
@@ -203,11 +205,10 @@ export async function registerEmailRoutes(
         ...(parsed.data.bcc ? { bcc: parsed.data.bcc } : {}),
       });
 
-      // 3. Stamp the SMTP messageId + subject on the activity.
+      // 3. Stamp the SMTP messageId on the activity (subject already set at pre-create).
       const [updated] = await deps.db
         .update(schema.activities)
         .set({
-          subject: parsed.data.subject,
           externalId: result.messageId,
           updatedAt: new Date(),
         })
@@ -224,10 +225,15 @@ export async function registerEmailRoutes(
       return reply.status(201).send({ activity: publicActivity(updated ?? created) });
     } catch (err) {
       // Send failed — mark the activity row and DON'T record a sent event.
-      await deps.db
-        .update(schema.activities)
-        .set({ deliveryStatus: 'failed', updatedAt: new Date() })
-        .where(eq(schema.activities.id, created.id));
+      // Best-effort: if THIS update also throws, log it but still return the error response.
+      try {
+        await deps.db
+          .update(schema.activities)
+          .set({ deliveryStatus: 'failed', updatedAt: new Date() })
+          .where(eq(schema.activities.id, created.id));
+      } catch (updateErr) {
+        req.log.error({ err: updateErr, activityId: created.id }, 'Failed to mark activity as failed');
+      }
       if (err instanceof EmailDisabledError) return emailDisabled(reply);
       req.log.error({ err }, 'POST /emails failed');
       return emailUpstreamError(reply);
