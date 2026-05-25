@@ -7,6 +7,7 @@ import { useActivitiesFor, useDeleteActivity, useUpdateActivity } from './api';
 import { AddNoteForm } from './add-note-form';
 import { AddTaskForm } from './add-task-form';
 import { TaskItem } from './task-item';
+import { EmailTrackingBadge } from '@/features/emails/email-tracking-badge';
 
 type ParentFilter = { contactId: string } | { companyId: string } | { dealId: string };
 
@@ -140,6 +141,7 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
           {activity.subject && (
             <p className="mt-0.5 text-sm font-medium text-neutral-900">{activity.subject}</p>
           )}
+          <EmailTrackingBadge activity={activity} />
           <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-700">{activity.body}</p>
           <p className="mt-1 text-xs text-neutral-500">
             {new Date(activity.createdAt).toLocaleString()}
