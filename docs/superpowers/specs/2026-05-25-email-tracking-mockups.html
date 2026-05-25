@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>DealFlow — Email Tracking v1 mockups</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --panel: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #d4d4d4;
+      --text: #171717;
+      --muted: #737373;
+      --subtle: #a3a3a3;
+      --accent: #171717;
+      --accent-fg: #ffffff;
+      --green: #16a34a;
+      --green-bg: #dcfce7;
+      --red: #dc2626;
+      --red-bg: #fee2e2;
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --blue: #2563eb;
+      --blue-bg: #dbeafe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px 80px;
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+    }
+    h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 40px 0 10px;
+      font-weight: 600;
+    }
+    .lede { color: var(--muted); margin: 0 0 32px; font-size: 14px; }
+    .caption { color: var(--subtle); font-size: 12px; margin: 8px 0 0; }
+
+    /* Generic panel */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .stack > * + * { margin-top: 10px; }
+
+    /* Compose dialog */
+    .dialog-shell {
+      background: rgba(0,0,0,0.05);
+      border-radius: 12px;
+      padding: 28px;
+    }
+    .dialog {
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      max-width: 540px;
+      margin: 0 auto;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .dialog-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dialog-title { font-weight: 600; font-size: 15px; }
+    .dialog-close { color: var(--subtle); cursor: pointer; user-select: none; }
+    .dialog-body { padding: 18px; }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .field { margin-bottom: 12px; }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .recipient {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: #f4f4f5;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text);
+      padding: 6px 0;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+    }
+
+    /* Activity feed row */
+    .feed-row {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .feed-row + .feed-row { margin-top: 12px; }
+    .feed-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #f4f4f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .feed-meta {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .feed-meta strong { color: var(--text); }
+    .feed-time { color: var(--subtle); }
+    .feed-subject { font-weight: 500; margin: 2px 0 2px; }
+    .feed-snippet { color: var(--muted); font-size: 13px; }
+    .feed-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      color: var(--subtle);
+      font-size: 12px;
+    }
+    .feed-actions a { color: var(--subtle); text-decoration: none; }
+    .feed-actions a:hover { color: var(--text); }
+
+    /* Tracking badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid transparent;
+      line-height: 1.4;
+    }
+    .badge-row { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+    .badge-row .when { color: var(--subtle); }
+    .badge.opened { background: var(--green-bg); color: #166534; border-color: #bbf7d0; }
+    .badge.clicked { background: var(--blue-bg); color: #1e40af; border-color: #bfdbfe; }
+    .badge.sent { background: #f4f4f5; color: var(--muted); border-color: var(--border); }
+    .badge.failed { background: var(--red-bg); color: #991b1b; border-color: #fecaca; }
+
+    /* Detail page */
+    .detail {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .back-link { color: var(--muted); font-size: 13px; text-decoration: none; }
+    .detail h3 {
+      font-size: 22px;
+      margin: 14px 0 6px;
+      letter-spacing: -0.01em;
+    }
+    .detail .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    .email-body {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      color: #1f2937;
+    }
+    .section-heading {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 28px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .engagement-summary {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .engagement-summary .stat { color: var(--text); }
+    .engagement-summary .stat strong { font-weight: 600; }
+
+    .timeline { position: relative; padding-left: 20px; }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 4px;
+      width: 1px;
+      background: var(--border-strong);
+    }
+    .tl-event {
+      position: relative;
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .tl-event::before {
+      content: "";
+      position: absolute;
+      left: -19px;
+      top: 12px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #d4d4d4;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px var(--border-strong);
+    }
+    .tl-event.open::before { background: var(--green); box-shadow: 0 0 0 1px #86efac; }
+    .tl-event.click::before { background: var(--blue); box-shadow: 0 0 0 1px #93c5fd; }
+    .tl-event.sent::before { background: #a3a3a3; box-shadow: 0 0 0 1px var(--border-strong); }
+    .tl-when { color: var(--subtle); font-size: 12px; display: block; }
+
+    /* Engagement rollup card */
+    .rollup {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+    }
+    .rollup .stat strong { color: var(--text); font-weight: 600; }
+    .rollup .stat span { color: var(--muted); }
+    .rollup .stat .pct { color: var(--subtle); margin-left: 2px; }
+
+    /* Dashboard table */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+    .table thead { background: #fafafa; }
+    .table th, .table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .table th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .table tbody tr:last-child td { border-bottom: 0; }
+    .table tbody tr:hover { background: #fafafa; cursor: pointer; }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .toolbar select, .toolbar input[type="text"] {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      font: inherit;
+      font-size: 13px;
+    }
+    .toolbar input[type="text"] { flex: 1; max-width: 280px; }
+
+    /* Wrapped email preview */
+    .email-preview {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px 22px;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      color: #1f2937;
+    }
+    .email-preview p { margin: 0 0 10px; }
+    .email-preview a { color: var(--blue); }
+    .pixel-note {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 8px;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px dashed #fcd34d;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+
+<h1>DealFlow — Email Tracking v1 mockups</h1>
+<p class="lede">All UI surfaces for the outbound tracking sub-plan. Open/click recording, engagement display, opt-out control.</p>
+
+<h2>1. Compose dialog — new "Track" toggle + CC/BCC reveal</h2>
+
+<p class="caption" style="margin-top:0">Default state — CC/BCC hidden behind a small link to keep the dialog clean:</p>
+<div class="dialog-shell">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">Email Sarah Chen</div>
+      <div class="dialog-close">×</div>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <label>To</label>
+        <span class="recipient">Sarah Chen · sarah@acme.com</span>
+        <a href="#" style="margin-left:10px;font-size:12px;color:var(--blue);text-decoration:none;">+ Cc · Bcc</a>
+      </div>
+      <div class="field">
+        <label for="subj">Subject</label>
+        <input id="subj" type="text" value="Following up on Q3 proposal" />
+      </div>
+      <div class="field">
+        <label for="body">Body</label>
+        <textarea id="body">Hi Sarah,
+
+Following up on our chat — here's the proposal:
+https://docs.acme.com/proposal-q3
+
+Let me know what you think.
+— Alice</textarea>
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" checked />
+        Track opens and clicks
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn">Cancel</button>
+      <button class="btn btn-primary">Send email</button>
+    </div>
+  </div>
+</div>
+
+<p class="caption" style="margin-top:16px">Expanded state — clicking "+ Cc · Bcc" reveals two extra inputs (comma-separated emails, validated inline):</p>
+<div class="dialog-shell">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">Email Sarah Chen</div>
+      <div class="dialog-close">×</div>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <label>To</label>
+        <span class="recipient">Sarah Chen · sarah@acme.com</span>
+      </div>
+      <div class="field">
+        <label for="cc">Cc</label>
+        <input id="cc" type="text" placeholder="comma-separated emails" value="alex@acme.com, manager@acme.com" />
+      </div>
+      <div class="field">
+        <label for="bcc">Bcc</label>
+        <input id="bcc" type="text" placeholder="comma-separated emails" value="archive@dealflow.internal" />
+      </div>
+      <div class="field">
+        <label for="subj2">Subject</label>
+        <input id="subj2" type="text" value="Following up on Q3 proposal" />
+      </div>
+      <div class="field">
+        <label for="body2">Body</label>
+        <textarea id="body2">Hi Sarah,
+
+Following up on our chat — here's the proposal:
+https://docs.acme.com/proposal-q3
+
+Let me know what you think.
+— Alice</textarea>
+      </div>
+      <label class="checkbox">
+        <input type="checkbox" checked />
+        Track opens and clicks
+      </label>
+    </div>
+    <div class="actions">
+      <button class="btn">Cancel</button>
+      <button class="btn btn-primary">Send email</button>
+    </div>
+  </div>
+</div>
+
+<p class="caption">Cc recipients see each other's addresses and can trigger opens/clicks (counted under the same activity). Bcc recipients are blind to other recipients; their opens/clicks also roll up under the same activity. The activity-detail page lists Cc/Bcc addresses separately so you know who was included.</p>
+
+<h2>2. Activity feed row — inline tracking badge</h2>
+<div class="stack">
+
+  <div class="feed-row">
+    <div class="feed-icon">✉</div>
+    <div>
+      <div class="feed-meta"><strong>Email</strong> · Alice → Sarah Chen <span class="feed-time">· 2 hrs ago</span></div>
+      <div class="feed-subject">Following up on Q3 proposal</div>
+      <div class="badge-row">
+        <span class="badge opened">👁 Opened 3×</span>
+        <span class="badge clicked">🖱 Clicked 2×</span>
+        <span class="when">· last 14 min ago</span>
+      </div>
+      <div class="feed-snippet">Hi Sarah, following up on our chat — here's the…</div>
+    </div>
+    <div class="feed-actions">
+      <a href="#">Open ↗</a>
+      <a href="#">Delete</a>
+    </div>
+  </div>
+
+  <div class="feed-row">
+    <div class="feed-icon">✉</div>
+    <div>
+      <div class="feed-meta"><strong>Email</strong> · Alice → Bob Lee <span class="feed-time">· yesterday</span></div>
+      <div class="feed-subject">Intro call follow-up</div>
+      <div class="badge-row">
+        <span class="badge opened">👁 Opened 1×</span>
+        <span class="when">· last 3 hrs ago</span>
+      </div>
+      <div class="feed-snippet">Bob, great chatting earlier. As promised, attaching…</div>
+    </div>
+    <div class="feed-actions">
+      <a href="#">Open ↗</a>
+      <a href="#">Delete</a>
+    </div>
+  </div>
+
+  <div class="feed-row">
+    <div class="feed-icon">✉</div>
+    <div>
+      <div class="feed-meta"><strong>Email</strong> · Alice → Cara Wu <span class="feed-time">· 2 days ago</span></div>
+      <div class="feed-subject">Pricing breakdown</div>
+      <div class="badge-row">
+        <span class="badge sent">📤 Sent · awaiting open</span>
+      </div>
+      <div class="feed-snippet">Hi Cara, per your request — here's the line-item…</div>
+    </div>
+    <div class="feed-actions">
+      <a href="#">Open ↗</a>
+      <a href="#">Delete</a>
+    </div>
+  </div>
+
+  <div class="feed-row">
+    <div class="feed-icon">✉</div>
+    <div>
+      <div class="feed-meta"><strong>Email</strong> · Alice → Dan Park <span class="feed-time">· 3 days ago</span></div>
+      <div class="feed-subject">RE: contract terms</div>
+      <div class="badge-row">
+        <span class="badge failed">⚠ Send failed</span>
+      </div>
+      <div class="feed-snippet">Dan, attached are the redlines we discussed…</div>
+    </div>
+    <div class="feed-actions">
+      <a href="#">Open ↗</a>
+      <a href="#">Delete</a>
+    </div>
+  </div>
+
+</div>
+<p class="caption">Badge state variants: <strong>tracked + opened/clicked</strong>, <strong>opened only</strong>, <strong>awaiting</strong>, <strong>failed</strong>. When tracking is unchecked at send time, no badge renders (silent).</p>
+
+<h2>3. Activity detail page — engagement timeline</h2>
+<div class="detail">
+  <a class="back-link" href="#">← Back</a>
+  <h3>Email</h3>
+  <div class="meta">To Sarah Chen · sent 2 hrs ago · tracking enabled</div>
+
+  <div style="margin-bottom: 14px;"><strong>Subject:</strong> Following up on Q3 proposal</div>
+  <div class="email-body">Hi Sarah,
+
+Following up on our chat — here's the proposal:
+https://docs.acme.com/proposal-q3
+
+Let me know what you think.
+— Alice</div>
+
+  <div class="section-heading">Engagement</div>
+  <div class="engagement-summary">
+    <div class="stat">👁 <strong>3</strong> opens</div>
+    <div class="stat">🖱 <strong>2</strong> clicks</div>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-event click">
+      Clicked → docs.acme.com/proposal-q3
+      <span class="tl-when">14 min ago</span>
+    </div>
+    <div class="tl-event open">
+      Opened
+      <span class="tl-when">28 min ago</span>
+    </div>
+    <div class="tl-event open">
+      Opened
+      <span class="tl-when">1 hr ago</span>
+    </div>
+    <div class="tl-event click">
+      Clicked → docs.acme.com/proposal-q3
+      <span class="tl-when">1 hr ago</span>
+    </div>
+    <div class="tl-event open">
+      Opened
+      <span class="tl-when">2 hrs ago</span>
+    </div>
+    <div class="tl-event sent">
+      Sent
+      <span class="tl-when">2 hrs ago</span>
+    </div>
+  </div>
+
+  <div class="section-heading">Custom fields</div>
+  <div style="font-size:13px; color:var(--muted);">(Existing custom-fields block from prior sub-plan renders here.)</div>
+</div>
+<p class="caption">Lives at <code>/app/activities/$id</code> — the same detail page shipped with Custom Fields. Engagement section appears only for <code>kind = "email"</code> activities.</p>
+
+<h2>4. Entity detail — engagement rollup card</h2>
+<div class="rollup">
+  <div class="stat"><strong>8</strong> <span>sent</span></div>
+  <div class="stat"><strong>5</strong> <span>opened</span> <span class="pct">(62%)</span></div>
+  <div class="stat"><strong>3</strong> <span>with clicks</span> <span class="pct">(37%)</span></div>
+  <div class="stat" style="margin-left:auto;color:var(--subtle);">Last activity: 14 min ago</div>
+</div>
+<p class="caption">Sits between the built-in fields and the custom-fields block on contact / company / deal detail pages. Hidden entirely if the entity has zero sent emails.</p>
+
+<h2>5. /app/emails dashboard — new sidebar entry</h2>
+<div>
+  <div class="toolbar">
+    <select><option>All</option><option>Opened</option><option>Clicked</option><option>Failed</option></select>
+    <select><option>Last 7 days</option><option>Last 30 days</option><option>All time</option></select>
+    <input type="text" placeholder="🔍 Search subject…" />
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Sent</th>
+        <th>Recipient</th>
+        <th>Subject</th>
+        <th>Engagement</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>14 min ago</td>
+        <td>Sarah Chen</td>
+        <td>Following up on Q3 proposal</td>
+        <td><span class="badge opened">👁 3</span> <span class="badge clicked">🖱 2</span></td>
+      </tr>
+      <tr>
+        <td>2 hrs ago</td>
+        <td>Bob Lee</td>
+        <td>Intro call follow-up</td>
+        <td><span class="badge opened">👁 1</span></td>
+      </tr>
+      <tr>
+        <td>Yesterday</td>
+        <td>Cara Wu</td>
+        <td>Pricing breakdown</td>
+        <td><span class="badge sent">📤 sent</span></td>
+      </tr>
+      <tr>
+        <td>Yesterday</td>
+        <td>Dan Park</td>
+        <td>RE: contract terms</td>
+        <td><span class="badge failed">⚠ failed</span></td>
+      </tr>
+      <tr>
+        <td>3 days ago</td>
+        <td>Eve Singh</td>
+        <td>Welcome</td>
+        <td><span class="badge opened">👁 7</span> <span class="badge clicked">🖱 4</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p class="caption">Click any row → activity detail page. Filters by status + date range. Search by subject. Pagination via cursor (same pattern as <code>/app/contacts</code> / <code>/app/deals</code>).</p>
+
+<h2>6. Bonus — what the recipient actually sees (HTML email preview)</h2>
+<div class="email-preview">
+  <p>Hi Sarah,</p>
+  <p>Following up on our chat — here's the proposal:<br>
+    <a href="https://crm.example.com/track/click/eyJhbGc…?u=aHR0cHM6Ly9kb2Nz…">https://docs.acme.com/proposal-q3</a>
+  </p>
+  <p>Let me know what you think.<br>— Alice</p>
+  <span class="pixel-note">↳ invisible 1×1 tracking pixel here (display: none)</span>
+</div>
+<p class="caption">The recipient sees normal-looking text. URL appears unchanged but actually goes through our redirect. Pixel is invisible (<code>display: none</code> + zero size).</p>
+
+</main>
+</body>
+</html>
