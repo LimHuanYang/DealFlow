@@ -6,6 +6,8 @@ import type { Database } from '@dealflow/db';
 
 export interface BuildTestAppOptions {
   envOverrides?: Partial<Env>;
+  /** Alias for envOverrides — accepted for convenience. */
+  env?: Partial<Env>;
   db?: Database;
   /** Test-only injection — bypasses the org-integrations DB lookup. */
   aiProviderForOrg?: (orgId: string) => Promise<{
@@ -37,6 +39,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     INTEGRATION_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
     PUBLIC_API_URL: 'http://localhost:3000',
     ...opts.envOverrides,
+    ...opts.env,
   };
   const app = await buildApp({
     env,

@@ -93,6 +93,12 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       emailProviderForOrg: opts.emailProviderForOrg,
     });
 
+    const { registerTrackingRoutes } = await import('./modules/emails/tracking-routes.js');
+    await registerTrackingRoutes(app, {
+      db: opts.db,
+      trackingSecret: env.EMAIL_TRACKING_SECRET,
+    });
+
     const { registerIntegrationsRoutes } = await import('./modules/integrations/routes.js');
     await registerIntegrationsRoutes(app, { db: opts.db, encryptionKey });
 
