@@ -35,6 +35,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     SESSION_DURATION_DAYS: 30,
     CSRF_SECRET: 'test-csrf-secret-32-chars-minimum-xxxxx',
     INTEGRATION_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
+    PUBLIC_API_URL: 'http://localhost:3000',
     ...opts.envOverrides,
   };
   const app = await buildApp({

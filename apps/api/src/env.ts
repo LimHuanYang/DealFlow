@@ -16,6 +16,8 @@ const envSchema = z
     SESSION_DURATION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
     CSRF_SECRET: z.string().min(32).default('dev-csrf-secret-CHANGE-ME-in-production-please'),
     INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
+    PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
+    EMAIL_TRACKING_SECRET: z.string().min(32).optional(),
   })
   .superRefine((data, ctx) => {
     // DATABASE_URL is required outside of `test` mode where the test helper
