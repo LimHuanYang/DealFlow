@@ -1,13 +1,19 @@
 export interface SendEmailInput {
   /** Display name + address part — already concatenated, e.g. `"Alice via DealFlow <noreply@dealflow.app>"`. */
   from: string;
-  /** Single recipient email — multi-recipient deferred to a later sub-plan. */
+  /** Primary recipient email. */
   to: string;
   /** Where replies should land (typically the sending user's real email). */
   replyTo: string;
   subject: string;
-  /** Plain-text body. The provider may also render an HTML derivative. */
+  /** Plain-text body (always present — required as multipart/alternative fallback). */
   text: string;
+  /** Optional HTML body. When set, the transport sends multipart/alternative. */
+  html?: string;
+  /** Optional CC recipients. */
+  cc?: string[];
+  /** Optional BCC recipients. */
+  bcc?: string[];
 }
 
 export interface SendEmailOutput {

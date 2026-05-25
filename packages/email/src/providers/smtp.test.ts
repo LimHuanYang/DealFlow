@@ -71,3 +71,48 @@ describe('SmtpEmailProvider.send', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('SmtpEmailProvider — cc/bcc/html extensions', () => {
+  it('passes cc and bcc arrays through to the transporter', async () => {
+    const calls: any[] = [];
+    const fakeTransporter = {
+      sendMail: async (opts: any) => {
+        calls.push(opts);
+        return { messageId: 'm-1' };
+      },
+    };
+    const p = new SmtpEmailProvider({ transport: fakeTransporter as never });
+    await p.send({
+      from: 'Alice <a@a.com>',
+      to: 's@s.com',
+      replyTo: 'a@a.com',
+      subject: 'Hi',
+      text: 'plain',
+      cc: ['x@x.com', 'y@y.com'],
+      bcc: ['z@z.com'],
+    });
+    expect(calls[0].cc).toEqual(['x@x.com', 'y@y.com']);
+    expect(calls[0].bcc).toEqual(['z@z.com']);
+  });
+
+  it('passes html when provided (alongside text)', async () => {
+    const calls: any[] = [];
+    const fakeTransporter = {
+      sendMail: async (opts: any) => {
+        calls.push(opts);
+        return { messageId: 'm-2' };
+      },
+    };
+    const p = new SmtpEmailProvider({ transport: fakeTransporter as never });
+    await p.send({
+      from: 'Alice <a@a.com>',
+      to: 's@s.com',
+      replyTo: 'a@a.com',
+      subject: 'Hi',
+      text: 'plain',
+      html: '<p>plain</p>',
+    });
+    expect(calls[0].html).toBe('<p>plain</p>');
+    expect(calls[0].text).toBe('plain');
+  });
+});

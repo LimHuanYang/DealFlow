@@ -29,6 +29,9 @@ export class SmtpEmailProvider implements EmailProvider {
       replyTo: input.replyTo,
       subject: input.subject,
       text: input.text,
+      ...(input.html !== undefined ? { html: input.html } : {}),
+      ...(input.cc !== undefined ? { cc: input.cc } : {}),
+      ...(input.bcc !== undefined ? { bcc: input.bcc } : {}),
     });
     if (!info.messageId) {
       throw new Error('SMTP transport returned no message id');
