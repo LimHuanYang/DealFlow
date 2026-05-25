@@ -11,3 +11,4 @@ export * from './pipeline-stages';
 export * from './deals';
 export * from './activities';
 export * from './custom-field-definitions';
+export * from './email-events';

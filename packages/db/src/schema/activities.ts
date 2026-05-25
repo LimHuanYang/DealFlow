@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { organizations } from './organizations';
 import { users } from './users';
 import { contacts } from './contacts';
@@ -39,6 +39,17 @@ export const activities = pgTable(
     contactId: uuid('contact_id').references(() => contacts.id, { onDelete: 'cascade' }),
     companyId: uuid('company_id').references(() => companies.id, { onDelete: 'cascade' }),
     dealId: uuid('deal_id').references(() => deals.id, { onDelete: 'cascade' }),
+    trackingEnabled: boolean('tracking_enabled').notNull().default(true),
+    ccEmails: text('cc_emails').array(),
+    bccEmails: text('bcc_emails').array(),
+    deliveryStatus: text('delivery_status').notNull().default('sent'),
+    openCount: integer('open_count').notNull().default(0),
+    firstOpenedAt: timestamp('first_opened_at', { withTimezone: true }),
+    lastOpenedAt: timestamp('last_opened_at', { withTimezone: true }),
+    clickCount: integer('click_count').notNull().default(0),
+    firstClickedAt: timestamp('first_clicked_at', { withTimezone: true }),
+    lastClickedAt: timestamp('last_clicked_at', { withTimezone: true }),
+
     customFields: jsonb('custom_fields')
       .notNull()
       .default(sql`'{}'::jsonb`)
