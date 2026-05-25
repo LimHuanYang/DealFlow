@@ -81,6 +81,17 @@ export interface PublicActivity {
   dealId: string | null;
   ownerUserId: string | null;
   customFields: Record<string, unknown>;
+  // Email-tracking columns (defaults safe for non-email activities)
+  ccEmails: string[] | null;
+  bccEmails: string[] | null;
+  trackingEnabled: boolean;
+  deliveryStatus: 'sent' | 'failed';
+  openCount: number;
+  firstOpenedAt: string | null;
+  lastOpenedAt: string | null;
+  clickCount: number;
+  firstClickedAt: string | null;
+  lastClickedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

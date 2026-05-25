@@ -8,6 +8,9 @@ export const sendEmailBodySchema = z.object({
   contactId: uuid,
   subject: z.string().min(1).max(200),
   body: z.string().min(1).max(50000),
+  cc: z.array(z.string().email()).max(20).optional(),
+  bcc: z.array(z.string().email()).max(20).optional(),
+  trackEnabled: z.boolean().optional(),
 });
 export type SendEmailInput = z.infer<typeof sendEmailBodySchema>;
 export interface SendEmailResponse {
