@@ -26,6 +26,7 @@ export const queryKeys = {
     forCompany: (id: string) => ['activities', 'company', id] as const,
     forDeal: (id: string) => ['activities', 'deal', id] as const,
     detail: (id: string) => ['activities', 'detail', id] as const,
+    events: (id: string) => ['activities', 'detail', id, 'events'] as const,
   },
   tasks: {
     list: (status: string, due: string) => ['tasks', 'list', { status, due }] as const,
@@ -35,6 +36,10 @@ export const queryKeys = {
   },
   emails: {
     status: ['emails', 'status'] as const,
+    list: (params: { status?: string; range?: string; q?: string; cursor?: string | null }) =>
+      ['emails', 'list', params] as const,
+    engagement: (entityType: string, id: string) =>
+      ['emails', 'engagement', entityType, id] as const,
   },
   integrations: {
     current: ['integrations', 'current'] as const,
