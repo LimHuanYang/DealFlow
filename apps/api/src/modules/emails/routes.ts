@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
 import {
   buildEmailProvider,
   describeEmail,
@@ -9,7 +9,7 @@ import {
 } from '@dealflow/email';
 import type { Database, schema as schemaType } from '@dealflow/db';
 import { schema } from '@dealflow/db';
-import { ERROR_CODES, sendEmailBodySchema } from '@dealflow/shared';
+import { ERROR_CODES, sendEmailBodySchema, emailDashboardQuerySchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
 import { OrgIntegrationsRepo } from '../integrations/repo.js';
@@ -238,5 +238,76 @@ export async function registerEmailRoutes(
       req.log.error({ err }, 'POST /emails failed');
       return emailUpstreamError(reply);
     }
+  });
+
+  app.get('/api/v1/emails', { preHandler: requireOrg }, async (req, reply) => {
+    const parsed = emailDashboardQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid filter' },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    const { status, range, q, cursor } = parsed.data;
+
+    const conds = [
+      eq(schema.activities.organizationId, orgId),
+      eq(schema.activities.kind, 'email'),
+    ];
+    if (range !== 'all') {
+      const ms = range === '7d' ? 7 * 86_400_000 : 30 * 86_400_000;
+      conds.push(gte(schema.activities.createdAt, new Date(Date.now() - ms)));
+    }
+    if (status === 'failed') {
+      conds.push(eq(schema.activities.deliveryStatus, 'failed'));
+    } else if (status === 'opened') {
+      conds.push(sql`${schema.activities.openCount} > 0`);
+    } else if (status === 'clicked') {
+      conds.push(sql`${schema.activities.clickCount} > 0`);
+    }
+    if (q) {
+      conds.push(ilike(schema.activities.subject, `%${q}%`));
+    }
+    if (cursor) {
+      const decoded = new Date(cursor);
+      if (!Number.isNaN(decoded.getTime())) {
+        conds.push(lt(schema.activities.createdAt, decoded));
+      }
+    }
+
+    const PAGE_SIZE = 50;
+    const rows = await deps.db
+      .select({
+        id: schema.activities.id,
+        subject: schema.activities.subject,
+        sentAt: schema.activities.createdAt,
+        deliveryStatus: schema.activities.deliveryStatus,
+        openCount: schema.activities.openCount,
+        clickCount: schema.activities.clickCount,
+        contactFirstName: schema.contacts.firstName,
+        contactLastName: schema.contacts.lastName,
+        contactEmail: schema.contacts.email,
+      })
+      .from(schema.activities)
+      .leftJoin(schema.contacts, eq(schema.activities.contactId, schema.contacts.id))
+      .where(and(...conds))
+      .orderBy(desc(schema.activities.createdAt))
+      .limit(PAGE_SIZE + 1);
+
+    const hasMore = rows.length > PAGE_SIZE;
+    const sliced = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+    const items = sliced.map((r) => ({
+      id: r.id,
+      subject: r.subject,
+      recipientName: [r.contactFirstName, r.contactLastName].filter(Boolean).join(' ') || null,
+      recipientEmail: r.contactEmail,
+      sentAt: r.sentAt.toISOString(),
+      deliveryStatus: r.deliveryStatus as 'sent' | 'failed',
+      openCount: r.openCount,
+      clickCount: r.clickCount,
+    }));
+    const nextCursor =
+      hasMore && sliced.length > 0 ? sliced[sliced.length - 1]!.sentAt.toISOString() : null;
+    return reply.send({ items, nextCursor });
   });
 }
