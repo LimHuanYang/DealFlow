@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppEmailsRouteImport } from './routes/app.emails'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppSettingsIndexRouteImport } from './routes/app.settings.index'
 import { Route as AppDealsIndexRouteImport } from './routes/app.deals.index'
@@ -60,6 +61,11 @@ const AppTasksRoute = AppTasksRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEmailsRoute = AppEmailsRouteImport.update({
+  id: '/emails',
+  path: '/emails',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/emails': typeof AppEmailsRoute
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/emails': typeof AppEmailsRoute
   '/app/tasks': typeof AppTasksRoute
   '/app': typeof AppIndexRoute
   '/app/activities/$id': typeof AppActivitiesIdRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/emails': typeof AppEmailsRoute
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
   '/app/': typeof AppIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/dashboard'
+    | '/app/emails'
     | '/app/settings'
     | '/app/tasks'
     | '/app/'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/dashboard'
+    | '/app/emails'
     | '/app/tasks'
     | '/app'
     | '/app/activities/$id'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/app/dashboard'
+    | '/app/emails'
     | '/app/settings'
     | '/app/tasks'
     | '/app/'
@@ -283,6 +295,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/emails': {
+      id: '/app/emails'
+      path: '/emails'
+      fullPath: '/app/emails'
+      preLoaderRoute: typeof AppEmailsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/dashboard': {
@@ -374,6 +393,7 @@ const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppEmailsRoute: typeof AppEmailsRoute
   AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppTasksRoute: typeof AppTasksRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -388,6 +408,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppEmailsRoute: AppEmailsRoute,
   AppSettingsRoute: AppSettingsRouteWithChildren,
   AppTasksRoute: AppTasksRoute,
   AppIndexRoute: AppIndexRoute,

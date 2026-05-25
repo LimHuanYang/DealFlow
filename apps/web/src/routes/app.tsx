@@ -85,6 +85,15 @@ function AppLayout() {
             Tasks
           </Link>
           <Link
+            to="/app/emails"
+            className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
+            activeProps={{
+              className: 'rounded px-2 py-1.5 bg-neutral-100 font-medium text-neutral-900',
+            }}
+          >
+            Emails
+          </Link>
+          <Link
             to="/app/settings"
             className="rounded px-2 py-1.5 text-neutral-700 hover:bg-neutral-100"
             activeProps={{
