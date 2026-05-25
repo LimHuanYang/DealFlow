@@ -12,22 +12,46 @@ interface RowState {
   model: string;
 }
 
-const PROVIDERS: { key: ProviderKey; label: string; defaultModel: string; placeholder: string }[] =
-  [
-    {
-      key: 'anthropic',
-      label: 'Anthropic (Claude)',
-      defaultModel: 'claude-haiku-4-5',
-      placeholder: 'sk-ant-...',
-    },
-    {
-      key: 'gemini',
-      label: 'Google (Gemini)',
-      defaultModel: 'gemini-2.5-flash',
-      placeholder: 'AIza...',
-    },
-    { key: 'grok', label: 'xAI (Grok)', defaultModel: 'grok-4', placeholder: 'xai-...' },
-  ];
+interface ProviderConfig {
+  key: ProviderKey;
+  label: string;
+  /** First entry is the default model for the provider. */
+  models: { value: string; label: string }[];
+  placeholder: string;
+}
+
+const PROVIDERS: ProviderConfig[] = [
+  {
+    key: 'anthropic',
+    label: 'Anthropic (Claude)',
+    models: [
+      { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (fastest, cheapest)' },
+      { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (balanced)' },
+      { value: 'claude-opus-4-5', label: 'Claude Opus 4.5 (most capable)' },
+    ],
+    placeholder: 'sk-ant-...',
+  },
+  {
+    key: 'gemini',
+    label: 'Google (Gemini)',
+    models: [
+      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (fastest)' },
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (cheapest)' },
+      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (most capable)' },
+    ],
+    placeholder: 'AIza...',
+  },
+  {
+    key: 'grok',
+    label: 'xAI (Grok)',
+    models: [
+      { value: 'grok-4', label: 'Grok 4 (default)' },
+      { value: 'grok-4-fast', label: 'Grok 4 Fast' },
+      { value: 'grok-3-mini', label: 'Grok 3 Mini' },
+    ],
+    placeholder: 'xai-...',
+  },
+];
 
 export function AIIntegrationsSection() {
   const integrations = useIntegrations();
@@ -40,13 +64,23 @@ export function AIIntegrationsSection() {
     grok: { apiKey: '', model: '' },
   });
 
-  // When integrations load, seed each row's model from the saved value.
+  // When integrations load, seed each row's model from the saved value (or the
+  // provider's default — the first entry in `models` — so the dropdown always
+  // shows a sensible pre-selection rather than a blank).
   useEffect(() => {
     if (!integrations.data) return;
+    const defaults: Record<ProviderKey, string> = {
+      anthropic: PROVIDERS[0]!.models[0]!.value,
+      gemini: PROVIDERS[1]!.models[0]!.value,
+      grok: PROVIDERS[2]!.models[0]!.value,
+    };
     setRows((prev) => ({
-      anthropic: { ...prev.anthropic, model: integrations.data!.anthropic.model ?? '' },
-      gemini: { ...prev.gemini, model: integrations.data!.gemini.model ?? '' },
-      grok: { ...prev.grok, model: integrations.data!.grok.model ?? '' },
+      anthropic: {
+        ...prev.anthropic,
+        model: integrations.data!.anthropic.model ?? defaults.anthropic,
+      },
+      gemini: { ...prev.gemini, model: integrations.data!.gemini.model ?? defaults.gemini },
+      grok: { ...prev.grok, model: integrations.data!.grok.model ?? defaults.grok },
     }));
   }, [integrations.data]);
 
@@ -126,17 +160,24 @@ export function AIIntegrationsSection() {
                     <Label htmlFor={`${p.key}-model`} className="text-xs">
                       Model
                     </Label>
-                    <Input
+                    <select
                       id={`${p.key}-model`}
-                      value={row.model}
+                      value={row.model || p.models[0]!.value}
                       onChange={(e) =>
                         setRows((prev) => ({
                           ...prev,
                           [p.key]: { ...prev[p.key], model: e.target.value },
                         }))
                       }
-                      placeholder={p.defaultModel}
-                    />
+                      className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                      data-testid={`${p.key}-model`}
+                    >
+                      {p.models.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <Button
                     type="button"
