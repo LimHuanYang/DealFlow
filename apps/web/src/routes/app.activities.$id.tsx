@@ -46,15 +46,19 @@ function ActivityDetailPage() {
     qc.invalidateQueries({ queryKey: queryKeys.activities.detail(id) });
   }
 
+  const backTarget =
+    a.kind === 'email' ? '/app/emails' : a.kind === 'task' ? '/app/tasks' : '/app/tasks';
+  const titleLabel = a.kind === 'task' ? 'Task' : a.kind === 'email' ? 'Email' : 'Note';
+
   return (
     <main className="space-y-6 p-8">
       <header>
-        <Link to="/app/tasks" className="text-sm text-neutral-500 hover:underline">
+        <Link to={backTarget} className="text-sm text-neutral-500 hover:underline">
           ← Back
         </Link>
         <h1 className="mt-2 flex items-center justify-between text-2xl font-semibold tracking-tight">
           <span>
-            {a.kind === 'task' ? 'Task' : 'Note'}
+            {titleLabel}
             {a.dueAt && (
               <span className="ml-2 text-sm font-normal text-neutral-500">
                 · Due {a.dueAt.slice(0, 10)}
@@ -67,6 +71,12 @@ function ActivityDetailPage() {
             </Button>
           )}
         </h1>
+        {a.kind === 'email' && a.subject && (
+          <p className="mt-2 text-sm">
+            <span className="text-neutral-500">Subject: </span>
+            <span className="font-medium text-neutral-900">{a.subject}</span>
+          </p>
+        )}
         <pre className="mt-3 whitespace-pre-wrap rounded-md border border-neutral-200 bg-white p-3 text-sm">
           {a.body}
         </pre>
