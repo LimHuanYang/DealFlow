@@ -81,15 +81,15 @@ function EmailsDashboardPage() {
                   </Link>
                 </td>
                 <td className="px-3 py-2">
-                  {e.deliveryStatus === 'failed' && <span className="text-red-700">failed</span>}
+                  {e.deliveryStatus === 'failed' && <span className="text-red-700">⚠ failed</span>}
                   {e.deliveryStatus === 'sent' && e.openCount === 0 && e.clickCount === 0 && (
-                    <span className="text-neutral-400">sent</span>
+                    <span className="text-neutral-400">📤 sent</span>
                   )}
                   {e.openCount > 0 && (
-                    <span className="mr-2 text-green-700">{e.openCount} open{e.openCount !== 1 ? 's' : ''}</span>
+                    <span className="mr-2 text-green-700">👁 {e.openCount}</span>
                   )}
                   {e.clickCount > 0 && (
-                    <span className="text-blue-700">{e.clickCount} click{e.clickCount !== 1 ? 's' : ''}</span>
+                    <span className="text-blue-700">🖱 {e.clickCount}</span>
                   )}
                 </td>
               </tr>
