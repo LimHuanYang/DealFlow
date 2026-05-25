@@ -23,6 +23,13 @@ interface ComposeEmailDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+function parseEmails(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@.,]{2,}$/.test(s));
+}
+
 /**
  * Dialog that sends an email to a single contact. Optional AI Draft button
  * (visible when AI is enabled) generates a subject + body from a short intent
@@ -45,6 +52,10 @@ export function ComposeEmailDialog({
   const [body, setBody] = useState('');
   const [intent, setIntent] = useState('');
   const [showDraftPanel, setShowDraftPanel] = useState(false);
+  const [cc, setCc] = useState('');
+  const [bcc, setBcc] = useState('');
+  const [showCcBcc, setShowCcBcc] = useState(false);
+  const [trackEnabled, setTrackEnabled] = useState(true);
 
   const send = useSendEmail();
   const draft = useDraftEmail();
@@ -63,9 +74,22 @@ export function ComposeEmailDialog({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!subject.trim() || !body.trim()) return;
-    await send.mutateAsync({ contactId, subject: subject.trim(), body: body.trim() });
+    const ccList = parseEmails(cc);
+    const bccList = parseEmails(bcc);
+    await send.mutateAsync({
+      contactId,
+      subject: subject.trim(),
+      body: body.trim(),
+      ...(ccList.length > 0 ? { cc: ccList } : {}),
+      ...(bccList.length > 0 ? { bcc: bccList } : {}),
+      trackEnabled,
+    });
     setSubject('');
     setBody('');
+    setCc('');
+    setBcc('');
+    setShowCcBcc(false);
+    setTrackEnabled(true);
     setOpen(false);
   }
 
@@ -115,6 +139,40 @@ export function ComposeEmailDialog({
               )}
             </div>
           )}
+          <div className="flex items-center">
+            <span className="text-xs text-neutral-500">To: {recipientEmail}</span>
+            {!showCcBcc && (
+              <button
+                type="button"
+                onClick={() => setShowCcBcc(true)}
+                className="ml-2 text-xs text-blue-600 hover:underline"
+              >
+                + Cc · Bcc
+              </button>
+            )}
+          </div>
+          {showCcBcc && (
+            <>
+              <div className="mb-2">
+                <Label htmlFor="cc" className="text-xs">Cc</Label>
+                <Input
+                  id="cc"
+                  value={cc}
+                  onChange={(e) => setCc(e.target.value)}
+                  placeholder="comma-separated emails"
+                />
+              </div>
+              <div className="mb-2">
+                <Label htmlFor="bcc" className="text-xs">Bcc</Label>
+                <Input
+                  id="bcc"
+                  value={bcc}
+                  onChange={(e) => setBcc(e.target.value)}
+                  placeholder="comma-separated emails"
+                />
+              </div>
+            </>
+          )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="email-subject">Subject</Label>
             <Input
@@ -136,6 +194,14 @@ export function ComposeEmailDialog({
               data-testid="email-body"
             />
           </div>
+          <label className="mt-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={trackEnabled}
+              onChange={(e) => setTrackEnabled(e.target.checked)}
+            />
+            Track opens and clicks
+          </label>
           <div className="flex items-center justify-end gap-2">
             <Button type="submit" disabled={!subject.trim() || !body.trim() || send.isPending}>
               {send.isPending ? 'Sending…' : 'Send email'}
