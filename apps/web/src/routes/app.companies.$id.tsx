@@ -3,6 +3,7 @@ import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useCompany, useUpdateCompany } from '@/features/companies/api';
+import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 
 export const Route = createFileRoute('/app/companies/$id')({
   component: CompanyDetailPage,
@@ -84,6 +85,7 @@ function CompanyDetailPage() {
           />
         </dd>
       </dl>
+      <EmailEngagementRollup entityType="company" entityId={c.id} />
       <section className="mt-6">
         <CustomFieldsBlock
           entityType="company"

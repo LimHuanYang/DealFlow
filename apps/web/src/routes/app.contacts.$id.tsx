@@ -6,6 +6,7 @@ import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block'
 import { useContact, useUpdateContact } from '@/features/contacts/api';
 import { useEmailStatus } from '@/features/emails/api';
 import { ComposeEmailDialog } from '@/features/emails/compose-email-dialog';
+import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 
 export const Route = createFileRoute('/app/contacts/$id')({
   component: ContactDetailPage,
@@ -104,6 +105,7 @@ function ContactDetailPage() {
           />
         </dd>
       </dl>
+      <EmailEngagementRollup entityType="contact" entityId={c.id} />
       <section className="mt-6">
         <CustomFieldsBlock
           entityType="contact"

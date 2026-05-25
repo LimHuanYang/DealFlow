@@ -4,6 +4,7 @@ import { InlineEdit } from '@/components/inline-edit';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useDeal, useUpdateDeal } from '@/features/deals/api';
+import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 import { formatCurrency } from '@/lib/format';
 
 export const Route = createFileRoute('/app/deals/$id')({
@@ -84,6 +85,7 @@ function DealDetailPage() {
           />
         </dd>
       </dl>
+      <EmailEngagementRollup entityType="deal" entityId={d.id} />
       <section className="mt-6">
         <CustomFieldsBlock
           entityType="deal"
