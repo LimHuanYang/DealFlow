@@ -6,6 +6,7 @@ import { apiFetch } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { Button } from '@/components/ui/button';
+import { EmailEngagementTimeline } from '@/features/emails/email-engagement-timeline';
 
 export const Route = createFileRoute('/app/activities/$id')({
   component: ActivityDetailPage,
@@ -70,6 +71,8 @@ function ActivityDetailPage() {
           {a.body}
         </pre>
       </header>
+
+      {a.kind === 'email' && <EmailEngagementTimeline activity={a} />}
 
       <section>
         <CustomFieldsBlock
