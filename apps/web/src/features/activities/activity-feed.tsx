@@ -135,8 +135,13 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
   }
   if (activity.kind === 'email') {
     return (
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="-mx-2 -my-1 flex items-start justify-between gap-3 rounded-md px-2 py-1 transition-colors hover:bg-neutral-50">
+        <Link
+          to="/app/activities/$id"
+          params={{ id: activity.id }}
+          className="block min-w-0 flex-1"
+          aria-label="Open email detail"
+        >
           <p className="text-xs font-medium uppercase tracking-wide text-blue-700">✉️ Email sent</p>
           {activity.subject && (
             <p className="mt-0.5 text-sm font-medium text-neutral-900">{activity.subject}</p>
@@ -146,53 +151,48 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
           <p className="mt-1 text-xs text-neutral-500">
             {new Date(activity.createdAt).toLocaleString()}
           </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Link
-            to="/app/activities/$id"
-            params={{ id: activity.id }}
-            className="text-xs text-neutral-400 hover:text-neutral-700"
-          >
-            Open ↗
-          </Link>
-          <button
-            type="button"
-            onClick={() => void onDelete(activity.id)}
-            className="text-xs text-neutral-400 hover:text-red-600"
-            aria-label="Delete email"
-          >
-            ✕
-          </button>
-        </div>
+        </Link>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            void onDelete(activity.id);
+          }}
+          className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
+          aria-label="Delete email"
+        >
+          ✕
+        </button>
       </div>
     );
   }
   // Default: note
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
+    <div className="-mx-2 -my-1 flex items-start justify-between gap-3 rounded-md px-2 py-1 transition-colors hover:bg-neutral-50">
+      <Link
+        to="/app/activities/$id"
+        params={{ id: activity.id }}
+        className="block min-w-0 flex-1"
+        aria-label="Open note detail"
+      >
         <p className="whitespace-pre-wrap text-sm text-neutral-800">{activity.body}</p>
         <p className="mt-1 text-xs text-neutral-500">
           Note · {new Date(activity.createdAt).toLocaleString()}
         </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Link
-          to="/app/activities/$id"
-          params={{ id: activity.id }}
-          className="text-xs text-neutral-400 hover:text-neutral-700"
-        >
-          Open ↗
-        </Link>
-        <button
-          type="button"
-          onClick={() => void onDelete(activity.id)}
-          className="text-xs text-neutral-400 hover:text-red-600"
-          aria-label="Delete note"
-        >
-          ✕
-        </button>
-      </div>
+      </Link>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void onDelete(activity.id);
+        }}
+        className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
+        aria-label="Delete note"
+      >
+        ✕
+      </button>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEmailsList } from '@/features/emails/api';
 
 export const Route = createFileRoute('/app/emails')({
@@ -7,6 +7,7 @@ export const Route = createFileRoute('/app/emails')({
 });
 
 function EmailsDashboardPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<'all' | 'opened' | 'clicked' | 'failed'>('all');
   const [range, setRange] = useState<'7d' | '30d' | 'all'>('7d');
   const [q, setQ] = useState('');
@@ -66,15 +67,25 @@ function EmailsDashboardPage() {
           </thead>
           <tbody>
             {list.data.items.map((e) => (
-              <tr key={e.id} className="border-t border-neutral-100">
+              <tr
+                key={e.id}
+                role="link"
+                tabIndex={0}
+                onClick={() => navigate({ to: '/app/activities/$id', params: { id: e.id } })}
+                onKeyDown={(ev) => {
+                  if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    void navigate({ to: '/app/activities/$id', params: { id: e.id } });
+                  }
+                }}
+                className="cursor-pointer border-t border-neutral-100 transition-colors hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none"
+              >
                 <td className="whitespace-nowrap px-3 py-2 text-neutral-500">
                   {new Date(e.sentAt).toLocaleDateString()}
                 </td>
                 <td className="px-3 py-2">{e.recipientName ?? e.recipientEmail ?? '—'}</td>
-                <td className="px-3 py-2">
-                  <Link to="/app/activities/$id" params={{ id: e.id }} className="hover:underline">
-                    {e.subject ?? '(no subject)'}
-                  </Link>
+                <td className="px-3 py-2 font-medium text-neutral-900">
+                  {e.subject ?? '(no subject)'}
                 </td>
                 <td className="px-3 py-2">
                   {e.deliveryStatus === 'failed' && <span className="text-red-700">⚠ failed</span>}
