@@ -108,3 +108,124 @@ describe('GET /track/open/:token', () => {
     expect(res.headers['content-type']).toContain('image/gif');
   });
 });
+
+describe('GET /track/click/:token', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db, env: { EMAIL_TRACKING_SECRET: SECRET } });
+  }, 30_000);
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  function encodeUrl(url: string): string {
+    return Buffer.from(url, 'utf8').toString('base64url');
+  }
+
+  it('302-redirects on a valid token + valid URL', async () => {
+    const { userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const activityId = await createEmailActivity(testDb, orgId, userId, contact!.id);
+    const token = signTrackingToken(activityId, SECRET);
+    const target = 'https://docs.example.com/x';
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/track/click/${token}?u=${encodeUrl(target)}`,
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(target);
+  });
+
+  it('inserts a click event with the URL', async () => {
+    const { userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const activityId = await createEmailActivity(testDb, orgId, userId, contact!.id);
+    const token = signTrackingToken(activityId, SECRET);
+
+    await app.inject({
+      method: 'GET',
+      url: `/track/click/${token}?u=${encodeUrl('https://a.com/path')}`,
+    });
+
+    const events = await testDb.db
+      .select()
+      .from(schema.emailEvents)
+      .where(eq(schema.emailEvents.activityId, activityId));
+    const clicks = events.filter((e) => e.eventType === 'click');
+    expect(clicks).toHaveLength(1);
+    expect(clicks[0]!.url).toBe('https://a.com/path');
+
+    const [row] = await testDb.db
+      .select()
+      .from(schema.activities)
+      .where(eq(schema.activities.id, activityId));
+    expect(row!.clickCount).toBe(1);
+  });
+
+  it('400s on a forged token', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: `/track/click/garbage.badsig?u=${encodeUrl('https://a.com')}`,
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('400s when u is missing', async () => {
+    const { userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const activityId = await createEmailActivity(testDb, orgId, userId, contact!.id);
+    const token = signTrackingToken(activityId, SECRET);
+    const res = await app.inject({ method: 'GET', url: `/track/click/${token}` });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('400s on a non-http URL scheme', async () => {
+    const { userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const activityId = await createEmailActivity(testDb, orgId, userId, contact!.id);
+    const token = signTrackingToken(activityId, SECRET);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/track/click/${token}?u=${encodeUrl('javascript:alert(1)')}`,
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('still redirects when tracking_enabled=false (no event recorded)', async () => {
+    const { userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const activityId = await createEmailActivity(testDb, orgId, userId, contact!.id, false);
+    const token = signTrackingToken(activityId, SECRET);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/track/click/${token}?u=${encodeUrl('https://a.com')}`,
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('https://a.com');
+    const events = await testDb.db
+      .select()
+      .from(schema.emailEvents)
+      .where(eq(schema.emailEvents.activityId, activityId));
+    expect(events.filter((e) => e.eventType === 'click')).toHaveLength(0);
+  });
+});

@@ -67,4 +67,68 @@ export async function registerTrackingRoutes(
     }
     return returnPixel();
   });
+
+  app.get('/track/click/:token', async (req, reply) => {
+    const { token } = req.params as { token: string };
+    const { u } = req.query as { u?: string };
+
+    if (!u) {
+      return reply.status(400).send('Invalid tracking link');
+    }
+    // Decode the base64url-encoded URL.
+    let decoded: string;
+    try {
+      decoded = Buffer.from(u, 'base64url').toString('utf8');
+    } catch {
+      return reply.status(400).send('Invalid tracking link');
+    }
+    // Enforce http(s) scheme — never blind-redirect (open redirect vuln).
+    if (!/^https?:\/\//i.test(decoded)) {
+      return reply.status(400).send('Invalid tracking link');
+    }
+
+    if (!deps.trackingSecret) {
+      // No secret configured: just redirect without recording.
+      return reply.redirect(decoded, 302);
+    }
+    const v = verifyTrackingToken(token, deps.trackingSecret);
+    if (!v.ok) {
+      return reply.status(400).send('Invalid tracking link');
+    }
+
+    try {
+      const [row] = await deps.db
+        .select({
+          id: schema.activities.id,
+          orgId: schema.activities.organizationId,
+          enabled: schema.activities.trackingEnabled,
+        })
+        .from(schema.activities)
+        .where(eq(schema.activities.id, v.activityId))
+        .limit(1);
+      if (row && row.enabled) {
+        await deps.db.transaction(async (tx) => {
+          await tx.insert(schema.emailEvents).values({
+            organizationId: row.orgId,
+            activityId: row.id,
+            eventType: 'click',
+            url: decoded,
+          });
+          await tx
+            .update(schema.activities)
+            .set({
+              clickCount: sql`click_count + 1`,
+              firstClickedAt: sql`COALESCE(first_clicked_at, NOW())`,
+              lastClickedAt: sql`NOW()`,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.activities.id, row.id));
+        });
+      }
+    } catch (err) {
+      req.log.error({ err, token }, '/track/click write failed');
+      // Fall through — redirect anyway.
+    }
+    return reply.redirect(decoded, 302);
+  });
 }
