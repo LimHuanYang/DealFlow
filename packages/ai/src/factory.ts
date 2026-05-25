@@ -20,8 +20,8 @@ export interface AIConfig {
 
 const DEFAULTS = {
   anthropicModel: 'claude-haiku-4-5',
-  geminiModel: 'gemini-2.5-flash',
-  grokModel: 'grok-4',
+  geminiModel: 'gemini-2.5-flash-lite',
+  grokModel: 'grok-3-mini',
   grokBaseURL: 'https://api.x.ai/v1',
 };
 

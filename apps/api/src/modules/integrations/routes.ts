@@ -68,8 +68,8 @@ export async function registerIntegrationsRoutes(
     }
     const defaultModel: Record<typeof parsed.data.provider, string> = {
       anthropic: 'claude-haiku-4-5',
-      gemini: 'gemini-2.5-flash',
-      grok: 'grok-4',
+      gemini: 'gemini-2.5-flash-lite',
+      grok: 'grok-3-mini',
     };
     const cfg: AIConfig = {
       [parsed.data.provider]: {

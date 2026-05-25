@@ -107,9 +107,11 @@ async function loadAIConfig(integrations: OrgIntegrationsRepo, orgId: string): P
       ? { apiKey: dec.anthropic.apiKey, model: dec.anthropic.model ?? 'claude-haiku-4-5' }
       : undefined,
     gemini: dec.gemini
-      ? { apiKey: dec.gemini.apiKey, model: dec.gemini.model ?? 'gemini-2.5-flash' }
+      ? { apiKey: dec.gemini.apiKey, model: dec.gemini.model ?? 'gemini-2.5-flash-lite' }
       : undefined,
-    grok: dec.grok ? { apiKey: dec.grok.apiKey, model: dec.grok.model ?? 'grok-4' } : undefined,
+    grok: dec.grok
+      ? { apiKey: dec.grok.apiKey, model: dec.grok.model ?? 'grok-3-mini' }
+      : undefined,
   };
 }
 

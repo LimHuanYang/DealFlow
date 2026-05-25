@@ -35,8 +35,8 @@ const PROVIDERS: ProviderConfig[] = [
     key: 'gemini',
     label: 'Google (Gemini)',
     models: [
+      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (cheapest, default)' },
       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (fastest)' },
-      { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (cheapest)' },
       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (most capable)' },
     ],
     placeholder: 'AIza...',
@@ -45,9 +45,9 @@ const PROVIDERS: ProviderConfig[] = [
     key: 'grok',
     label: 'xAI (Grok)',
     models: [
-      { value: 'grok-4', label: 'Grok 4 (default)' },
+      { value: 'grok-3-mini', label: 'Grok 3 Mini (cheapest, default)' },
       { value: 'grok-4-fast', label: 'Grok 4 Fast' },
-      { value: 'grok-3-mini', label: 'Grok 3 Mini' },
+      { value: 'grok-4', label: 'Grok 4 (most capable)' },
     ],
     placeholder: 'xai-...',
   },
