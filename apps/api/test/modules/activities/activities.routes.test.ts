@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { startTestPostgres, type TestDatabase } from '../../helpers/postgres.js';
 import { buildTestApp } from '../../helpers/build-app.js';
 import { signupTestUser } from '../../helpers/auth.js';
+import { schema } from '@dealflow/db';
 
 interface ActivityBody {
   activity: { id: string; kind: string; body: string; contactId: string | null };
@@ -420,6 +421,100 @@ describe('Activities customFields', () => {
         headers: { cookie },
       });
       expect(got.statusCode).toBe(404);
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+});
+
+describe('GET /api/v1/activities/:id/events', () => {
+  it('returns events ordered by most recent first', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const { cookie, userId, orgId } = await signupTestUser(app);
+      const [contact] = await testDb.db
+        .insert(schema.contacts)
+        .values({ organizationId: orgId, firstName: 'X' })
+        .returning();
+      const [activity] = await testDb.db
+        .insert(schema.activities)
+        .values({
+          organizationId: orgId,
+          ownerUserId: userId,
+          kind: 'email',
+          body: 'b',
+          contactId: contact!.id,
+        })
+        .returning();
+      // Insert 3 events with deliberately spaced timestamps.
+      await testDb.db.insert(schema.emailEvents).values([
+        {
+          organizationId: orgId,
+          activityId: activity!.id,
+          eventType: 'sent',
+          occurredAt: new Date('2026-05-25T10:00:00Z'),
+        },
+        {
+          organizationId: orgId,
+          activityId: activity!.id,
+          eventType: 'open',
+          occurredAt: new Date('2026-05-25T10:05:00Z'),
+        },
+        {
+          organizationId: orgId,
+          activityId: activity!.id,
+          eventType: 'click',
+          url: 'https://a.com',
+          occurredAt: new Date('2026-05-25T10:10:00Z'),
+        },
+      ]);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/activities/${activity!.id}/events`,
+        headers: { cookie },
+      });
+      expect(res.statusCode).toBe(200);
+      const items = res.json().items;
+      expect(items).toHaveLength(3);
+      expect(items[0].eventType).toBe('click');
+      expect(items[0].url).toBe('https://a.com');
+      expect(items[items.length - 1].eventType).toBe('sent');
+    } finally {
+      await app.close();
+      await testDb.stop();
+    }
+  }, 30_000);
+
+  it('404s when activity belongs to another org (tenant isolation)', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({ db: testDb.db });
+    try {
+      const a = await signupTestUser(app);
+      const b = await signupTestUser(app);
+      const [contact] = await testDb.db
+        .insert(schema.contacts)
+        .values({ organizationId: a.orgId, firstName: 'X' })
+        .returning();
+      const [activity] = await testDb.db
+        .insert(schema.activities)
+        .values({
+          organizationId: a.orgId,
+          ownerUserId: a.userId,
+          kind: 'email',
+          body: 'b',
+          contactId: contact!.id,
+        })
+        .returning();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/activities/${activity!.id}/events`,
+        headers: { cookie: b.cookie },
+      });
+      expect(res.statusCode).toBe(404);
     } finally {
       await app.close();
       await testDb.stop();

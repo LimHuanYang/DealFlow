@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { Database, schema as schemaType } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import {
@@ -165,6 +165,45 @@ export async function registerActivitiesRoutes(
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
     }
     return reply.send({ activity: publicActivity(row) });
+  });
+
+  app.get('/api/v1/activities/:id/events', { preHandler: requireOrg }, async (req, reply) => {
+    const params = idParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.status(400).send({
+        error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid id' },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    // Tenant check: verify the activity belongs to this org. Avoid leaking
+    // existence to other tenants — return 404 either way.
+    const [act] = await deps.db
+      .select({ id: schema.activities.id })
+      .from(schema.activities)
+      .where(
+        and(
+          eq(schema.activities.organizationId, orgId),
+          eq(schema.activities.id, params.data.id),
+        ),
+      )
+      .limit(1);
+    if (!act) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
+    }
+    const rows = await deps.db
+      .select()
+      .from(schema.emailEvents)
+      .where(eq(schema.emailEvents.activityId, params.data.id))
+      .orderBy(desc(schema.emailEvents.occurredAt));
+    const items = rows.map((r) => ({
+      id: r.id,
+      eventType: r.eventType,
+      url: r.url,
+      occurredAt: r.occurredAt.toISOString(),
+    }));
+    return reply.send({ items });
   });
 
   app.patch('/api/v1/activities/:id', { preHandler: requireOrg }, async (req, reply) => {
