@@ -89,6 +89,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     await registerEmailRoutes(app, {
       db: opts.db,
       encryptionKey,
+      env,
       emailProviderForOrg: opts.emailProviderForOrg,
     });
 

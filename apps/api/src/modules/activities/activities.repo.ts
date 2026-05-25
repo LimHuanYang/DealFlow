@@ -3,6 +3,13 @@ import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import type { CreateActivityInput, ListTasksQuery, UpdateActivityInput } from '@dealflow/shared';
 
+export interface CreateActivityEmailExtras {
+  ccEmails?: string[] | null;
+  bccEmails?: string[] | null;
+  trackingEnabled?: boolean;
+  deliveryStatus?: 'sent' | 'failed';
+}
+
 export interface ListForParentQuery {
   contactId?: string;
   companyId?: string;
@@ -20,7 +27,7 @@ export class ActivitiesRepo {
   async create(
     organizationId: string,
     ownerUserId: string,
-    input: CreateActivityInput,
+    input: CreateActivityInput & CreateActivityEmailExtras,
   ): Promise<typeof schema.activities.$inferSelect> {
     const [row] = await this.db
       .insert(schema.activities)
@@ -35,6 +42,10 @@ export class ActivitiesRepo {
         companyId: input.companyId ?? null,
         dealId: input.dealId ?? null,
         customFields: input.customFields ?? {},
+        ccEmails: input.ccEmails ?? null,
+        bccEmails: input.bccEmails ?? null,
+        trackingEnabled: input.trackingEnabled ?? true,
+        deliveryStatus: input.deliveryStatus ?? 'sent',
       })
       .returning();
     if (!row) throw new Error('Failed to insert activity');

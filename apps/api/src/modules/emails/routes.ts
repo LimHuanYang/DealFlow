@@ -13,10 +13,15 @@ import { ERROR_CODES, sendEmailBodySchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
 import { OrgIntegrationsRepo } from '../integrations/repo.js';
+import { loadEnv, type Env } from '../../env.js';
+import { signTrackingToken } from '../../lib/email-tracking-token.js';
+import { wrapBodyAsHtml } from '../../lib/email-html-wrap.js';
 
 export interface EmailRoutesDeps {
   db: Database;
   encryptionKey: Buffer;
+  /** Optional env override (tests inject this to control tracking behaviour). */
+  env?: Partial<Env>;
   /** Optional override (tests only). */
   emailProviderForOrg?: (orgId: string) => Promise<{
     provider: EmailProvider;
@@ -38,6 +43,16 @@ function publicActivity(row: typeof schemaType.activities.$inferSelect) {
     companyId: row.companyId,
     dealId: row.dealId,
     ownerUserId: row.ownerUserId,
+    ccEmails: row.ccEmails,
+    bccEmails: row.bccEmails,
+    trackingEnabled: row.trackingEnabled,
+    deliveryStatus: row.deliveryStatus as 'sent' | 'failed',
+    openCount: row.openCount,
+    firstOpenedAt: row.firstOpenedAt?.toISOString() ?? null,
+    lastOpenedAt: row.lastOpenedAt?.toISOString() ?? null,
+    clickCount: row.clickCount,
+    firstClickedAt: row.firstClickedAt?.toISOString() ?? null,
+    lastClickedAt: row.lastClickedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -77,6 +92,7 @@ export async function registerEmailRoutes(
   app: FastifyInstance,
   deps: EmailRoutesDeps,
 ): Promise<void> {
+  const resolvedEnv = { ...loadEnv(), ...deps.env };
   const activitiesRepo = new ActivitiesRepo(deps.db);
   const integrations = new OrgIntegrationsRepo(deps.db, deps.encryptionKey);
 
@@ -146,6 +162,34 @@ export async function registerEmailRoutes(
     }
 
     const personalisedFrom = `${userRow.name} <${fromAddress}>`;
+    const trackEnabled = parsed.data.trackEnabled ?? true;
+    const trackingActive = trackEnabled && !!resolvedEnv.EMAIL_TRACKING_SECRET;
+
+    // 1. Pre-create the activity row so we have an ID to embed in tracking URLs.
+    const created = await activitiesRepo.create(orgId, userId, {
+      kind: 'email',
+      body: parsed.data.body,
+      contactId: parsed.data.contactId,
+      ccEmails: parsed.data.cc ?? null,
+      bccEmails: parsed.data.bcc ?? null,
+      trackingEnabled: trackEnabled,
+      deliveryStatus: 'sent',
+    });
+
+    // 2. Build HTML body if tracking is active.
+    let html: string | undefined;
+    if (trackingActive) {
+      const token = signTrackingToken(created.id, resolvedEnv.EMAIL_TRACKING_SECRET!);
+      const pixelUrl = `${resolvedEnv.PUBLIC_API_URL}/track/open/${token}`;
+      const wrapped = wrapBodyAsHtml(parsed.data.body, {
+        pixelUrl,
+        rewriteLink: (originalUrl) =>
+          `${resolvedEnv.PUBLIC_API_URL}/track/click/${token}?u=${encodeURIComponent(
+            Buffer.from(originalUrl, 'utf8').toString('base64url'),
+          )}`,
+      });
+      html = wrapped.html;
+    }
 
     try {
       const result = await provider.send({
@@ -154,12 +198,12 @@ export async function registerEmailRoutes(
         replyTo: userRow.email,
         subject: parsed.data.subject,
         text: parsed.data.body,
+        ...(html ? { html } : {}),
+        ...(parsed.data.cc ? { cc: parsed.data.cc } : {}),
+        ...(parsed.data.bcc ? { bcc: parsed.data.bcc } : {}),
       });
-      const created = await activitiesRepo.create(orgId, userId, {
-        kind: 'email',
-        body: parsed.data.body,
-        contactId: parsed.data.contactId,
-      });
+
+      // 3. Stamp the SMTP messageId + subject on the activity.
       const [updated] = await deps.db
         .update(schema.activities)
         .set({
@@ -169,8 +213,21 @@ export async function registerEmailRoutes(
         })
         .where(eq(schema.activities.id, created.id))
         .returning();
+
+      // 4. Insert a 'sent' email_events row for the timeline.
+      await deps.db.insert(schema.emailEvents).values({
+        organizationId: orgId,
+        activityId: created.id,
+        eventType: 'sent',
+      });
+
       return reply.status(201).send({ activity: publicActivity(updated ?? created) });
     } catch (err) {
+      // Send failed — mark the activity row and DON'T record a sent event.
+      await deps.db
+        .update(schema.activities)
+        .set({ deliveryStatus: 'failed', updatedAt: new Date() })
+        .where(eq(schema.activities.id, created.id));
       if (err instanceof EmailDisabledError) return emailDisabled(reply);
       req.log.error({ err }, 'POST /emails failed');
       return emailUpstreamError(reply);
