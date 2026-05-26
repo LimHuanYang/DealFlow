@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>DealFlow — Email Attachments v1 architecture + mockups</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #fafaf9;
+      --panel: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #d4d4d4;
+      --text: #171717;
+      --muted: #737373;
+      --subtle: #a3a3a3;
+      --accent: #171717;
+      --accent-fg: #ffffff;
+      --green: #16a34a;
+      --green-bg: #dcfce7;
+      --red: #dc2626;
+      --red-bg: #fee2e2;
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --blue: #2563eb;
+      --blue-bg: #dbeafe;
+      --indigo: #4f46e5;
+      --indigo-bg: #e0e7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px 80px;
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .page { max-width: 1040px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+    h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 40px 0 10px;
+      font-weight: 600;
+    }
+    .lede { color: var(--muted); margin: 0 0 32px; font-size: 14px; }
+    .caption { color: var(--subtle); font-size: 12px; margin: 8px 0 0; }
+
+    /* Architecture flow diagram */
+    .flow {
+      display: grid;
+      gap: 8px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .flow-row {
+      display: grid;
+      grid-template-columns: 200px 60px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+    .flow-actor {
+      background: var(--blue-bg);
+      border: 1px solid #93c5fd;
+      color: #1e3a8a;
+      font-weight: 500;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .flow-actor.api { background: var(--indigo-bg); border-color: #a5b4fc; color: #312e81; }
+    .flow-actor.disk { background: #f3f4f6; border-color: var(--border-strong); color: #1f2937; }
+    .flow-actor.smtp { background: var(--amber-bg); border-color: #fcd34d; color: #78350f; }
+    .flow-actor.db { background: var(--green-bg); border-color: #86efac; color: #14532d; }
+    .flow-arrow {
+      font-size: 18px;
+      color: var(--subtle);
+      text-align: center;
+    }
+    .flow-step {
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+      border: 1px dashed var(--border-strong);
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+    .flow-step code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: #f4f4f5;
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #1f2937;
+    }
+    .flow-step .lbl {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-right: 6px;
+    }
+
+    /* Compose dialog mockup */
+    .dialog-shell {
+      background: rgba(0,0,0,0.05);
+      border-radius: 12px;
+      padding: 28px;
+    }
+    .dialog {
+      background: var(--panel);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      max-width: 540px;
+      margin: 0 auto;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .dialog-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dialog-title { font-weight: 600; font-size: 15px; }
+    .dialog-close { color: var(--subtle); cursor: pointer; user-select: none; }
+    .dialog-body { padding: 18px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .field { margin-bottom: 12px; }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .recipient {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: #f4f4f5;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text);
+      padding: 6px 0;
+    }
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+    }
+    .btn-link {
+      background: transparent;
+      border: 0;
+      color: var(--blue);
+      padding: 0;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-link:hover { text-decoration: underline; }
+
+    /* Attachment list inside compose */
+    .attach-list {
+      margin-top: 10px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 6px;
+      padding: 8px;
+      background: #fafafa;
+    }
+    .attach-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .attach-row + .attach-row { border-top: 1px solid var(--border); }
+    .attach-row:hover { background: #f4f4f5; }
+    .attach-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: #fff;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .attach-name { flex: 1; min-width: 0; }
+    .attach-name .file { font-weight: 500; color: var(--text); }
+    .attach-name .meta { color: var(--subtle); font-size: 11px; }
+    .attach-remove {
+      color: var(--subtle);
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 14px;
+    }
+    .attach-remove:hover { color: var(--red); }
+
+    .size-bar {
+      margin-top: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .size-bar .pill { color: var(--blue); font-weight: 500; }
+
+    .dropzone-hint {
+      margin-top: 8px;
+      text-align: center;
+      padding: 14px;
+      border: 2px dashed var(--border-strong);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      background: #fff;
+    }
+    .dropzone-hint strong { color: var(--text); }
+
+    /* Activity detail page */
+    .detail {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+    .back-link { color: var(--muted); font-size: 13px; text-decoration: none; }
+    .detail h3 { font-size: 22px; margin: 14px 0 6px; letter-spacing: -0.01em; }
+    .detail .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+    .email-body {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      color: #1f2937;
+    }
+    .section-heading {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 28px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .download-list { display: grid; gap: 8px; }
+    .download-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .download-row .file { font-weight: 500; }
+    .download-row .meta { color: var(--subtle); font-size: 11px; margin-top: 2px; }
+    .download-action {
+      margin-left: auto;
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    /* Storage tree */
+    .tree {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      color: #1f2937;
+      line-height: 1.7;
+    }
+    .tree .muted { color: var(--subtle); }
+    .tree .hash { color: var(--blue); }
+    .tree .name { color: var(--accent); }
+
+    /* DB schema */
+    .schema {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+    .schema .key { color: var(--indigo); }
+    .schema .type { color: var(--blue); }
+    .schema .com { color: var(--subtle); font-style: italic; }
+
+    /* Recipient inbox preview */
+    .inbox-preview {
+      max-width: 540px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 22px;
+      font-size: 14px;
+      color: #1f2937;
+    }
+    .inbox-preview .from { color: var(--muted); font-size: 12px; }
+    .inbox-preview .subject { font-weight: 600; font-size: 16px; margin: 4px 0 12px; }
+    .inbox-preview .body { white-space: pre-wrap; line-height: 1.55; }
+    .inbox-preview .attached {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .inbox-preview .attached-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .inbox-preview .attached-row .file { font-weight: 500; color: var(--blue); }
+    .inbox-preview .attached-row .meta { color: var(--subtle); font-size: 11px; }
+
+    /* Error/limit examples */
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      border: 1px solid;
+    }
+    .alert.warn { background: var(--amber-bg); border-color: #fcd34d; color: #78350f; }
+    .alert.error { background: var(--red-bg); border-color: #fecaca; color: #991b1b; }
+  </style>
+</head>
+<body>
+<main class="page">
+
+<h1>DealFlow — Email Attachments v1</h1>
+<p class="lede">Architecture, storage layout, UI mockups, and recipient-side view for the proposed attachment feature.</p>
+
+<h2>1. End-to-end data flow</h2>
+<div class="flow">
+  <div class="flow-row">
+    <div class="flow-actor">Browser (compose dialog)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">user action</span>
+      Clicks <strong>+ Attach files</strong>, picks <code>proposal.pdf</code> + <code>diagram.png</code>. Files stay in browser memory.
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor">Browser (compose dialog)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">user action</span>
+      Clicks <strong>Send email</strong>. Browser builds a <code>multipart/form-data</code> POST with one JSON field <code>body</code> + N binary file fields.
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor api">API · POST /api/v1/emails</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">parse</span>
+      <code>@fastify/multipart</code> streams each file to memory or disk. Validates size (≤ 25 MB each, ≤ 25 MB total) and MIME (blocks <code>.exe, .bat, .vbs, …</code>).
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor db">DB · activities + email_attachments</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">insert</span>
+      Pre-creates the email activity (subject, body, cc/bcc, tracking, …). Inserts one <code>email_attachments</code> row per file with the chosen storage path.
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor disk">Disk · apps/api/data/uploads</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">write</span>
+      Writes each file to <code>uploads/&lt;orgId&gt;/&lt;activityId&gt;/&lt;uuid&gt;-&lt;sanitized-name&gt;</code>. Org-scoped subdir prevents cross-tenant leakage.
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor smtp">SMTP · nodemailer</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">send</span>
+      Sends the email with <code>attachments: [{ filename, path }]</code> — nodemailer reads from disk and attaches as multipart/mixed. Tracking pixel + click links still injected per v1 tracking flow.
+    </div>
+  </div>
+  <div class="flow-row">
+    <div class="flow-actor">Recipient inbox</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <span class="lbl">delivered</span>
+      Recipient sees the email body plus a download list of all attachments at the bottom (standard MIME behavior).
+    </div>
+  </div>
+</div>
+<p class="caption">If any file fails validation, the entire send is rejected with a 400 before anything writes to disk or DB. On send failure (SMTP error), files are deleted from disk and the activity row is marked <code>delivery_status: 'failed'</code>.</p>
+
+<h2>2. Disk layout</h2>
+<div class="tree">
+  apps/api/data/<br>
+  └── uploads/<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hash">f4b3c2…</span> &nbsp;<span class="muted"># org id</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="hash">a01923…</span> &nbsp;<span class="muted"># activity id</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="hash">11ee29…</span><span class="name">-proposal-q3.pdf</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="hash">22ff30…</span><span class="name">-architecture-diagram.png</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="hash">b02834…</span> &nbsp;<span class="muted"># another email activity</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hash">33aa41…</span><span class="name">-pricing.xlsx</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hash">e8d1a7…</span> &nbsp;<span class="muted"># other org's files (isolated)</span>
+</div>
+<p class="caption">
+  • Org-scoped subdirs mean a bug in path construction can leak at most within one tenant.<br>
+  • UUID prefix prevents collisions when two emails have files with the same name.<br>
+  • Filename gets sanitized (strip <code>../</code>, control chars, etc.) before write.<br>
+  • <code>apps/api/data/</code> is added to <code>.gitignore</code>. Operators back up <code>data/</code> alongside the Postgres dump.
+</p>
+
+<h2>3. DB schema — new table</h2>
+<div class="schema">
+CREATE TABLE <span class="key">email_attachments</span> (<br>
+&nbsp;&nbsp;<span class="key">id</span>              <span class="type">uuid</span> PRIMARY KEY DEFAULT gen_random_uuid(),<br>
+&nbsp;&nbsp;<span class="key">organization_id</span> <span class="type">uuid</span> NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,<br>
+&nbsp;&nbsp;<span class="key">activity_id</span>     <span class="type">uuid</span> NOT NULL REFERENCES activities(id) ON DELETE CASCADE,<br>
+&nbsp;&nbsp;<span class="key">filename</span>        <span class="type">text</span> NOT NULL,&nbsp;&nbsp;<span class="com">-- original filename (sanitized for display only)</span><br>
+&nbsp;&nbsp;<span class="key">mime_type</span>       <span class="type">text</span> NOT NULL,<br>
+&nbsp;&nbsp;<span class="key">size_bytes</span>      <span class="type">integer</span> NOT NULL,<br>
+&nbsp;&nbsp;<span class="key">storage_path</span>    <span class="type">text</span> NOT NULL,&nbsp;&nbsp;<span class="com">-- relative to data/uploads/, e.g. "&lt;orgId&gt;/&lt;activityId&gt;/&lt;uuid&gt;-name.pdf"</span><br>
+&nbsp;&nbsp;<span class="key">created_at</span>      <span class="type">timestamptz</span> NOT NULL DEFAULT now()<br>
+);<br>
+<br>
+CREATE INDEX <span class="key">email_attachments_activity_idx</span> ON email_attachments (activity_id);
+</div>
+
+<h2>4. Compose dialog — attachments UX</h2>
+<div class="dialog-shell">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">Email Sarah Chen</div>
+      <div class="dialog-close">×</div>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <label>To</label>
+        <span class="recipient">Sarah Chen · sarah@acme.com</span>
+      </div>
+      <div class="field">
+        <label>Subject</label>
+        <input type="text" value="Q3 proposal + diagrams" />
+      </div>
+      <div class="field">
+        <label>Body</label>
+        <textarea>Hi Sarah,
+
+Attaching the proposal and our architecture diagram for review. Quick walkthrough call this week?
+
+— Alice</textarea>
+      </div>
+
+      <div>
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Attachments</span>
+          <button class="btn-link">+ Attach files</button>
+        </label>
+        <div class="attach-list">
+          <div class="attach-row">
+            <div class="attach-icon">📄</div>
+            <div class="attach-name">
+              <div class="file">proposal-q3.pdf</div>
+              <div class="meta">1.4 MB · PDF document</div>
+            </div>
+            <span class="attach-remove">×</span>
+          </div>
+          <div class="attach-row">
+            <div class="attach-icon">🖼️</div>
+            <div class="attach-name">
+              <div class="file">architecture-diagram.png</div>
+              <div class="meta">820 KB · Image</div>
+            </div>
+            <span class="attach-remove">×</span>
+          </div>
+        </div>
+        <div class="size-bar">
+          <span>2 files · 2.2 MB / 25 MB</span>
+          <span class="pill">9% used</span>
+        </div>
+        <div class="dropzone-hint">
+          📎 <strong>Drop files here</strong> or paste images from clipboard
+        </div>
+      </div>
+
+      <label class="checkbox">
+        <input type="checkbox" checked />
+        Track opens and clicks
+      </label>
+    </div>
+    <div class="actions">
+      <span style="font-size:11px;color:var(--subtle);">Files send as standard attachments</span>
+      <div>
+        <button class="btn">Cancel</button>
+        <button class="btn btn-primary">Send email</button>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="caption">
+  • <strong>+ Attach files</strong> opens native file picker.<br>
+  • Files dropped onto the dialog get added to the list.<br>
+  • Pasted images (Ctrl+V with an image on the clipboard) auto-attach as <code>pasted-image-YYYY-MM-DDTHH-MM-SS.png</code>.<br>
+  • Each row shows filename, size, type, and a remove × button.<br>
+  • Running total bar updates live; turns amber at 80% and red at 100%.<br>
+  • Files stay in browser memory until Send — closing the dialog discards them with no server-side cleanup needed.
+</p>
+
+<h2>5. Validation errors (shown inline in the dialog)</h2>
+<div style="display:grid;gap:10px;max-width:540px;margin:0 auto;">
+  <div class="alert warn">
+    <strong>File too large.</strong> <code>video.mp4</code> is 32 MB; the limit is 25 MB per file. Skipped.
+  </div>
+  <div class="alert error">
+    <strong>Blocked file type.</strong> <code>installer.exe</code> can't be attached for security reasons (executable file).
+  </div>
+  <div class="alert warn">
+    <strong>Total size limit reached.</strong> Adding <code>screenshots.zip</code> (8 MB) would exceed the 25 MB total. Remove a file first.
+  </div>
+</div>
+<p class="caption">All client-side checks. The server re-validates and rejects with HTTP 400 if anything slips through (e.g., user disables JS).</p>
+
+<h2>6. Activity detail page — Attachments section</h2>
+<div class="detail">
+  <a class="back-link" href="#">← Back</a>
+  <h3>Email</h3>
+  <div class="meta">To Sarah Chen · sent 12 min ago · tracking enabled</div>
+
+  <div style="margin-bottom:14px;"><strong>Subject:</strong> Q3 proposal + diagrams</div>
+  <div class="email-body">Hi Sarah,
+
+Attaching the proposal and our architecture diagram for review. Quick walkthrough call this week?
+
+— Alice</div>
+
+  <div class="section-heading">Attachments (2)</div>
+  <div class="download-list">
+    <div class="download-row">
+      <div class="attach-icon">📄</div>
+      <div>
+        <div class="file">proposal-q3.pdf</div>
+        <div class="meta">1.4 MB · PDF document</div>
+      </div>
+      <a class="download-action" href="#">Download ↓</a>
+    </div>
+    <div class="download-row">
+      <div class="attach-icon">🖼️</div>
+      <div>
+        <div class="file">architecture-diagram.png</div>
+        <div class="meta">820 KB · Image</div>
+      </div>
+      <a class="download-action" href="#">Download ↓</a>
+    </div>
+  </div>
+
+  <div class="section-heading">Engagement</div>
+  <div style="font-size:13px;color:var(--muted);">(Existing email-tracking timeline renders here.)</div>
+</div>
+<p class="caption">Clicking <strong>Download ↓</strong> hits <code>GET /api/v1/attachments/:id</code> — auth-gated by <code>requireOrg</code>, streams the file with <code>Content-Disposition: attachment; filename="..."</code> and the original MIME type.</p>
+
+<h2>7. What the recipient sees in their inbox</h2>
+<div class="inbox-preview">
+  <div class="from">From: Alice via DealFlow &lt;noreply@dealflow.app&gt;</div>
+  <div class="subject">Q3 proposal + diagrams</div>
+  <div class="body">Hi Sarah,
+
+Attaching the proposal and our architecture diagram for review. Quick walkthrough call this week?
+
+— Alice</div>
+  <div class="attached">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">2 attachments</div>
+    <div class="attached-row">
+      📄 <a href="#" class="file">proposal-q3.pdf</a>
+      <span class="meta">· 1.4 MB</span>
+    </div>
+    <div class="attached-row">
+      🖼️ <a href="#" class="file">architecture-diagram.png</a>
+      <span class="meta">· 820 KB</span>
+    </div>
+  </div>
+</div>
+<p class="caption">Standard email-client rendering — Gmail, Outlook, Apple Mail all show attachments as a download list at the bottom. Images are shown as files (not inline-embedded), per the v1 scope decision.</p>
+
+<h2>8. Cleanup &amp; lifecycle</h2>
+<div style="display:grid;gap:8px;font-size:13px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;">
+  <div><strong>Activity deleted</strong> → DB cascade deletes <code>email_attachments</code> rows. A small background hook unlinks the corresponding files from disk. If the file is already gone, the unlink is a no-op (idempotent).</div>
+  <div><strong>Org deleted</strong> → Cascade deletes everything below it. Files orphaned on disk are caught by a once-a-day cleanup pass that walks <code>data/uploads/&lt;orgId&gt;/</code> against the DB.</div>
+  <div><strong>Send failure</strong> → Activity row marked <code>delivery_status: 'failed'</code>, attachment rows + files retained so the user can retry by composing a new email (copy-attachment endpoint deferred to v2).</div>
+  <div><strong>Disk backup</strong> → <code>data/uploads/</code> backed up alongside Postgres dump. Both must be restored together to keep DB rows and files in sync.</div>
+</div>
+
+<h2>9. Explicitly out of scope (v1)</h2>
+<ul style="font-size:13px;color:var(--muted);">
+  <li><strong>Inline images</strong> via <code>cid:</code> references — images attach as files only.</li>
+  <li><strong>Inbound attachments</strong> — depends on the deferred reply-detection sub-plan.</li>
+  <li><strong>Virus scanning</strong> — file content is trusted to be what the user uploads.</li>
+  <li><strong>Pre-upload / draft attachments</strong> — files travel with the send request, not separately.</li>
+  <li><strong>Re-attaching saved files</strong> — each compose starts fresh; no "Attach from prior email" affordance.</li>
+  <li><strong>Resumable uploads</strong> — single multipart POST. Under 25 MB so resumability isn't worth the complexity.</li>
+  <li><strong>Thumbnails / image previews</strong> — files show by filename + MIME icon, not rendered preview.</li>
+  <li><strong>S3 / object-storage backend</strong> — local filesystem only. A future sub-plan can add S3 as a pluggable backend.</li>
+</ul>
+
+</main>
+</body>
+</html>
