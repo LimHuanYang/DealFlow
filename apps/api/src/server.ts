@@ -47,6 +47,16 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   // void registerCsrf;
   await app.register(sensible);
 
+  const multipart = await import('@fastify/multipart');
+  await app.register(multipart.default, {
+    limits: {
+      fileSize: 25 * 1024 * 1024, // 25 MB per file
+      files: 20,
+      fields: 10,
+    },
+    attachFieldsToBody: false,
+  });
+
   registerErrorHandler(app);
   registerHealthRoutes(app);
 

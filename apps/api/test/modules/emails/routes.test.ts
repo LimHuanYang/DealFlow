@@ -411,3 +411,190 @@ describe('GET /api/v1/emails/engagement/:entityType/:id', () => {
     expect(res.statusCode).toBe(400);
   });
 });
+
+describe('POST /api/v1/emails — attachments (multipart)', () => {
+  it('accepts one file and persists an attachment row', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContactWithEmail(app, cookie, 'sarah@acme.com');
+
+    const form = new FormData();
+    form.append('body', JSON.stringify({ contactId, subject: 'with file', body: 'see attached' }));
+    form.append(
+      'attachments',
+      new Blob([Buffer.from('fake pdf bytes')], { type: 'application/pdf' }),
+      'doc.pdf',
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/emails',
+      headers: { cookie },
+      payload: form,
+    });
+    expect(res.statusCode).toBe(201);
+    const activityId = (res.json() as { activity: { id: string } }).activity.id;
+
+    const rows = await testDb.db
+      .select()
+      .from(schema.emailAttachments)
+      .where(eq(schema.emailAttachments.activityId, activityId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.filename).toBe('doc.pdf');
+    expect(rows[0]!.mimeType).toBe('application/pdf');
+    expect(rows[0]!.sizeBytes).toBe(14);
+
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('still works with a JSON-only payload (no attachments, backward compat)', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContactWithEmail(app, cookie, 'sarah@acme.com');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/emails',
+      headers: { cookie },
+      payload: { contactId, subject: 'no files', body: 'plain' },
+    });
+    expect(res.statusCode).toBe(201);
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('rejects a blocked extension (.exe)', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContactWithEmail(app, cookie, 'sarah@acme.com');
+
+    const form = new FormData();
+    form.append('body', JSON.stringify({ contactId, subject: 's', body: 'b' }));
+    form.append(
+      'attachments',
+      new Blob([Buffer.from('MZ')], { type: 'application/octet-stream' }),
+      'installer.exe',
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/emails',
+      headers: { cookie },
+      payload: form,
+    });
+    expect(res.statusCode).toBe(400);
+    expect((res.json() as { error: { code: string } }).error.code).toBe('ATTACHMENT_BLOCKED_TYPE');
+
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('caches files with an expiry when org uses default (30 days)', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie } = await signupTestUser(app);
+    const contactId = await createContactWithEmail(app, cookie, 'sarah@acme.com');
+
+    const form = new FormData();
+    form.append('body', JSON.stringify({ contactId, subject: 's', body: 'b' }));
+    form.append(
+      'attachments',
+      new Blob([Buffer.from('hi')], { type: 'text/plain' }),
+      'note.txt',
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/emails',
+      headers: { cookie },
+      payload: form,
+    });
+    expect(res.statusCode).toBe(201);
+    const activityId = (res.json() as { activity: { id: string } }).activity.id;
+
+    const rows = await testDb.db
+      .select()
+      .from(schema.emailAttachments)
+      .where(eq(schema.emailAttachments.activityId, activityId));
+    expect(rows[0]!.cachePath).not.toBeNull();
+    expect(rows[0]!.cacheExpiresAt).not.toBeNull();
+
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('never-cache org setting yields NULL cacheExpiresAt but still caches the file', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie } = await signupTestUser(app);
+
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+      payload: { email: { attachmentCacheDays: 'never' } },
+    });
+
+    const contactId = await createContactWithEmail(app, cookie, 'sarah@acme.com');
+
+    const form = new FormData();
+    form.append('body', JSON.stringify({ contactId, subject: 's', body: 'b' }));
+    form.append(
+      'attachments',
+      new Blob([Buffer.from('hi')], { type: 'text/plain' }),
+      'note.txt',
+    );
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/emails',
+      headers: { cookie },
+      payload: form,
+    });
+    expect(res.statusCode).toBe(201);
+    const activityId = (res.json() as { activity: { id: string } }).activity.id;
+
+    const rows = await testDb.db
+      .select()
+      .from(schema.emailAttachments)
+      .where(eq(schema.emailAttachments.activityId, activityId));
+    expect(rows[0]!.cachePath).not.toBeNull();
+    expect(rows[0]!.cacheExpiresAt).toBeNull();
+
+    await app.close();
+    await testDb.stop();
+  });
+});

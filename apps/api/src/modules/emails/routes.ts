@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { and, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
 import {
@@ -21,6 +22,13 @@ import { OrgIntegrationsRepo } from '../integrations/repo.js';
 import { loadEnv, type Env } from '../../env.js';
 import { signTrackingToken } from '../../lib/email-tracking-token.js';
 import { wrapBodyAsHtml } from '../../lib/email-html-wrap.js';
+import {
+  validateAttachment,
+  validateAttachmentTotal,
+  MAX_FILE_BYTES,
+} from '../../lib/email-attachments-validate.js';
+import { cacheAttachment, evictAttachment } from '../../lib/email-attachments-store.js';
+import { EmailAttachmentsRepo } from './email-attachments.repo.js';
 
 export interface EmailRoutesDeps {
   db: Database;
@@ -34,7 +42,10 @@ export interface EmailRoutesDeps {
   }>;
 }
 
-function publicActivity(row: typeof schemaType.activities.$inferSelect) {
+function publicActivity(
+  row: typeof schemaType.activities.$inferSelect,
+  attachments: (typeof schemaType.emailAttachments.$inferSelect)[] = [],
+) {
   return {
     id: row.id,
     kind: row.kind,
@@ -58,6 +69,14 @@ function publicActivity(row: typeof schemaType.activities.$inferSelect) {
     clickCount: row.clickCount,
     firstClickedAt: row.firstClickedAt?.toISOString() ?? null,
     lastClickedAt: row.lastClickedAt?.toISOString() ?? null,
+    attachments: attachments.map((a) => ({
+      id: a.id,
+      filename: a.filename,
+      mimeType: a.mimeType,
+      sizeBytes: a.sizeBytes,
+      cached: a.cachePath !== null && (a.cacheExpiresAt === null || a.cacheExpiresAt > new Date()),
+      createdAt: a.createdAt.toISOString(),
+    })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -100,6 +119,7 @@ export async function registerEmailRoutes(
   const resolvedEnv = { ...loadEnv(), ...deps.env };
   const activitiesRepo = new ActivitiesRepo(deps.db);
   const integrations = new OrgIntegrationsRepo(deps.db, deps.encryptionKey);
+  const attachmentsRepo = new EmailAttachmentsRepo(deps.db);
 
   async function resolveEmail(orgId: string): Promise<{
     provider: EmailProvider;
@@ -119,7 +139,39 @@ export async function registerEmailRoutes(
   });
 
   app.post('/api/v1/emails', { preHandler: requireOrg }, async (req, reply) => {
-    const parsed = sendEmailBodySchema.safeParse(req.body);
+    // 1. Parse body — JSON or multipart.
+    let parsedJson: unknown;
+    const filesBuffered: { filename: string; mimeType: string; buffer: Buffer }[] = [];
+
+    if (req.isMultipart()) {
+      for await (const part of req.parts()) {
+        if (part.type === 'file') {
+          const buf = await part.toBuffer();
+          if (part.file.truncated) {
+            return reply.status(400).send({
+              error: {
+                code: 'ATTACHMENT_TOO_LARGE',
+                message: `File exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB per-file limit`,
+                details: { filename: part.filename },
+              },
+            });
+          }
+          filesBuffered.push({ filename: part.filename, mimeType: part.mimetype, buffer: buf });
+        } else if (part.fieldname === 'body') {
+          try {
+            parsedJson = JSON.parse(part.value as string);
+          } catch {
+            return reply.status(400).send({
+              error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'body field is not valid JSON' },
+            });
+          }
+        }
+      }
+    } else {
+      parsedJson = req.body;
+    }
+
+    const parsed = sendEmailBodySchema.safeParse(parsedJson);
     if (!parsed.success) {
       return reply.status(400).send({
         error: {
@@ -129,6 +181,20 @@ export async function registerEmailRoutes(
         },
       });
     }
+
+    // 2. Validate attachments.
+    for (const f of filesBuffered) {
+      const v = validateAttachment({ filename: f.filename, mimeType: f.mimeType, sizeBytes: f.buffer.length });
+      if (!v.ok) {
+        return reply.status(400).send({ error: { code: v.code, message: v.message, details: { filename: f.filename } } });
+      }
+    }
+    const totalCheck = validateAttachmentTotal(filesBuffered.map((f) => f.buffer.length));
+    if (!totalCheck.ok) {
+      return reply.status(400).send({ error: { code: totalCheck.code, message: totalCheck.message } });
+    }
+
+    // 3. Recipient + sender lookups.
     const orgId = req.session!.currentOrgId!;
     const userId = req.user!.id;
     const { provider, fromAddress } = await resolveEmail(orgId);
@@ -170,7 +236,7 @@ export async function registerEmailRoutes(
     const trackEnabled = parsed.data.trackEnabled ?? true;
     const trackingActive = trackEnabled && !!resolvedEnv.EMAIL_TRACKING_SECRET;
 
-    // 1. Pre-create the activity row so we have an ID to embed in tracking URLs.
+    // 4. Pre-create the activity row so we have an ID to embed in tracking URLs.
     //    subject is stamped here so concurrent reads don't see a subject-less row.
     const created = await activitiesRepo.create(orgId, userId, {
       kind: 'email',
@@ -183,7 +249,7 @@ export async function registerEmailRoutes(
       deliveryStatus: 'sent',
     });
 
-    // 2. Build HTML body if tracking is active.
+    // 5. Build HTML body if tracking is active.
     let html: string | undefined;
     if (trackingActive) {
       const token = signTrackingToken(created.id, resolvedEnv.EMAIL_TRACKING_SECRET!);
@@ -198,6 +264,44 @@ export async function registerEmailRoutes(
       html = wrapped.html;
     }
 
+    // 6. Resolve per-org cache settings.
+    const integrationsPublic = await integrations.getMasked(orgId);
+    const cacheDays = integrationsPublic.email.attachmentCacheDays; // '7' | '30' | '90' | 'never'
+    const cacheExpiresAt = cacheDays === 'never' ? null : new Date(Date.now() + Number(cacheDays) * 86_400_000);
+    const cacheDir = resolvedEnv.ATTACHMENTS_CACHE_DIR;
+
+    // 7. Insert attachment rows (cachePath filled after disk write).
+    const attachmentRows = await attachmentsRepo.createMany(
+      orgId,
+      created.id,
+      filesBuffered.map((f) => ({
+        filename: f.filename,
+        mimeType: f.mimeType,
+        sizeBytes: f.buffer.length,
+        cachePath: null,
+        cacheExpiresAt,
+      })),
+    );
+
+    const providerAttachments: { filename: string; path?: string; content?: Buffer }[] = [];
+    for (let i = 0; i < attachmentRows.length; i++) {
+      const row = attachmentRows[i]!;
+      const file = filesBuffered[i]!;
+      try {
+        const rel = await cacheAttachment({ cacheDir, orgId, attachmentId: row.id, buffer: file.buffer });
+        await deps.db
+          .update(schema.emailAttachments)
+          .set({ cachePath: rel })
+          .where(eq(schema.emailAttachments.id, row.id));
+        providerAttachments.push({ filename: file.filename, path: join(cacheDir, rel) });
+      } catch (err) {
+        // Cache write failed (disk full etc.) — send still proceeds from the buffer.
+        req.log.warn({ err, attachmentId: row.id }, 'attachment cache write failed');
+        providerAttachments.push({ filename: file.filename, content: file.buffer });
+      }
+    }
+
+    // 8. Send.
     try {
       const result = await provider.send({
         from: personalisedFrom,
@@ -208,9 +312,10 @@ export async function registerEmailRoutes(
         ...(html ? { html } : {}),
         ...(parsed.data.cc ? { cc: parsed.data.cc } : {}),
         ...(parsed.data.bcc ? { bcc: parsed.data.bcc } : {}),
+        ...(providerAttachments.length > 0 ? { attachments: providerAttachments } : {}),
       });
 
-      // 3. Stamp the SMTP messageId on the activity (subject already set at pre-create).
+      // Stamp the SMTP messageId on the activity (subject already set at pre-create).
       const [updated] = await deps.db
         .update(schema.activities)
         .set({
@@ -220,27 +325,28 @@ export async function registerEmailRoutes(
         .where(eq(schema.activities.id, created.id))
         .returning();
 
-      // 4. Insert a 'sent' email_events row for the timeline.
+      // Insert a 'sent' email_events row for the timeline.
       await deps.db.insert(schema.emailEvents).values({
         organizationId: orgId,
         activityId: created.id,
         eventType: 'sent',
       });
 
-      return reply.status(201).send({ activity: publicActivity(updated ?? created) });
+      const finalAttachments = await attachmentsRepo.listForActivity(orgId, created.id);
+      return reply.status(201).send({ activity: publicActivity(updated ?? created, finalAttachments) });
     } catch (err) {
-      // Send failed — mark the activity row and DON'T record a sent event.
-      // Best-effort: if THIS update also throws, log it but still return the error response.
+      // Roll back attachments (rows + cached files) and mark failed.
       try {
+        const rolled = await attachmentsRepo.deleteForActivity(orgId, created.id);
+        for (const r of rolled) {
+          if (r.cachePath) await evictAttachment({ cacheDir, orgId, attachmentId: r.id });
+        }
         await deps.db
           .update(schema.activities)
           .set({ deliveryStatus: 'failed', updatedAt: new Date() })
           .where(eq(schema.activities.id, created.id));
-      } catch (updateErr) {
-        req.log.error(
-          { err: updateErr, activityId: created.id },
-          'Failed to mark activity as failed',
-        );
+      } catch (rollbackErr) {
+        req.log.error({ err: rollbackErr, activityId: created.id }, 'attachment send rollback failed');
       }
       if (err instanceof EmailDisabledError) return emailDisabled(reply);
       req.log.error({ err }, 'POST /emails failed');
