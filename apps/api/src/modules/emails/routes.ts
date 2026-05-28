@@ -1,5 +1,8 @@
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { and, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
 import {
   buildEmailProvider,
@@ -28,8 +31,10 @@ import {
   MAX_FILE_BYTES,
   MAX_TOTAL_BYTES,
 } from '../../lib/email-attachments-validate.js';
-import { cacheAttachment, evictAttachment } from '../../lib/email-attachments-store.js';
+import { cacheAttachment, evictAttachment, attachmentCachePath } from '../../lib/email-attachments-store.js';
 import { EmailAttachmentsRepo } from './email-attachments.repo.js';
+
+const idParamSchema = z.object({ id: z.string().uuid() });
 
 export interface EmailRoutesDeps {
   db: Database;
@@ -436,6 +441,64 @@ export async function registerEmailRoutes(
     const nextCursor =
       hasMore && sliced.length > 0 ? sliced[sliced.length - 1]!.sentAt.toISOString() : null;
     return reply.send({ items, nextCursor });
+  });
+
+  app.get('/api/v1/attachments/:id', { preHandler: requireOrg }, async (req, reply) => {
+    const params = idParamSchema.safeParse(req.params);
+    if (!params.success) {
+      return reply.status(400).send({
+        error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid id' },
+      });
+    }
+    const orgId = req.session!.currentOrgId!;
+    const row = await attachmentsRepo.findById(orgId, params.data.id);
+    if (!row) {
+      // Don't leak existence across tenants — same 404 as cache-miss.
+      return reply.status(404).send({
+        error: {
+          code: 'ATTACHMENT_NOT_CACHED',
+          message: "Retrieve from your email provider's Sent folder.",
+        },
+      });
+    }
+
+    const cacheDir = resolvedEnv.ATTACHMENTS_CACHE_DIR;
+    const expired = row.cacheExpiresAt !== null && row.cacheExpiresAt <= new Date();
+
+    if (row.cachePath === null || expired) {
+      if (row.cachePath !== null) {
+        // Lazy eviction of the expired file.
+        await attachmentsRepo.clearCachePath(row.id);
+        await evictAttachment({ cacheDir, orgId, attachmentId: row.id });
+      }
+      return reply.status(404).send({
+        error: {
+          code: 'ATTACHMENT_NOT_CACHED',
+          message: "Retrieve from your email provider's Sent folder.",
+        },
+      });
+    }
+
+    const absPath = attachmentCachePath({ cacheDir, orgId, attachmentId: row.id });
+    try {
+      const s = await stat(absPath);
+      if (!s.isFile()) throw new Error('not a file');
+    } catch {
+      // DB says cached but file is gone — clear the column, 404.
+      await attachmentsRepo.clearCachePath(row.id);
+      return reply.status(404).send({
+        error: {
+          code: 'ATTACHMENT_NOT_CACHED',
+          message: "Retrieve from your email provider's Sent folder.",
+        },
+      });
+    }
+
+    reply.header('Content-Type', row.mimeType);
+    reply.header('Content-Length', String(row.sizeBytes));
+    const safeName = row.filename.replace(/"/g, '\\"');
+    reply.header('Content-Disposition', `attachment; filename="${safeName}"`);
+    return reply.send(createReadStream(absPath));
   });
 
   app.get(
