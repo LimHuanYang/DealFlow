@@ -17,6 +17,51 @@ export class ApiException extends Error {
   }
 }
 
+/**
+ * POST a FormData body to the API. The browser sets the multipart
+ * Content-Type + boundary automatically — do NOT set it manually.
+ * Throws the error envelope on non-2xx.
+ */
+export async function apiFetchFormData<T>(path: string, form: FormData): Promise<T> {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  if (!res.ok) {
+    let envelope: unknown;
+    try {
+      envelope = await res.json();
+    } catch {
+      envelope = { error: { code: 'UPSTREAM', message: res.statusText } };
+    }
+    throw envelope;
+  }
+  return (await res.json()) as T;
+}
+
+/**
+ * Download a file from the API. Returns a Blob + filename (from
+ * Content-Disposition), or { notCached: true } on a 404.
+ */
+export async function downloadAttachment(
+  id: string,
+): Promise<{ blob: Blob; filename: string } | { notCached: true }> {
+  const url = `${API_BASE}/api/v1/attachments/${id}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  });
+  if (res.status === 404) return { notCached: true };
+  if (!res.ok) throw new Error(`Download failed: ${res.statusText}`);
+  const blob = await res.blob();
+  const cd = res.headers.get('content-disposition') ?? '';
+  const match = /filename="([^"]+)"/.exec(cd);
+  const filename = match ? match[1]! : 'download';
+  return { blob, filename };
+}
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
   // Only set Content-Type when we're actually sending a body — Fastify's

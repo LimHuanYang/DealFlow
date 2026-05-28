@@ -9,11 +9,15 @@ import type {
   PublicEmailStatus,
   SendEmailInput,
 } from '@dealflow/shared';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiFetchFormData } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 
 interface SendEmailResponse {
   activity: PublicActivity;
+}
+
+interface SendEmailWithAttachments extends SendEmailInput {
+  attachments?: File[];
 }
 
 export function useEmailStatus() {
@@ -27,11 +31,21 @@ export function useEmailStatus() {
 export function useSendEmail() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: SendEmailInput) =>
-      apiFetch<SendEmailResponse>('/api/v1/emails', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }),
+    mutationFn: async (input: SendEmailWithAttachments) => {
+      const { attachments, ...body } = input;
+      if (!attachments || attachments.length === 0) {
+        return apiFetch<SendEmailResponse>('/api/v1/emails', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+      }
+      const form = new FormData();
+      form.append('body', JSON.stringify(body));
+      for (const f of attachments) {
+        form.append('attachments', f, f.name);
+      }
+      return apiFetchFormData<SendEmailResponse>('/api/v1/emails', form);
+    },
     onSuccess: (data) => {
       // The new activity belongs to a contact — invalidate that feed.
       const contactId = data.activity.contactId;
