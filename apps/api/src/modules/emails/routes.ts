@@ -496,7 +496,8 @@ export async function registerEmailRoutes(
 
     reply.header('Content-Type', row.mimeType);
     reply.header('Content-Length', String(row.sizeBytes));
-    const safeName = row.filename.replace(/"/g, '\\"');
+    // Strip CR/LF/control chars (header-injection guard) and escape quotes.
+    const safeName = row.filename.replace(/[\r\n\x00-\x1f]/g, '').replace(/"/g, '\\"');
     reply.header('Content-Disposition', `attachment; filename="${safeName}"`);
     return reply.send(createReadStream(absPath));
   });
