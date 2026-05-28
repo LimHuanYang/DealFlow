@@ -12,3 +12,4 @@ export * from './deals';
 export * from './activities';
 export * from './custom-field-definitions';
 export * from './email-events';
+export * from './email-attachments';
