@@ -23,7 +23,12 @@ describe('email-attachments-store', () => {
 
   it('writes a file at the org+attachment scoped path', async () => {
     const buf = Buffer.from('hello world');
-    const rel = await cacheAttachment({ cacheDir, orgId: ORG_ID, attachmentId: ATT_ID, buffer: buf });
+    const rel = await cacheAttachment({
+      cacheDir,
+      orgId: ORG_ID,
+      attachmentId: ATT_ID,
+      buffer: buf,
+    });
     expect(rel).toBe(`${ORG_ID}/${ATT_ID}`);
     const stat1 = await stat(join(cacheDir, ORG_ID, ATT_ID));
     expect(stat1.size).toBe(buf.length);
@@ -47,7 +52,12 @@ describe('email-attachments-store', () => {
   });
 
   it('evictAttachment removes the file', async () => {
-    await cacheAttachment({ cacheDir, orgId: ORG_ID, attachmentId: ATT_ID, buffer: Buffer.from('x') });
+    await cacheAttachment({
+      cacheDir,
+      orgId: ORG_ID,
+      attachmentId: ATT_ID,
+      buffer: Buffer.from('x'),
+    });
     await evictAttachment({ cacheDir, orgId: ORG_ID, attachmentId: ATT_ID });
     const got = await readCachedAttachment({ cacheDir, orgId: ORG_ID, attachmentId: ATT_ID });
     expect(got).toBeNull();

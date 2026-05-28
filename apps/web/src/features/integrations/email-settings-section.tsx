@@ -33,15 +33,12 @@ export function EmailSettingsSection() {
   }
 
   return (
-    <section
-      className="mt-4 rounded-md border border-neutral-200 p-4"
-      data-testid="email-settings"
-    >
+    <section className="mt-4 rounded-md border border-neutral-200 p-4" data-testid="email-settings">
       <h2 className="mb-1 text-base font-medium">Email attachments</h2>
       <p className="mb-3 text-sm text-neutral-500">
-        How long DealFlow keeps sent-email attachments cached locally for fast re-download.
-        After this window, files are removed and you retrieve them from your email
-        provider&apos;s Sent folder.
+        How long DealFlow keeps sent-email attachments cached locally for fast re-download. After
+        this window, files are removed and you retrieve them from your email provider&apos;s Sent
+        folder.
       </p>
       <div className="flex flex-col gap-2">
         <Label htmlFor="attachment-cache-days">Keep cached attachments for&hellip;</Label>

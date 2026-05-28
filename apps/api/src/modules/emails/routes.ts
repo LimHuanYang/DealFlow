@@ -31,7 +31,11 @@ import {
   MAX_FILE_BYTES,
   MAX_TOTAL_BYTES,
 } from '../../lib/email-attachments-validate.js';
-import { cacheAttachment, evictAttachment, attachmentCachePath } from '../../lib/email-attachments-store.js';
+import {
+  cacheAttachment,
+  evictAttachment,
+  attachmentCachePath,
+} from '../../lib/email-attachments-store.js';
 import { EmailAttachmentsRepo } from './email-attachments.repo.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
@@ -180,7 +184,10 @@ export async function registerEmailRoutes(
             parsedJson = JSON.parse(part.value as string);
           } catch {
             return reply.status(400).send({
-              error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'body field is not valid JSON' },
+              error: {
+                code: ERROR_CODES.VALIDATION_FAILED,
+                message: 'body field is not valid JSON',
+              },
             });
           }
         }
@@ -202,14 +209,22 @@ export async function registerEmailRoutes(
 
     // 2. Validate attachments.
     for (const f of filesBuffered) {
-      const v = validateAttachment({ filename: f.filename, mimeType: f.mimeType, sizeBytes: f.buffer.length });
+      const v = validateAttachment({
+        filename: f.filename,
+        mimeType: f.mimeType,
+        sizeBytes: f.buffer.length,
+      });
       if (!v.ok) {
-        return reply.status(400).send({ error: { code: v.code, message: v.message, details: { filename: f.filename } } });
+        return reply
+          .status(400)
+          .send({ error: { code: v.code, message: v.message, details: { filename: f.filename } } });
       }
     }
     const totalCheck = validateAttachmentTotal(filesBuffered.map((f) => f.buffer.length));
     if (!totalCheck.ok) {
-      return reply.status(400).send({ error: { code: totalCheck.code, message: totalCheck.message } });
+      return reply
+        .status(400)
+        .send({ error: { code: totalCheck.code, message: totalCheck.message } });
     }
 
     // 3. Recipient + sender lookups.
@@ -285,7 +300,8 @@ export async function registerEmailRoutes(
     // 6. Resolve per-org cache settings.
     const integrationsPublic = await integrations.getMasked(orgId);
     const cacheDays = integrationsPublic.email.attachmentCacheDays; // '7' | '30' | '90' | 'never'
-    const cacheExpiresAt = cacheDays === 'never' ? null : new Date(Date.now() + Number(cacheDays) * 86_400_000);
+    const cacheExpiresAt =
+      cacheDays === 'never' ? null : new Date(Date.now() + Number(cacheDays) * 86_400_000);
     const cacheDir = resolvedEnv.ATTACHMENTS_CACHE_DIR;
 
     // 7. Insert attachment rows (cachePath filled after disk write).
@@ -306,7 +322,12 @@ export async function registerEmailRoutes(
       const row = attachmentRows[i]!;
       const file = filesBuffered[i]!;
       try {
-        const rel = await cacheAttachment({ cacheDir, orgId, attachmentId: row.id, buffer: file.buffer });
+        const rel = await cacheAttachment({
+          cacheDir,
+          orgId,
+          attachmentId: row.id,
+          buffer: file.buffer,
+        });
         await deps.db
           .update(schema.emailAttachments)
           .set({ cachePath: rel })
@@ -351,7 +372,9 @@ export async function registerEmailRoutes(
       });
 
       const finalAttachments = await attachmentsRepo.listForActivity(orgId, created.id);
-      return reply.status(201).send({ activity: publicActivity(updated ?? created, finalAttachments) });
+      return reply
+        .status(201)
+        .send({ activity: publicActivity(updated ?? created, finalAttachments) });
     } catch (err) {
       // Roll back attachments (rows + cached files) and mark failed.
       try {
@@ -364,7 +387,10 @@ export async function registerEmailRoutes(
           .set({ deliveryStatus: 'failed', updatedAt: new Date() })
           .where(eq(schema.activities.id, created.id));
       } catch (rollbackErr) {
-        req.log.error({ err: rollbackErr, activityId: created.id }, 'attachment send rollback failed');
+        req.log.error(
+          { err: rollbackErr, activityId: created.id },
+          'attachment send rollback failed',
+        );
       }
       if (err instanceof EmailDisabledError) return emailDisabled(reply);
       req.log.error({ err }, 'POST /emails failed');
@@ -513,6 +539,7 @@ export async function registerEmailRoutes(
     reply.header('Content-Type', row.mimeType);
     reply.header('Content-Length', String(row.sizeBytes));
     // Strip CR/LF/control chars (header-injection guard) and escape quotes.
+    // eslint-disable-next-line no-control-regex -- intentionally matching control chars to sanitize the header value
     const safeName = row.filename.replace(/[\r\n\x00-\x1f]/g, '').replace(/"/g, '\\"');
     reply.header('Content-Disposition', `attachment; filename="${safeName}"`);
     return reply.send(createReadStream(absPath));

@@ -15,7 +15,11 @@ type Row = typeof schema.emailAttachments.$inferSelect;
 export class EmailAttachmentsRepo {
   constructor(private readonly db: Database) {}
 
-  async createMany(orgId: string, activityId: string, inputs: NewAttachmentInput[]): Promise<Row[]> {
+  async createMany(
+    orgId: string,
+    activityId: string,
+    inputs: NewAttachmentInput[],
+  ): Promise<Row[]> {
     if (inputs.length === 0) return [];
     return this.db
       .insert(schema.emailAttachments)

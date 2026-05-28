@@ -71,8 +71,7 @@ export function ComposeEmailDialog({
         window.alert(`${f.name} is larger than 25 MB and was skipped.`);
         continue;
       }
-      const projected =
-        totalBytes + accepted.reduce((s, a) => s + a.size, 0) + f.size;
+      const projected = totalBytes + accepted.reduce((s, a) => s + a.size, 0) + f.size;
       if (projected > MAX_TOTAL) {
         window.alert(`Total attachment size would exceed 25 MB. ${f.name} skipped.`);
         continue;

@@ -39,7 +39,13 @@ describe('runAttachmentEvictionSweep', () => {
       .returning();
     const [activity] = await testDb.db
       .insert(schema.activities)
-      .values({ organizationId: orgId, ownerUserId: userId, kind: 'email', body: 'b', contactId: contact!.id })
+      .values({
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'b',
+        contactId: contact!.id,
+      })
       .returning();
     const [att] = await testDb.db
       .insert(schema.emailAttachments)

@@ -42,8 +42,20 @@ describe('EmailAttachmentsRepo', () => {
 
   it('createMany inserts attachment rows and returns them', async () => {
     const rows = await repo.createMany(orgId, activityId, [
-      { filename: 'a.pdf', mimeType: 'application/pdf', sizeBytes: 100, cacheExpiresAt: null, cachePath: null },
-      { filename: 'b.png', mimeType: 'image/png', sizeBytes: 200, cacheExpiresAt: new Date(Date.now() + 86_400_000), cachePath: `${orgId}/x` },
+      {
+        filename: 'a.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 100,
+        cacheExpiresAt: null,
+        cachePath: null,
+      },
+      {
+        filename: 'b.png',
+        mimeType: 'image/png',
+        sizeBytes: 200,
+        cacheExpiresAt: new Date(Date.now() + 86_400_000),
+        cachePath: `${orgId}/x`,
+      },
     ]);
     expect(rows).toHaveLength(2);
     expect(rows[0]!.filename).toBe('a.pdf');
@@ -67,7 +79,9 @@ describe('EmailAttachmentsRepo', () => {
   });
 
   it('clearCachePath nulls out cache columns for an id', async () => {
-    const row = (await repo.listForActivity(orgId, activityId)).find((r) => r.filename === 'b.png')!;
+    const row = (await repo.listForActivity(orgId, activityId)).find(
+      (r) => r.filename === 'b.png',
+    )!;
     await repo.clearCachePath(row.id);
     const after = await repo.findById(orgId, row.id);
     expect(after!.cachePath).toBeNull();

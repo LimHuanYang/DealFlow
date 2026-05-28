@@ -524,11 +524,7 @@ describe('POST /api/v1/emails — attachments (multipart)', () => {
 
     const form = new FormData();
     form.append('body', JSON.stringify({ contactId, subject: 's', body: 'b' }));
-    form.append(
-      'attachments',
-      new Blob([Buffer.from('hi')], { type: 'text/plain' }),
-      'note.txt',
-    );
+    form.append('attachments', new Blob([Buffer.from('hi')], { type: 'text/plain' }), 'note.txt');
 
     const res = await app.inject({
       method: 'POST',
@@ -572,11 +568,7 @@ describe('POST /api/v1/emails — attachments (multipart)', () => {
 
     const form = new FormData();
     form.append('body', JSON.stringify({ contactId, subject: 's', body: 'b' }));
-    form.append(
-      'attachments',
-      new Blob([Buffer.from('hi')], { type: 'text/plain' }),
-      'note.txt',
-    );
+    form.append('attachments', new Blob([Buffer.from('hi')], { type: 'text/plain' }), 'note.txt');
 
     const res = await app.inject({
       method: 'POST',

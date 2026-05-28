@@ -53,12 +53,22 @@ describe('validateAttachment', () => {
     ).toBe(false);
   });
 
-  it.each(['installer.bat', 'script.cmd', 'app.com', 'pkg.msi', 'lib.dll', 'macro.vbs', 'code.js', 'run.ps1', 'screen.scr', 'java.jar'])(
-    'rejects %s',
-    (filename) => {
-      expect(validateAttachment({ filename, mimeType: 'application/octet-stream', sizeBytes: 10 }).ok).toBe(false);
-    },
-  );
+  it.each([
+    'installer.bat',
+    'script.cmd',
+    'app.com',
+    'pkg.msi',
+    'lib.dll',
+    'macro.vbs',
+    'code.js',
+    'run.ps1',
+    'screen.scr',
+    'java.jar',
+  ])('rejects %s', (filename) => {
+    expect(
+      validateAttachment({ filename, mimeType: 'application/octet-stream', sizeBytes: 10 }).ok,
+    ).toBe(false);
+  });
 
   it('rejects a blocked content-type', () => {
     expect(
