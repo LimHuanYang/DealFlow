@@ -117,6 +117,29 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
 
     const { registerCustomFieldsRoutes } = await import('./modules/custom-fields/routes.js');
     await registerCustomFieldsRoutes(app, { db: opts.db });
+
+    const evict = async () => {
+      try {
+        const { runAttachmentEvictionSweep } = await import('./jobs/attachments-eviction.js');
+        const result = await runAttachmentEvictionSweep({
+          db: opts.db!,
+          cacheDir: env.ATTACHMENTS_CACHE_DIR,
+        });
+        if (result.processed > 0) {
+          app.log.info(
+            { processed: result.processed, errors: result.errors },
+            'attachment eviction sweep complete',
+          );
+        }
+      } catch (err) {
+        app.log.error({ err }, 'attachment eviction sweep failed');
+      }
+    };
+    void evict();
+    const evictInterval = setInterval(() => void evict(), 24 * 60 * 60 * 1000);
+    app.addHook('onClose', async () => {
+      clearInterval(evictInterval);
+    });
   }
 
   return app;
