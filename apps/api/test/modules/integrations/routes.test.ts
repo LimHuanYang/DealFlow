@@ -222,3 +222,68 @@ describe('POST /api/v1/integrations/test-email', () => {
     expect(body.error).toBeDefined();
   });
 });
+
+describe('Integrations PATCH — email.attachmentCacheDays', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('persists a valid value', async () => {
+    const { cookie } = await signupTestUser(app);
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+      payload: { email: { attachmentCacheDays: '7' } },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().email.attachmentCacheDays).toBe('7');
+  });
+
+  it('defaults to 30 when never set', async () => {
+    const { cookie } = await signupTestUser(app);
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+    });
+    expect(res.json().email.attachmentCacheDays).toBe('30');
+  });
+
+  it('rejects an invalid value', async () => {
+    const { cookie } = await signupTestUser(app);
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+      payload: { email: { attachmentCacheDays: '60' } },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('accepts "never" and round-trips', async () => {
+    const { cookie } = await signupTestUser(app);
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+      payload: { email: { attachmentCacheDays: 'never' } },
+    });
+    expect(patch.json().email.attachmentCacheDays).toBe('never');
+    const get = await app.inject({
+      method: 'GET',
+      url: '/api/v1/integrations',
+      headers: { cookie },
+    });
+    expect(get.json().email.attachmentCacheDays).toBe('never');
+  });
+});

@@ -3,6 +3,7 @@ import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
 import type {
+  AttachmentCacheDays,
   PublicAIProviderConfig,
   PublicIntegrations,
   PublicSmtpConfig,
@@ -23,11 +24,16 @@ interface StoredSmtp {
   fromName?: string;
 }
 
+interface StoredEmail {
+  attachmentCacheDays?: string;
+}
+
 interface StoredIntegrations {
   anthropic?: StoredAIProvider | null;
   gemini?: StoredAIProvider | null;
   grok?: StoredAIProvider | null;
   smtp?: StoredSmtp | null;
+  email?: StoredEmail;
 }
 
 export interface DecryptedAIProvider {
@@ -76,12 +82,25 @@ export class OrgIntegrationsRepo {
 
   /** Public masked view for the Settings UI. Never returns real secrets. */
   async getMasked(orgId: string): Promise<PublicIntegrations> {
-    const decrypted = await this.getDecrypted(orgId);
+    const stored = await this.loadStored(orgId);
+    const decrypted = {
+      anthropic: this.decryptAI(stored.anthropic),
+      gemini: this.decryptAI(stored.gemini),
+      grok: this.decryptAI(stored.grok),
+      smtp: this.decryptSmtp(stored.smtp),
+    };
+    const VALID_DAYS = ['7', '30', '90', 'never'] as const;
+    const storedDays = stored.email?.attachmentCacheDays;
+    const attachmentCacheDays: AttachmentCacheDays =
+      typeof storedDays === 'string' && (VALID_DAYS as readonly string[]).includes(storedDays)
+        ? (storedDays as AttachmentCacheDays)
+        : '30';
     return {
       anthropic: maskAI(decrypted.anthropic),
       gemini: maskAI(decrypted.gemini),
       grok: maskAI(decrypted.grok),
       smtp: maskSmtp(decrypted.smtp),
+      email: { attachmentCacheDays },
     };
   }
 
@@ -132,6 +151,9 @@ export class OrgIntegrationsRepo {
               fromEmail: patch.smtp.fromEmail,
               fromName: patch.smtp.fromName,
             };
+    }
+    if (patch.email !== undefined && patch.email !== null) {
+      next.email = { ...(next.email ?? {}), ...patch.email };
     }
 
     await this.db
