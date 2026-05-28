@@ -18,6 +18,7 @@ const envSchema = z
     INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
     PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
     EMAIL_TRACKING_SECRET: z.string().min(32).optional(),
+    ATTACHMENTS_CACHE_DIR: z.string().default('apps/api/.data/cache/attachments'),
   })
   .superRefine((data, ctx) => {
     // DATABASE_URL is required outside of `test` mode where the test helper
