@@ -3,7 +3,7 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { and, desc, eq, gte, ilike, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, inArray, lt, sql } from 'drizzle-orm';
 import {
   buildEmailProvider,
   describeEmail,
@@ -428,6 +428,21 @@ export async function registerEmailRoutes(
 
     const hasMore = rows.length > PAGE_SIZE;
     const sliced = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+
+    const ids = sliced.map((r) => r.id);
+    let countsByActivity = new Map<string, number>();
+    if (ids.length > 0) {
+      const countRows = await deps.db
+        .select({
+          activityId: schema.emailAttachments.activityId,
+          c: sql<number>`COUNT(*)::int`,
+        })
+        .from(schema.emailAttachments)
+        .where(inArray(schema.emailAttachments.activityId, ids))
+        .groupBy(schema.emailAttachments.activityId);
+      countsByActivity = new Map(countRows.map((r) => [r.activityId, r.c]));
+    }
+
     const items = sliced.map((r) => ({
       id: r.id,
       subject: r.subject,
@@ -437,6 +452,7 @@ export async function registerEmailRoutes(
       deliveryStatus: r.deliveryStatus as 'sent' | 'failed',
       openCount: r.openCount,
       clickCount: r.clickCount,
+      attachmentCount: countsByActivity.get(r.id) ?? 0,
     }));
     const nextCursor =
       hasMore && sliced.length > 0 ? sliced[sliced.length - 1]!.sentAt.toISOString() : null;

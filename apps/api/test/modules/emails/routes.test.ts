@@ -598,3 +598,63 @@ describe('POST /api/v1/emails — attachments (multipart)', () => {
     await testDb.stop();
   });
 });
+
+describe('GET /api/v1/emails - attachmentCount', () => {
+  it('each row has attachmentCount', async () => {
+    const testDb = await startTestPostgres();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fakeSmtp(),
+        fromAddress: 'noreply@dealflow.app',
+      }),
+    });
+    const { cookie, userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X', email: 's@s.com' })
+      .returning();
+    const [activity] = await testDb.db
+      .insert(schema.activities)
+      .values({
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'b',
+        subject: 'with files',
+        contactId: contact!.id,
+      })
+      .returning();
+    await testDb.db.insert(schema.emailAttachments).values([
+      {
+        organizationId: orgId,
+        activityId: activity!.id,
+        filename: 'x.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 100,
+        cachePath: null,
+        cacheExpiresAt: null,
+      },
+      {
+        organizationId: orgId,
+        activityId: activity!.id,
+        filename: 'y.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 200,
+        cachePath: null,
+        cacheExpiresAt: null,
+      },
+    ]);
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/emails?range=all',
+      headers: { cookie },
+    });
+    const body = res.json() as { items: { subject: string; attachmentCount: number }[] };
+    const row = body.items.find((r) => r.subject === 'with files');
+    expect(row!.attachmentCount).toBe(2);
+
+    await app.close();
+    await testDb.stop();
+  });
+});

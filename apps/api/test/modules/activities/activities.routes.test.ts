@@ -521,3 +521,93 @@ describe('GET /api/v1/activities/:id/events', () => {
     }
   }, 30_000);
 });
+
+describe('GET /api/v1/activities/:id (attachments included)', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+  }, 60_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  }, 60_000);
+
+  it('returns an empty attachments array when there are none', async () => {
+    const { cookie, userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const [activity] = await testDb.db
+      .insert(schema.activities)
+      .values({
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'b',
+        contactId: contact!.id,
+      })
+      .returning();
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/activities/${activity!.id}`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { activity: { attachments: unknown[] } };
+    expect(body.activity.attachments).toEqual([]);
+  });
+
+  it('includes attachments with cached flag', async () => {
+    const { cookie, userId, orgId } = await signupTestUser(app);
+    const [contact] = await testDb.db
+      .insert(schema.contacts)
+      .values({ organizationId: orgId, firstName: 'X' })
+      .returning();
+    const [activity] = await testDb.db
+      .insert(schema.activities)
+      .values({
+        organizationId: orgId,
+        ownerUserId: userId,
+        kind: 'email',
+        body: 'b',
+        contactId: contact!.id,
+      })
+      .returning();
+    await testDb.db.insert(schema.emailAttachments).values([
+      {
+        organizationId: orgId,
+        activityId: activity!.id,
+        filename: 'a.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 100,
+        cachePath: `${orgId}/${activity!.id}`,
+        cacheExpiresAt: new Date(Date.now() + 86_400_000),
+      },
+      {
+        organizationId: orgId,
+        activityId: activity!.id,
+        filename: 'b.png',
+        mimeType: 'image/png',
+        sizeBytes: 200,
+        cachePath: null,
+        cacheExpiresAt: null,
+      },
+    ]);
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/activities/${activity!.id}`,
+      headers: { cookie },
+    });
+    const body = res.json() as {
+      activity: { attachments: { filename: string; cached: boolean }[] };
+    };
+    expect(body.activity.attachments).toHaveLength(2);
+    expect(body.activity.attachments.find((a) => a.filename === 'a.pdf')!.cached).toBe(true);
+    expect(body.activity.attachments.find((a) => a.filename === 'b.png')!.cached).toBe(false);
+  });
+});

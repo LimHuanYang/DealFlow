@@ -21,6 +21,7 @@ export const publicEmailRowSchema = z.object({
   deliveryStatus: z.enum(['sent', 'failed']),
   openCount: z.number().int().nonnegative(),
   clickCount: z.number().int().nonnegative(),
+  attachmentCount: z.number().int().nonnegative(),
 });
 export type PublicEmailRow = z.infer<typeof publicEmailRowSchema>;
 

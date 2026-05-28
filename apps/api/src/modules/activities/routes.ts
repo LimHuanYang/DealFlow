@@ -12,6 +12,7 @@ import {
 import { requireOrg } from '../../plugins/require-org.js';
 import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
 import { ActivitiesRepo } from './activities.repo.js';
+import { EmailAttachmentsRepo } from '../emails/email-attachments.repo.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -25,7 +26,10 @@ const listQuerySchema = z
     message: 'Set exactly one of contactId, companyId, dealId',
   });
 
-function publicActivity(row: typeof schemaType.activities.$inferSelect) {
+function publicActivity(
+  row: typeof schemaType.activities.$inferSelect,
+  attachments: (typeof schemaType.emailAttachments.$inferSelect)[] = [],
+) {
   return {
     id: row.id,
     kind: row.kind,
@@ -38,6 +42,14 @@ function publicActivity(row: typeof schemaType.activities.$inferSelect) {
     dealId: row.dealId,
     ownerUserId: row.ownerUserId,
     customFields: (row.customFields as Record<string, unknown>) ?? {},
+    attachments: (attachments ?? []).map((a) => ({
+      id: a.id,
+      filename: a.filename,
+      mimeType: a.mimeType,
+      sizeBytes: a.sizeBytes,
+      cached: a.cachePath !== null && (a.cacheExpiresAt === null || a.cacheExpiresAt > new Date()),
+      createdAt: a.createdAt.toISOString(),
+    })),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -89,6 +101,7 @@ export async function registerActivitiesRoutes(
   deps: { db: Database },
 ): Promise<void> {
   const repo = new ActivitiesRepo(deps.db);
+  const attachmentsRepo = new EmailAttachmentsRepo(deps.db);
 
   app.post('/api/v1/activities', { preHandler: requireOrg }, async (req, reply) => {
     const parsed = createActivityBodySchema.safeParse(req.body);
@@ -147,7 +160,7 @@ export async function registerActivitiesRoutes(
     }
     const orgId = req.session!.currentOrgId!;
     const rows = await repo.listForParent(orgId, parsed.data);
-    return reply.send({ items: rows.map(publicActivity) });
+    return reply.send({ items: rows.map((r) => publicActivity(r)) });
   });
 
   app.get('/api/v1/activities/:id', { preHandler: requireOrg }, async (req, reply) => {
@@ -164,7 +177,8 @@ export async function registerActivitiesRoutes(
         .status(404)
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
     }
-    return reply.send({ activity: publicActivity(row) });
+    const attachments = await attachmentsRepo.listForActivity(orgId, params.data.id);
+    return reply.send({ activity: publicActivity(row, attachments) });
   });
 
   app.get('/api/v1/activities/:id/events', { preHandler: requireOrg }, async (req, reply) => {
@@ -285,6 +299,6 @@ export async function registerActivitiesRoutes(
     }
     const orgId = req.session!.currentOrgId!;
     const rows = await repo.listTasks(orgId, parsed.data);
-    return reply.send({ items: rows.map(publicActivity) });
+    return reply.send({ items: rows.map((r) => publicActivity(r)) });
   });
 }
