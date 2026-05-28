@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { PublicEmailAttachment } from './emails.js';
 
 export const ACTIVITY_KINDS = ['note', 'task', 'email'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
@@ -92,6 +93,7 @@ export interface PublicActivity {
   clickCount: number;
   firstClickedAt: string | null;
   lastClickedAt: string | null;
+  attachments: PublicEmailAttachment[];
   createdAt: string;
   updatedAt: string;
 }

@@ -34,3 +34,17 @@ export interface PublicEmailStatus {
   /** Raw sender email address when enabled, else null. The UI displays it as-is; the API layer wraps it as "{userName} <{from}>" per-email. */
   from: string | null;
 }
+
+export const ATTACHMENT_CACHE_DAYS = ['7', '30', '90', 'never'] as const;
+export const attachmentCacheDaysSchema = z.enum(ATTACHMENT_CACHE_DAYS);
+export type AttachmentCacheDays = z.infer<typeof attachmentCacheDaysSchema>;
+
+export const publicEmailAttachmentSchema = z.object({
+  id: z.string().uuid(),
+  filename: z.string(),
+  mimeType: z.string(),
+  sizeBytes: z.number().int().nonnegative(),
+  cached: z.boolean(),
+  createdAt: z.string(),
+});
+export type PublicEmailAttachment = z.infer<typeof publicEmailAttachmentSchema>;

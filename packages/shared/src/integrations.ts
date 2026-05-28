@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { attachmentCacheDaysSchema, type AttachmentCacheDays } from './emails.js';
 
 const aiProviderConfigSchema = z.object({
   apiKey: z.string().min(1),
@@ -23,6 +24,13 @@ export const updateIntegrationsBodySchema = z.object({
   gemini: aiProviderConfigSchema.nullable().optional(),
   grok: aiProviderConfigSchema.nullable().optional(),
   smtp: smtpConfigSchema.nullable().optional(),
+  email: z
+    .object({
+      attachmentCacheDays: attachmentCacheDaysSchema,
+    })
+    .partial()
+    .nullable()
+    .optional(),
 });
 export type UpdateIntegrationsInput = z.infer<typeof updateIntegrationsBodySchema>;
 
@@ -60,6 +68,9 @@ export interface PublicIntegrations {
   gemini: PublicAIProviderConfig;
   grok: PublicAIProviderConfig;
   smtp: PublicSmtpConfig;
+  email: {
+    attachmentCacheDays: AttachmentCacheDays;
+  };
 }
 
 export interface TestResultResponse {
