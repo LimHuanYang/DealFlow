@@ -26,6 +26,7 @@ import {
   validateAttachment,
   validateAttachmentTotal,
   MAX_FILE_BYTES,
+  MAX_TOTAL_BYTES,
 } from '../../lib/email-attachments-validate.js';
 import { cacheAttachment, evictAttachment } from '../../lib/email-attachments-store.js';
 import { EmailAttachmentsRepo } from './email-attachments.repo.js';
@@ -144,6 +145,7 @@ export async function registerEmailRoutes(
     const filesBuffered: { filename: string; mimeType: string; buffer: Buffer }[] = [];
 
     if (req.isMultipart()) {
+      let runningTotal = 0;
       for await (const part of req.parts()) {
         if (part.type === 'file') {
           const buf = await part.toBuffer();
@@ -153,6 +155,17 @@ export async function registerEmailRoutes(
                 code: 'ATTACHMENT_TOO_LARGE',
                 message: `File exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB per-file limit`,
                 details: { filename: part.filename },
+              },
+            });
+          }
+          // Running-total guard: abort early so we never buffer more than the
+          // total limit (+ at most one in-flight file) in memory.
+          runningTotal += buf.length;
+          if (runningTotal > MAX_TOTAL_BYTES) {
+            return reply.status(400).send({
+              error: {
+                code: 'ATTACHMENTS_TOTAL_TOO_LARGE',
+                message: `Total attachment size exceeds ${MAX_TOTAL_BYTES / 1024 / 1024} MB limit`,
               },
             });
           }

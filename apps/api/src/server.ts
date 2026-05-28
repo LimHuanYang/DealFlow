@@ -51,7 +51,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   await app.register(multipart.default, {
     limits: {
       fileSize: 25 * 1024 * 1024, // 25 MB per file
-      files: 20,
+      files: 10,
       fields: 10,
     },
     attachFieldsToBody: false,
