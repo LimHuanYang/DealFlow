@@ -120,3 +120,53 @@ describe('SmtpEmailProvider — cc/bcc/html extensions', () => {
     expect(calls[0].text).toBe('plain');
   });
 });
+
+describe('SmtpEmailProvider — attachments', () => {
+  it('passes through nodemailer-shaped attachments', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls: any[] = [];
+    const fakeTransporter = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sendMail: async (opts: any) => {
+        calls.push(opts);
+        return { messageId: 'm-att-1' };
+      },
+    };
+    const p = new SmtpEmailProvider({ transport: fakeTransporter as never });
+    await p.send({
+      from: 'Alice <a@a.com>',
+      to: 's@s.com',
+      replyTo: 'a@a.com',
+      subject: 'with attachments',
+      text: 'see attached',
+      attachments: [
+        { filename: 'proposal.pdf', content: Buffer.from('fake pdf bytes') },
+        { filename: 'pic.png', path: '/tmp/pic.png' },
+      ],
+    });
+    expect(calls[0].attachments).toHaveLength(2);
+    expect(calls[0].attachments[0].filename).toBe('proposal.pdf');
+    expect(calls[0].attachments[1].path).toBe('/tmp/pic.png');
+  });
+
+  it('omits attachments key entirely when none provided', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls: any[] = [];
+    const fakeTransporter = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      sendMail: async (opts: any) => {
+        calls.push(opts);
+        return { messageId: 'm-noatt' };
+      },
+    };
+    const p = new SmtpEmailProvider({ transport: fakeTransporter as never });
+    await p.send({
+      from: 'Alice <a@a.com>',
+      to: 's@s.com',
+      replyTo: 'a@a.com',
+      subject: 'no attachments',
+      text: 'plain',
+    });
+    expect('attachments' in calls[0]).toBe(false);
+  });
+});

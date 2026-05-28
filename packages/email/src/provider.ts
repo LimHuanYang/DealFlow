@@ -14,6 +14,15 @@ export interface SendEmailInput {
   cc?: string[];
   /** Optional BCC recipients. */
   bcc?: string[];
+  /** Optional file attachments. */
+  attachments?: SendEmailAttachment[];
+}
+
+export interface SendEmailAttachment {
+  filename: string;
+  /** Provide ONE of: `content` (Buffer) or `path` (file on disk). nodemailer reads from whichever is set. */
+  content?: Buffer;
+  path?: string;
 }
 
 export interface SendEmailOutput {
