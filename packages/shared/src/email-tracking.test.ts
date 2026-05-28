@@ -112,6 +112,7 @@ describe('publicEmailRowSchema', () => {
         deliveryStatus: 'sent',
         openCount: 3,
         clickCount: 1,
+        attachmentCount: 2,
       }),
     ).not.toThrow();
   });
