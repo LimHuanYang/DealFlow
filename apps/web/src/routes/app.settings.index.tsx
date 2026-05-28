@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AIIntegrationsSection } from '@/features/integrations/ai-integrations-section';
 import { SmtpIntegrationSection } from '@/features/integrations/smtp-integration-section';
+import { EmailSettingsSection } from '@/features/integrations/email-settings-section';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
 
 export const Route = createFileRoute('/app/settings/')({
@@ -112,6 +113,8 @@ function SettingsForm({ org }: SettingsFormProps) {
       <AIIntegrationsSection />
 
       <SmtpIntegrationSection />
+
+      <EmailSettingsSection />
 
       <section className="mt-4 rounded-md border border-neutral-200 p-4">
         <h2 className="mb-1 text-base font-medium">Custom fields</h2>
