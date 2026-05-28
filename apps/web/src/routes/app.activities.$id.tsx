@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-keys';
 import { Button } from '@/components/ui/button';
 import { EmailEngagementTimeline } from '@/features/emails/email-engagement-timeline';
+import { EmailAttachmentsList } from '@/features/emails/email-attachments-list';
 
 export const Route = createFileRoute('/app/activities/$id')({
   component: ActivityDetailPage,
@@ -83,6 +84,10 @@ function ActivityDetailPage() {
       </header>
 
       {a.kind === 'email' && <EmailEngagementTimeline activity={a} />}
+
+      {a.kind === 'email' && a.attachments.length > 0 && (
+        <EmailAttachmentsList attachments={a.attachments} />
+      )}
 
       <section>
         <CustomFieldsBlock
