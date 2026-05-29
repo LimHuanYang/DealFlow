@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>DealFlow — Manual Testing Checklist</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #fafaf9; --panel: #fff; --border: #e5e7eb; --border-strong: #d4d4d4;
+      --text: #171717; --muted: #737373; --subtle: #a3a3a3;
+      --green: #16a34a; --green-bg: #dcfce7; --red: #dc2626; --red-bg: #fee2e2;
+      --amber: #b45309; --amber-bg: #fef3c7; --blue: #2563eb; --blue-bg: #dbeafe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 32px 20px 100px; background: var(--bg); color: var(--text);
+      font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.5;
+    }
+    .page { max-width: 920px; margin: 0 auto; }
+    h1 { font-size: 28px; margin: 0 0 2px; letter-spacing: -0.02em; }
+    .lede { color: var(--muted); margin: 0 0 8px; font-size: 14px; }
+    .progress-wrap { margin: 16px 0 28px; }
+    .progress-bar { height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; background: var(--green); transition: width .25s; }
+    .progress-label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* status summary table */
+    table.summary { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; font-size: 14px; margin-bottom: 36px; }
+    table.summary th, table.summary td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    table.summary th { background: #fafafa; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+    table.summary tr:last-child td { border-bottom: 0; }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.done { background: var(--green-bg); color: #166534; }
+    .pill.todo { background: var(--red-bg); color: #991b1b; }
+    .pill.partial { background: var(--amber-bg); color: var(--amber); }
+    .pill.foundational { background: #f4f4f5; color: var(--muted); }
+
+    section.feature { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+    section.feature.priority { border-color: #fcd34d; box-shadow: 0 0 0 3px var(--amber-bg); }
+    .feature h2 { font-size: 18px; margin: 0 0 2px; display: flex; align-items: center; gap: 10px; }
+    .feature .why { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+
+    .prereq { background: var(--amber-bg); border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; font-size: 13px; color: #78350f; }
+    .prereq strong { color: #78350f; }
+
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+    ol.steps li { position: relative; padding: 8px 8px 8px 40px; border-radius: 6px; }
+    ol.steps li:hover { background: #fafafa; }
+    ol.steps li .num { position: absolute; left: 8px; top: 8px; width: 22px; height: 22px; border-radius: 50%; background: #f4f4f5; color: var(--muted); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+    .check-row { display: flex; align-items: flex-start; gap: 10px; }
+    .check-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+    .check-row label { cursor: pointer; font-size: 14px; }
+    .expect { display: block; margin-top: 3px; font-size: 12.5px; color: var(--green); }
+    code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px; color: #1f2937; }
+    .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; padding-left: 6px; border-left: 2px solid var(--border-strong); }
+    .reset-btn { background: #fff; border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--muted); }
+    .reset-btn:hover { color: var(--text); }
+    .legend { font-size: 12px; color: var(--subtle); margin-top: 4px; }
+  </style>
+</head>
+<body>
+<main class="page">
+  <h1>DealFlow — Manual Testing Checklist</h1>
+  <p class="lede">What's verified, what isn't, and exactly how to test the gaps. Tick boxes as you go — progress saves in this browser.</p>
+
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
+    <div class="progress-label" id="plabel">0 / 0 checks complete</div>
+  </div>
+
+  <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Status overview</h2>
+  <table class="summary">
+    <thead><tr><th>Feature</th><th>Status</th><th>What's left to verify</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Custom Fields</strong></td><td><span class="pill done">Tested ✓</span></td><td>You confirmed it works.</td></tr>
+      <tr><td><strong>AI + SMTP integrations</strong></td><td><span class="pill done">Tested ✓</span></td><td>You confirmed send + AI work.</td></tr>
+      <tr><td><strong>Email Attachments</strong></td><td><span class="pill todo">Not tested</span></td><td>Full flow — send w/ files, download, retention. <em>Mostly local-testable.</em></td></tr>
+      <tr><td><strong>Email Tracking (opens/clicks)</strong></td><td><span class="pill partial">Partly / blocked</span></td><td>Needs a public URL (ngrok) — localhost can't receive pixel/click hits.</td></tr>
+      <tr><td><strong>Reports &amp; Dashboard</strong></td><td><span class="pill todo">Not tested</span></td><td>KPI tiles, charts, top-deals — verify numbers render.</td></tr>
+      <tr><td><strong>Core CRM</strong> (contacts/companies/deals/pipelines/activities)</td><td><span class="pill foundational">Foundational</span></td><td>Works; quick sanity pass only if you want.</td></tr>
+    </tbody>
+  </table>
+  <p class="legend">Recommended order: ① Email Attachments (easiest, all local) → ② Reports &amp; Dashboard → ③ Email Tracking (needs ngrok) → ④ optional Core CRM sanity.</p>
+
+  <!-- ============ EMAIL ATTACHMENTS ============ -->
+  <section class="feature priority">
+    <h2>① Email Attachments <span class="pill todo">Not tested</span></h2>
+    <p class="why">The newest feature. Attachments ride the SMTP send (so they land in your real Sent folder), and DealFlow keeps a local cache for in-app download. <strong>This is fully testable on localhost</strong> — no ngrok needed.</p>
+
+    <ol class="steps" data-feature="attachments">
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Start the stack: <code>pnpm dev</code>. Make sure SMTP is configured (Settings → AI/SMTP) with a Gmail/Outlook/Yahoo App Password.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Open a contact that has a <strong>real email address you control</strong> (so you can check the inbox + Sent folder). Click <strong>✉️ Email</strong>.<span class="expect">Compose dialog opens.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Click <strong>+ Attach files</strong>, pick a PDF and an image.<span class="expect">Both appear in a list with filename, size, and a × remove button. The meter shows "2 files · X MB / 25 MB".</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Try the drop zone: drag a file onto the dialog. Then try pasting an image (copy an image, Ctrl+V in the dialog).<span class="expect">Dropped/pasted files get added to the list too.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Remove one file with its × button.<span class="expect">It disappears; the size meter updates.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Type a subject + body, click <strong>Send email</strong>.<span class="expect">Dialog closes, no error.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">7</span> Check the recipient inbox.<span class="expect">Email arrived with both attachments downloadable.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">8</span> Open your <strong>own</strong> email account's <strong>Sent</strong> folder (the SMTP account).<span class="expect">The sent email + attachments are there too — that's the long-term source of truth.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">9</span> Back in DealFlow, open the contact's activity feed → click the email row → it opens the activity detail page.<span class="expect">An "Attachments (2)" section lists both files, each with a <strong>Download</strong> link.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">10</span> Click <strong>Download</strong> on each.<span class="expect">Each file downloads with its correct name + content (cache hit).</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">11</span> Try a blocked type: compose again, attempt to attach a <code>.exe</code> (rename any file to <code>test.exe</code>).<span class="expect">It's rejected with a "blocked file type" alert (client-side), and the server would 400 it too.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">12</span> Settings → <strong>Email attachments</strong> section: change "Keep cached attachments for…" to <strong>7 days</strong>, Save.<span class="expect">"Saved" confirmation; the dropdown persists on reload.</span></label></div></li>
+    </ol>
+    <p class="note">Cache-expiry behaviour (file removed after the retention window → "In Sent folder" pointer instead of Download) is hard to test live without waiting/altering the DB. Trust the automated test for that path, or tell me and I'll show you a DB tweak to force it.</p>
+  </section>
+
+  <!-- ============ REPORTS & DASHBOARD ============ -->
+  <section class="feature">
+    <h2>② Reports &amp; Dashboard <span class="pill todo">Not tested</span></h2>
+    <p class="why">The <code>/app/dashboard</code> home page: KPI tiles, pipeline-value bar chart, won/lost trend line, activity sparkline, and a top-5 open deals table — all from one aggregate endpoint. Fully local.</p>
+    <ol class="steps" data-feature="dashboard">
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Log in. You should land on <code>/app/dashboard</code> (the home route redirects here).<span class="expect">Dashboard renders without errors.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Check the KPI tiles (total pipeline value, open deals, won this month, activities).<span class="expect">Numbers show — zeros are fine on a fresh org.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Seed some data: create 3–4 deals across different pipeline stages, mark one Won and one Lost, log a few activities.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Reload the dashboard.<span class="expect">Pipeline-by-stage bar chart shows bars; the won/lost trend line and activity sparkline reflect your data; top-5 open deals table lists your open deals by value.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Click a deal in the top-5 list.<span class="expect">Navigates to that deal's detail page.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Confirm the Dashboard link is in the sidebar and currency formatting matches your org's default currency.</label></div></li>
+    </ol>
+  </section>
+
+  <!-- ============ EMAIL TRACKING ============ -->
+  <section class="feature">
+    <h2>③ Email Tracking — opens &amp; clicks <span class="pill partial">Needs ngrok</span></h2>
+    <p class="why">Open + click tracking only works when the recipient's mail client can reach your API over the public internet. On <code>localhost</code> the tracking pixel/redirect is unreachable, so events never record — that's why your earlier test showed nothing.</p>
+    <div class="prereq">
+      <strong>Prerequisite — expose your API publicly:</strong>
+      <ol style="margin:6px 0 0 18px;padding:0;">
+        <li>In one terminal: <code>ngrok http 3001</code> (the API port — NOT 5173, that's the web app). Copy the <code>https://….ngrok-free.dev</code> URL.</li>
+        <li>In <code>apps/api/.env</code> set <code>PUBLIC_API_URL=https://&lt;your-ngrok&gt;.ngrok-free.dev</code> (no trailing slash) and make sure <code>EMAIL_TRACKING_SECRET</code> is set (64 hex chars).</li>
+        <li>Restart <code>pnpm dev</code> so the API picks up the env.</li>
+        <li>Open the web app at <code>http://localhost:5173</code> (your own browser — not the ngrok URL).</li>
+      </ol>
+    </div>
+    <ol class="steps" data-feature="tracking">
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Compose an email to an address you control. Keep <strong>"Track opens and clicks"</strong> checked. Put a real link in the body, e.g. <code>https://example.com</code>. Send.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Open the email in the recipient inbox (Gmail/Outlook web is fine now — the pixel resolves via ngrok). Make sure image loading is enabled.<span class="expect">Within a few seconds the open is recorded.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Back in DealFlow, refresh the contact's activity feed.<span class="expect">The email row shows <strong>👁 Opened 1×</strong>.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Click the <code>example.com</code> link inside the email.<span class="expect">It redirects through your API to example.com.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Refresh DealFlow.<span class="expect">Row now shows <strong>🖱 Clicked 1×</strong> as well.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Open the email's activity detail page.<span class="expect">"Engagement" timeline lists each open + click event with timestamps.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">7</span> Sidebar → <strong>Emails</strong> dashboard.<span class="expect">The sent email is listed with its open/click counts; clicking any row opens the detail page.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">8</span> Send one more with <strong>tracking unchecked</strong>.<span class="expect">It arrives, but the feed row shows no tracking badge (opt-out works).</span></label></div></li>
+    </ol>
+    <p class="note">CC/BCC: in the compose dialog click "+ Cc · Bcc", add an address you control, send, and confirm it arrives at the CC address.</p>
+  </section>
+
+  <!-- ============ CORE CRM ============ -->
+  <section class="feature">
+    <h2>④ Core CRM — optional sanity pass <span class="pill foundational">Foundational</span></h2>
+    <p class="why">These underpin everything and have automated coverage. Only run if you want a fresh-eyes pass.</p>
+    <ol class="steps" data-feature="core">
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Create a contact, a company, link the contact to the company.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Create a deal, drag it across pipeline stages.<span class="expect">Stage + position persist on reload.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Add a note and a task to a contact; mark the task done.<span class="expect">Activity feed updates; task shows completed.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Go to <code>/app/tasks</code>; confirm your open tasks list and a task title links to its detail page.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Try the AI ✨ Draft / Summarize buttons (if AI configured).</label></div></li>
+    </ol>
+  </section>
+
+  <button class="reset-btn" id="reset">Reset all checkboxes</button>
+</main>
+
+<script>
+  const KEY = 'dealflow-test-checklist-v1';
+  const boxes = Array.from(document.querySelectorAll('input[type=checkbox]'));
+  boxes.forEach((b, i) => (b.dataset.idx = i));
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+  boxes.forEach((b) => { if (saved[b.dataset.idx]) b.checked = true; });
+
+  function update() {
+    const done = boxes.filter((b) => b.checked).length;
+    const total = boxes.length;
+    document.getElementById('fill').style.width = total ? `${(done / total) * 100}%` : '0';
+    document.getElementById('plabel').textContent = `${done} / ${total} checks complete`;
+  }
+  function persist() {
+    const state = {};
+    boxes.forEach((b) => { if (b.checked) state[b.dataset.idx] = 1; });
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+  boxes.forEach((b) => b.addEventListener('change', () => { persist(); update(); }));
+  document.getElementById('reset').addEventListener('click', () => {
+    boxes.forEach((b) => (b.checked = false));
+    localStorage.removeItem(KEY);
+    update();
+  });
+  update();
+</script>
+</body>
+</html>
