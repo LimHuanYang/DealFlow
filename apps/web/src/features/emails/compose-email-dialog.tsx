@@ -9,8 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { useAIStatus } from '@/features/ai/api';
 import { useDraftEmail, useSendEmail } from './api';
+import { AttachmentPreviewDialog, isPreviewable } from './attachment-preview-dialog';
 
 interface ComposeEmailDialogProps {
   contactId: string;
@@ -57,6 +59,11 @@ export function ComposeEmailDialog({
   const [showCcBcc, setShowCcBcc] = useState(false);
   const [trackEnabled, setTrackEnabled] = useState(true);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [preview, setPreview] = useState<{
+    url: string;
+    filename: string;
+    mimeType: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalBytes = attachments.reduce((sum, f) => sum + f.size, 0);
@@ -68,12 +75,12 @@ export function ComposeEmailDialog({
     const accepted: File[] = [];
     for (const f of incoming) {
       if (f.size > MAX_FILE) {
-        window.alert(`${f.name} is larger than 25 MB and was skipped.`);
+        toast.error(`${f.name} is larger than 25 MB and was skipped.`);
         continue;
       }
       const projected = totalBytes + accepted.reduce((s, a) => s + a.size, 0) + f.size;
       if (projected > MAX_TOTAL) {
-        window.alert(`Total attachment size would exceed 25 MB. ${f.name} skipped.`);
+        toast.error(`Total attachment size would exceed 25 MB. ${f.name} skipped.`);
         continue;
       }
       accepted.push(f);
@@ -83,6 +90,19 @@ export function ComposeEmailDialog({
 
   function removeAttachment(index: number) {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function openPreview(f: File) {
+    setPreview({ url: URL.createObjectURL(f), filename: f.name, mimeType: f.type });
+  }
+
+  function onPreviewOpenChange(open: boolean) {
+    if (!open) {
+      setPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return null;
+      });
+    }
   }
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
@@ -144,176 +164,196 @@ export function ComposeEmailDialog({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Email {recipientName}</DialogTitle>
-          <p className="text-xs text-neutral-500">{recipientEmail}</p>
-        </DialogHeader>
-        <form onSubmit={onSubmit} onPaste={onPaste} className="flex flex-col gap-4" noValidate>
-          {aiStatus.data?.enabled && (
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => setShowDraftPanel((v) => !v)}
-                className="text-xs font-medium text-amber-700 hover:text-amber-900"
-                data-testid="ai-draft-toggle"
-              >
-                {showDraftPanel ? 'Hide AI draft' : '✨ AI draft'}
-              </button>
-            </div>
-          )}
-          {showDraftPanel && (
-            <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
-              <Label htmlFor="intent" className="text-amber-900">
-                What should the email do?
-              </Label>
-              <Input
-                id="intent"
-                value={intent}
-                onChange={(e) => setIntent(e.target.value)}
-                placeholder="e.g. follow up on the pricing discussion"
-                data-testid="ai-draft-intent"
-              />
-              <Button
-                type="button"
-                size="sm"
-                onClick={onDraft}
-                disabled={!intent.trim() || draft.isPending}
-              >
-                {draft.isPending ? 'Drafting…' : 'Draft with AI'}
-              </Button>
-              {draft.isError && (
-                <p className="text-sm text-red-600">Couldn't draft — please try again.</p>
+    <>
+      <Dialog open={isOpen} onOpenChange={setOpen}>
+        {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Email {recipientName}</DialogTitle>
+            <p className="text-xs text-neutral-500">{recipientEmail}</p>
+          </DialogHeader>
+          <form onSubmit={onSubmit} onPaste={onPaste} className="flex flex-col gap-4" noValidate>
+            {aiStatus.data?.enabled && (
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDraftPanel((v) => !v)}
+                  className="text-xs font-medium text-amber-700 hover:text-amber-900"
+                  data-testid="ai-draft-toggle"
+                >
+                  {showDraftPanel ? 'Hide AI draft' : '✨ AI draft'}
+                </button>
+              </div>
+            )}
+            {showDraftPanel && (
+              <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+                <Label htmlFor="intent" className="text-amber-900">
+                  What should the email do?
+                </Label>
+                <Input
+                  id="intent"
+                  value={intent}
+                  onChange={(e) => setIntent(e.target.value)}
+                  placeholder="e.g. follow up on the pricing discussion"
+                  data-testid="ai-draft-intent"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={onDraft}
+                  disabled={!intent.trim() || draft.isPending}
+                >
+                  {draft.isPending ? 'Drafting…' : 'Draft with AI'}
+                </Button>
+                {draft.isError && (
+                  <p className="text-sm text-red-600">Couldn't draft — please try again.</p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center">
+              <span className="text-xs text-neutral-500">To: {recipientEmail}</span>
+              {!showCcBcc && (
+                <button
+                  type="button"
+                  onClick={() => setShowCcBcc(true)}
+                  className="ml-2 text-xs text-blue-600 hover:underline"
+                >
+                  + Cc · Bcc
+                </button>
               )}
             </div>
-          )}
-          <div className="flex items-center">
-            <span className="text-xs text-neutral-500">To: {recipientEmail}</span>
-            {!showCcBcc && (
-              <button
-                type="button"
-                onClick={() => setShowCcBcc(true)}
-                className="ml-2 text-xs text-blue-600 hover:underline"
-              >
-                + Cc · Bcc
-              </button>
+            {showCcBcc && (
+              <>
+                <div className="mb-2">
+                  <Label htmlFor="cc" className="text-xs">
+                    Cc
+                  </Label>
+                  <Input
+                    id="cc"
+                    value={cc}
+                    onChange={(e) => setCc(e.target.value)}
+                    placeholder="comma-separated emails"
+                  />
+                </div>
+                <div className="mb-2">
+                  <Label htmlFor="bcc" className="text-xs">
+                    Bcc
+                  </Label>
+                  <Input
+                    id="bcc"
+                    value={bcc}
+                    onChange={(e) => setBcc(e.target.value)}
+                    placeholder="comma-separated emails"
+                  />
+                </div>
+              </>
             )}
-          </div>
-          {showCcBcc && (
-            <>
-              <div className="mb-2">
-                <Label htmlFor="cc" className="text-xs">
-                  Cc
-                </Label>
-                <Input
-                  id="cc"
-                  value={cc}
-                  onChange={(e) => setCc(e.target.value)}
-                  placeholder="comma-separated emails"
-                />
-              </div>
-              <div className="mb-2">
-                <Label htmlFor="bcc" className="text-xs">
-                  Bcc
-                </Label>
-                <Input
-                  id="bcc"
-                  value={bcc}
-                  onChange={(e) => setBcc(e.target.value)}
-                  placeholder="comma-separated emails"
-                />
-              </div>
-            </>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email-subject">Subject</Label>
-            <Input
-              id="email-subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              autoFocus
-              data-testid="email-subject"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email-body">Message</Label>
-            <textarea
-              id="email-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={10}
-              className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm"
-              data-testid="email-body"
-            />
-          </div>
-          <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
-            <div className="mb-1 flex items-center justify-between">
-              <Label className="text-xs">Attachments</Label>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                + Attach files
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                hidden
-                onChange={(e) => {
-                  if (e.target.files) addFiles(e.target.files);
-                  e.target.value = '';
-                }}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                autoFocus
+                data-testid="email-subject"
               />
             </div>
-            {attachments.length > 0 && (
-              <ul className="mb-1 divide-y divide-neutral-100 rounded-md border border-neutral-200 bg-white text-sm">
-                {attachments.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="flex items-center gap-3 px-3 py-2">
-                    <span className="text-base">{f.type.startsWith('image/') ? '🖼️' : '📄'}</span>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-neutral-900">{f.name}</div>
-                      <div className="text-xs text-neutral-500">{formatSize(f.size)}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeAttachment(i)}
-                      className="text-neutral-400 hover:text-red-600"
-                      aria-label={`Remove ${f.name}`}
-                    >
-                      &times;
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="text-xs text-neutral-500">
-              {attachments.length === 0
-                ? 'Drop files here or paste images'
-                : `${attachments.length} file${attachments.length === 1 ? '' : 's'} · ${formatSize(totalBytes)} / 25 MB`}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email-body">Message</Label>
+              <textarea
+                id="email-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={10}
+                className="w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm"
+                data-testid="email-body"
+              />
             </div>
-          </div>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={trackEnabled}
-              onChange={(e) => setTrackEnabled(e.target.checked)}
-            />
-            Track opens and clicks
-          </label>
-          <div className="flex items-center justify-end gap-2">
-            <Button type="submit" disabled={!subject.trim() || !body.trim() || send.isPending}>
-              {send.isPending ? 'Sending…' : 'Send email'}
-            </Button>
-          </div>
-          {send.isError && (
-            <p className="text-sm text-red-600">Couldn't send — please try again.</p>
-          )}
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+              <div className="mb-1 flex items-center justify-between">
+                <Label className="text-xs">Attachments</Label>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  + Attach files
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    if (e.target.files) addFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+              {attachments.length > 0 && (
+                <ul className="mb-1 divide-y divide-neutral-100 rounded-md border border-neutral-200 bg-white text-sm">
+                  {attachments.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex items-center gap-3 px-3 py-2">
+                      <span className="text-base">{f.type.startsWith('image/') ? '🖼️' : '📄'}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-neutral-900">{f.name}</div>
+                        <div className="text-xs text-neutral-500">{formatSize(f.size)}</div>
+                      </div>
+                      {isPreviewable(f.type) && (
+                        <button
+                          type="button"
+                          onClick={() => openPreview(f)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Preview
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        className="text-neutral-400 hover:text-red-600"
+                        aria-label={`Remove ${f.name}`}
+                      >
+                        &times;
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="text-xs text-neutral-500">
+                {attachments.length === 0
+                  ? 'Drop files here or paste images'
+                  : `${attachments.length} file${attachments.length === 1 ? '' : 's'} · ${formatSize(totalBytes)} / 25 MB`}
+              </div>
+            </div>
+            <label className="mt-2 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={trackEnabled}
+                onChange={(e) => setTrackEnabled(e.target.checked)}
+              />
+              Track opens and clicks
+            </label>
+            <div className="flex items-center justify-end gap-2">
+              <Button type="submit" disabled={!subject.trim() || !body.trim() || send.isPending}>
+                {send.isPending ? 'Sending…' : 'Send email'}
+              </Button>
+            </div>
+            {send.isError && (
+              <p className="text-sm text-red-600">Couldn't send — please try again.</p>
+            )}
+          </form>
+        </DialogContent>
+      </Dialog>
+      {preview && (
+        <AttachmentPreviewDialog
+          open
+          onOpenChange={onPreviewOpenChange}
+          filename={preview.filename}
+          mimeType={preview.mimeType}
+          url={preview.url}
+        />
+      )}
+    </>
   );
 }

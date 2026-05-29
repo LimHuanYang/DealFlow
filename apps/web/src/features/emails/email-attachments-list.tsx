@@ -1,8 +1,19 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
 import type { PublicEmailAttachment } from '@dealflow/shared';
 import { downloadAttachment } from '@/lib/api';
+import { AttachmentPreviewDialog, isPreviewable } from './attachment-preview-dialog';
 
 interface Props {
   attachments: PublicEmailAttachment[];
+}
+
+interface PreviewState {
+  filename: string;
+  mimeType: string;
+  url: string | null;
+  loading: boolean;
+  message?: string;
 }
 
 function formatSize(bytes: number): string {
@@ -12,11 +23,13 @@ function formatSize(bytes: number): string {
 }
 
 export function EmailAttachmentsList({ attachments }: Props) {
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+
   if (attachments.length === 0) return null;
 
   async function onDownload(att: PublicEmailAttachment) {
     if (!att.cached) {
-      window.alert(
+      toast.warning(
         "This attachment is no longer cached. Open your email provider's Sent folder to retrieve it.",
       );
       return;
@@ -24,7 +37,7 @@ export function EmailAttachmentsList({ attachments }: Props) {
     try {
       const result = await downloadAttachment(att.id);
       if ('notCached' in result) {
-        window.alert("Cache miss — retrieve from your email provider's Sent folder.");
+        toast.warning("Cache miss — retrieve from your email provider's Sent folder.");
         return;
       }
       const url = URL.createObjectURL(result.blob);
@@ -36,7 +49,38 @@ export function EmailAttachmentsList({ attachments }: Props) {
       a.remove();
       URL.revokeObjectURL(url);
     } catch {
-      window.alert('Download failed. Try again or get the file from your Sent folder.');
+      toast.error('Download failed. Try again or get the file from your Sent folder.');
+    }
+  }
+
+  async function onPreview(att: PublicEmailAttachment) {
+    setPreview({ filename: att.filename, mimeType: att.mimeType, url: null, loading: true });
+    try {
+      const result = await downloadAttachment(att.id);
+      if ('notCached' in result) {
+        setPreview({
+          filename: att.filename,
+          mimeType: att.mimeType,
+          url: null,
+          loading: false,
+          message: "Cache miss — retrieve from your email provider's Sent folder.",
+        });
+        return;
+      }
+      const url = URL.createObjectURL(result.blob);
+      setPreview({ filename: att.filename, mimeType: att.mimeType, url, loading: false });
+    } catch {
+      toast.error('Could not load preview. Try again or get the file from your Sent folder.');
+      setPreview(null);
+    }
+  }
+
+  function onPreviewOpenChange(open: boolean) {
+    if (!open) {
+      setPreview((prev) => {
+        if (prev?.url) URL.revokeObjectURL(prev.url);
+        return null;
+      });
     }
   }
 
@@ -56,13 +100,24 @@ export function EmailAttachmentsList({ attachments }: Props) {
               </div>
             </div>
             {att.cached ? (
-              <button
-                type="button"
-                onClick={() => void onDownload(att)}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                Download
-              </button>
+              <>
+                {isPreviewable(att.mimeType) && (
+                  <button
+                    type="button"
+                    onClick={() => void onPreview(att)}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Preview
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void onDownload(att)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Download
+                </button>
+              </>
             ) : (
               <span
                 className="text-xs text-neutral-400"
@@ -74,6 +129,17 @@ export function EmailAttachmentsList({ attachments }: Props) {
           </li>
         ))}
       </ul>
+      {preview && (
+        <AttachmentPreviewDialog
+          open
+          onOpenChange={onPreviewOpenChange}
+          filename={preview.filename}
+          mimeType={preview.mimeType}
+          url={preview.url}
+          loading={preview.loading}
+          message={preview.message}
+        />
+      )}
     </section>
   );
 }

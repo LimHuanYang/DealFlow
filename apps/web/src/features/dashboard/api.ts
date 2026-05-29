@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import type { DashboardResponse } from '@dealflow/shared';
 import { queryKeys } from '@/lib/query-keys';
+import { apiFetch } from '@/lib/api';
 
-async function fetchDashboard(): Promise<DashboardResponse> {
-  const res = await fetch('/api/v1/reports/dashboard', { credentials: 'include' });
-  if (!res.ok) throw new Error(`Dashboard request failed: ${res.status}`);
-  return (await res.json()) as DashboardResponse;
+function fetchDashboard(): Promise<DashboardResponse> {
+  // Route through the shared apiFetch so the request targets API_BASE
+  // (http://localhost:3001) like every other feature. A bare relative
+  // fetch() hits the Vite dev origin (5173), which has no /api proxy and
+  // returns the SPA HTML — that's what previously broke this page.
+  return apiFetch<DashboardResponse>('/api/v1/reports/dashboard');
 }
 
 export function useDashboard() {
