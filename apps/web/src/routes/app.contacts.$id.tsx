@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { InlineEdit } from '@/components/inline-edit';
+import { CompanySelect } from '@/features/companies/company-select';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useContact, useUpdateContact } from '@/features/contacts/api';
@@ -103,6 +104,25 @@ function ContactDetailPage() {
             }}
             muted
           />
+        </dd>
+        <dt className="text-neutral-500">Company</dt>
+        <dd className="flex items-center gap-3">
+          <CompanySelect
+            value={c.companyId}
+            onChange={(companyId) => {
+              void update.mutateAsync({ companyId });
+            }}
+            className="max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1 text-sm disabled:opacity-60"
+          />
+          {c.companyId && (
+            <Link
+              to="/app/companies/$id"
+              params={{ id: c.companyId }}
+              className="whitespace-nowrap text-xs text-blue-600 hover:underline"
+            >
+              View company →
+            </Link>
+          )}
         </dd>
       </dl>
       <EmailEngagementRollup entityType="contact" entityId={c.id} />

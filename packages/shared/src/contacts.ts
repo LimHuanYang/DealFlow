@@ -10,7 +10,11 @@ export const createContactBodySchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const updateContactBodySchema = createContactBodySchema.partial();
+// `companyId` is nullable on update so the UI can *unassign* a contact's
+// company by sending `null` (a plain `.partial()` would only allow setting it).
+export const updateContactBodySchema = createContactBodySchema.partial().extend({
+  companyId: z.string().uuid().nullable().optional(),
+});
 
 export type CreateContactInput = z.infer<typeof createContactBodySchema>;
 export type UpdateContactInput = z.infer<typeof updateContactBodySchema>;

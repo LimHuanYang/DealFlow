@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useAIStatus, useExtractContact } from '@/features/ai/api';
 import { useCreateContact } from './api';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
+import { CompanySelect } from '@/features/companies/company-select';
 
 interface CreateContactDialogProps {
   trigger?: React.ReactNode;
@@ -38,6 +39,7 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
   } = useForm<CreateContactInput>({ resolver: zodResolver(createContactBodySchema) });
 
   const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   const [mode, setMode] = useState<'form' | 'paste'>('form');
   const [pasteText, setPasteText] = useState('');
@@ -57,9 +59,10 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
   }
 
   async function onSubmit(values: CreateContactInput) {
-    await mut.mutateAsync({ ...values, customFields });
+    await mut.mutateAsync({ ...values, companyId: companyId ?? undefined, customFields });
     reset();
     setCustomFields({});
+    setCompanyId(null);
     setOpen(false);
   }
 
@@ -137,6 +140,10 @@ export function CreateContactDialog({ trigger, open, onOpenChange }: CreateConta
           <div className="flex flex-col gap-2">
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register('title')} placeholder="e.g., CEO" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="company">Company</Label>
+            <CompanySelect id="company" value={companyId} onChange={setCompanyId} />
           </div>
           <CustomFieldsBlock
             entityType="contact"

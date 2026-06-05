@@ -68,6 +68,43 @@ describe('Contacts routes', () => {
     expect(contact.json<{ contact: { companyId: string } }>().contact.companyId).toBe(companyId);
   });
 
+  it('PATCH assigns then unassigns the company (companyId: null clears it)', async () => {
+    const company = await app.inject({
+      method: 'POST',
+      url: '/api/v1/companies',
+      headers: { cookie },
+      payload: { name: 'AssignCo' },
+    });
+    const companyId = company.json<{ company: { id: string } }>().company.id;
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/contacts',
+      headers: { cookie },
+      payload: { firstName: 'Assignable' },
+    });
+    const id = created.json<{ contact: { id: string } }>().contact.id;
+
+    const assigned = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/contacts/${id}`,
+      headers: { cookie },
+      payload: { companyId },
+    });
+    expect(assigned.statusCode).toBe(200);
+    expect(assigned.json<{ contact: { companyId: string | null } }>().contact.companyId).toBe(
+      companyId,
+    );
+
+    const cleared = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/contacts/${id}`,
+      headers: { cookie },
+      payload: { companyId: null },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json<{ contact: { companyId: string | null } }>().contact.companyId).toBeNull();
+  });
+
   it('PATCH updates partial fields', async () => {
     const created = await app.inject({
       method: 'POST',
