@@ -26,7 +26,7 @@ const listQuerySchema = z
     message: 'Set exactly one of contactId, companyId, dealId',
   });
 
-function publicActivity(
+export function publicActivity(
   row: typeof schemaType.activities.$inferSelect,
   attachments: (typeof schemaType.emailAttachments.$inferSelect)[] = [],
 ) {
@@ -41,6 +41,21 @@ function publicActivity(
     companyId: row.companyId,
     dealId: row.dealId,
     ownerUserId: row.ownerUserId,
+    // Email metadata + tracking columns (NULL/defaults for notes/tasks). The
+    // activity detail Engagement timeline + tracking badge read these, so the
+    // serializer must surface them or tracking always renders as "disabled".
+    subject: row.subject,
+    externalId: row.externalId,
+    ccEmails: row.ccEmails,
+    bccEmails: row.bccEmails,
+    trackingEnabled: row.trackingEnabled,
+    deliveryStatus: row.deliveryStatus as 'sent' | 'failed',
+    openCount: row.openCount,
+    firstOpenedAt: row.firstOpenedAt?.toISOString() ?? null,
+    lastOpenedAt: row.lastOpenedAt?.toISOString() ?? null,
+    clickCount: row.clickCount,
+    firstClickedAt: row.firstClickedAt?.toISOString() ?? null,
+    lastClickedAt: row.lastClickedAt?.toISOString() ?? null,
     customFields: (row.customFields as Record<string, unknown>) ?? {},
     attachments: (attachments ?? []).map((a) => ({
       id: a.id,
