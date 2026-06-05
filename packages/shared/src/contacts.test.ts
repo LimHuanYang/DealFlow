@@ -16,6 +16,29 @@ describe('createContactBodySchema', () => {
       false,
     );
   });
+
+  it('treats blank optional fields as absent (form sends "" for empty inputs)', () => {
+    const r = createContactBodySchema.safeParse({
+      firstName: 'Ada',
+      lastName: '',
+      email: '',
+      phone: '',
+      title: '   ',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.lastName).toBeUndefined();
+      expect(r.data.email).toBeUndefined();
+      expect(r.data.phone).toBeUndefined();
+      expect(r.data.title).toBeUndefined();
+    }
+  });
+
+  it('still rejects a malformed (non-blank) email', () => {
+    expect(
+      createContactBodySchema.safeParse({ firstName: 'Ada', email: 'not-an-email' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('updateContactBodySchema', () => {
