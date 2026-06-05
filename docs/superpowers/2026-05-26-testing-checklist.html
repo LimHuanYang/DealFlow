@@ -29,19 +29,31 @@
     table.summary th, table.summary td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
     table.summary th { background: #fafafa; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
     table.summary tr:last-child td { border-bottom: 0; }
-    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
     .pill.done { background: var(--green-bg); color: #166534; }
     .pill.todo { background: var(--red-bg); color: #991b1b; }
     .pill.partial { background: var(--amber-bg); color: var(--amber); }
+    .pill.ready { background: var(--blue-bg); color: #1e40af; }
     .pill.foundational { background: #f4f4f5; color: var(--muted); }
 
     section.feature { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
     section.feature.priority { border-color: #fcd34d; box-shadow: 0 0 0 3px var(--amber-bg); }
+    section.feature.done-feature { opacity: .82; }
     .feature h2 { font-size: 18px; margin: 0 0 2px; display: flex; align-items: center; gap: 10px; }
     .feature .why { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
 
     .prereq { background: var(--amber-bg); border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; font-size: 13px; color: #78350f; }
     .prereq strong { color: #78350f; }
+    .ok-box { background: var(--green-bg); border: 1px solid #86efac; border-radius: 8px; padding: 12px 14px; margin: 0 0 16px; font-size: 13px; color: #14532d; }
+    .ok-box strong { color: #14532d; }
+    .ok-box code, .prereq code { background: rgba(255,255,255,.6); }
+    .new-box { background: var(--blue-bg); border: 1px solid #93c5fd; border-radius: 8px; padding: 12px 14px; margin: 14px 0 0; font-size: 13px; color: #1e3a8a; }
+    .new-box strong { color: #1e3a8a; }
+    .new-box ol.steps li:hover { background: rgba(255,255,255,.45); }
+    .banner { background: #ecfdf5; border: 1px solid #6ee7b7; border-left: 4px solid var(--green); border-radius: 8px; padding: 14px 16px; margin: 0 0 24px; font-size: 13.5px; color: #064e3b; }
+    .banner h3 { margin: 0 0 6px; font-size: 15px; color: #065f46; }
+    .banner ul { margin: 6px 0 0 18px; padding: 0; }
+    .banner code { background: rgba(255,255,255,.7); }
 
     ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
     ol.steps li { position: relative; padding: 8px 8px 8px 40px; border-radius: 6px; }
@@ -51,6 +63,7 @@
     .check-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
     .check-row label { cursor: pointer; font-size: 14px; }
     .expect { display: block; margin-top: 3px; font-size: 12.5px; color: var(--green); }
+    .verified-tag { display: inline-block; font-size: 11px; font-weight: 600; color: #166534; background: var(--green-bg); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
     code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; background: #f4f4f5; padding: 1px 5px; border-radius: 4px; color: #1f2937; }
     .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; padding-left: 6px; border-left: 2px solid var(--border-strong); }
     .reset-btn { background: #fff; border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--muted); }
@@ -61,7 +74,27 @@
 <body>
 <main class="page">
   <h1>DealFlow — Manual Testing Checklist</h1>
-  <p class="lede">What's verified, what isn't, and exactly how to test the gaps. Tick boxes as you go — progress saves in this browser.</p>
+  <p class="lede">What's verified, what isn't, and exactly how to re-test. Tick boxes as you go — progress saves in this browser. <em>Last updated 2026-06-05.</em></p>
+
+  <div class="banner">
+    <h3>✅ Full pass on 2026-06-05 — all three open items verified end-to-end</h3>
+    Driven through a real browser (Playwright) against the live app. Every previously-open feature now checks out:
+    <ul>
+      <li><strong>Reports &amp; Dashboard</strong> — loads with data, <code>GET /reports/dashboard → 200</code>. The relative-<code>fetch</code> bug is confirmed fixed.</li>
+      <li><strong>Email Attachments</strong> — oversize file → red <em>toast</em> (the old <code>alert()</code> is gone; verified <code>window.alert</code> was never called), image + PDF <em>preview</em> modals, and activity-detail preview-from-cache all work.</li>
+      <li><strong>Email Tracking</strong> — a tracked email sent (real Gmail message-id); the open pixel and click redirect <em>record</em> correctly (<code>open_count</code>/<code>click_count</code> increment), and the activity-detail Engagement timeline now <em>displays</em> them.</li>
+    </ul>
+    <p style="margin:8px 0 0;"><strong>🐞 Bug found &amp; fixed during this pass.</strong> The activity serializer (<code>publicActivity()</code>) dropped all email-tracking fields, so the Engagement section always said "Tracking was disabled" even when opens/clicks were recorded. Fixed test-first — commit <code>f23775b</code> (<code>fix(api): include email-tracking fields in activity serializer</code>).</p>
+  </div>
+
+  <div class="prereq">
+    <strong>⚙️ Environment change — the database moved to Supabase.</strong>
+    Local PostgreSQL was uninstalled, which is why login/dashboard were 500ing (every DB call failed). The dev/runtime database is now <strong>Supabase</strong> (region <em>ap-southeast-2</em>). The connection string lives in <code>apps/api/.env</code> as <code>DATABASE_URL</code> (gitignored — never committed; SSL via <code>?sslmode=require</code>). All 12 migrations were applied and the app account + Gmail SMTP were reconnected on the fresh DB.
+    <ul style="margin:6px 0 0 18px;padding:0;">
+      <li><strong>No more local Postgres or Docker</strong> needed to run the app.</li>
+      <li><strong>Heads-up — <code>pnpm test</code> needs a throwaway Postgres.</strong> The integration harness creates a database per test file (<code>CREATE DATABASE</code>), which Supabase can't do. Tests now run in <strong>CI against an ephemeral Postgres service</strong> (commit <code>cffd6b7</code>). ⚠️ GitHub Actions is currently blocked by an <strong>account billing lock</strong> — clear that and CI will run green; the E2E job still needs the same DB wiring (follow-up).</li>
+    </ul>
+  </div>
 
   <div class="progress-wrap">
     <div class="progress-bar"><div class="progress-fill" id="fill"></div></div>
@@ -70,89 +103,98 @@
 
   <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">Status overview</h2>
   <table class="summary">
-    <thead><tr><th>Feature</th><th>Status</th><th>What's left to verify</th></tr></thead>
+    <thead><tr><th>Feature</th><th>Status</th><th>Notes</th></tr></thead>
     <tbody>
-      <tr><td><strong>Custom Fields</strong></td><td><span class="pill done">Tested ✓</span></td><td>You confirmed it works.</td></tr>
-      <tr><td><strong>AI + SMTP integrations</strong></td><td><span class="pill done">Tested ✓</span></td><td>You confirmed send + AI work.</td></tr>
-      <tr><td><strong>Email Attachments</strong></td><td><span class="pill todo">Not tested</span></td><td>Full flow — send w/ files, download, retention. <em>Mostly local-testable.</em></td></tr>
-      <tr><td><strong>Email Tracking (opens/clicks)</strong></td><td><span class="pill partial">Partly / blocked</span></td><td>Needs a public URL (ngrok) — localhost can't receive pixel/click hits.</td></tr>
-      <tr><td><strong>Reports &amp; Dashboard</strong></td><td><span class="pill todo">Not tested</span></td><td>KPI tiles, charts, top-deals — verify numbers render.</td></tr>
-      <tr><td><strong>Core CRM</strong> (contacts/companies/deals/pipelines/activities)</td><td><span class="pill foundational">Foundational</span></td><td>Works; quick sanity pass only if you want.</td></tr>
+      <tr><td><strong>Custom Fields</strong></td><td><span class="pill done">Tested ✓</span></td><td>Confirmed working.</td></tr>
+      <tr><td><strong>AI + SMTP integrations</strong></td><td><span class="pill done">Tested ✓</span></td><td>Gmail SMTP reconnected on Supabase (2026-06-05) — test email sent OK.</td></tr>
+      <tr><td><strong>Core CRM</strong> (contacts/companies/deals/pipelines/activities)</td><td><span class="pill done">Tested ✓</span></td><td>Sanity pass + re-exercised today (contact/activity creation on the new DB).</td></tr>
+      <tr><td><strong>Email Attachments</strong></td><td><span class="pill done">Tested ✓</span></td><td>Core flow + the new error <em>toasts</em> &amp; file <em>preview</em> verified 2026-06-05.</td></tr>
+      <tr><td><strong>Reports &amp; Dashboard</strong></td><td><span class="pill done">Tested ✓</span></td><td>Verified 2026-06-05 — loads with data, no "could not load".</td></tr>
+      <tr><td><strong>Email Tracking (opens/clicks)</strong></td><td><span class="pill done">Tested ✓</span></td><td>Record + display verified 2026-06-05; serializer display bug fixed (<code>f23775b</code>).</td></tr>
     </tbody>
   </table>
-  <p class="legend">Recommended order: ① Email Attachments (easiest, all local) → ② Reports &amp; Dashboard → ③ Email Tracking (needs ngrok) → ④ optional Core CRM sanity.</p>
+  <p class="legend">All features are now verified. The step lists below are kept for regression / your own re-verification — including an optional real-Gmail confirmation for tracking.</p>
 
   <!-- ============ EMAIL ATTACHMENTS ============ -->
-  <section class="feature priority">
-    <h2>① Email Attachments <span class="pill todo">Not tested</span></h2>
-    <p class="why">The newest feature. Attachments ride the SMTP send (so they land in your real Sent folder), and DealFlow keeps a local cache for in-app download. <strong>This is fully testable on localhost</strong> — no ngrok needed.</p>
+  <section class="feature done-feature">
+    <h2>① Email Attachments <span class="pill done">Tested ✓</span></h2>
+    <p class="why">Core flow (send with files → real Sent folder → in-app cached download → per-org retention) confirmed. The toast + preview additions were verified on 2026-06-05.</p>
 
-    <ol class="steps" data-feature="attachments">
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Start the stack: <code>pnpm dev</code>. Make sure SMTP is configured (Settings → AI/SMTP) with a Gmail/Outlook/Yahoo App Password.</label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Open a contact that has a <strong>real email address you control</strong> (so you can check the inbox + Sent folder). Click <strong>✉️ Email</strong>.<span class="expect">Compose dialog opens.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Click <strong>+ Attach files</strong>, pick a PDF and an image.<span class="expect">Both appear in a list with filename, size, and a × remove button. The meter shows "2 files · X MB / 25 MB".</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Try the drop zone: drag a file onto the dialog. Then try pasting an image (copy an image, Ctrl+V in the dialog).<span class="expect">Dropped/pasted files get added to the list too.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Remove one file with its × button.<span class="expect">It disappears; the size meter updates.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Type a subject + body, click <strong>Send email</strong>.<span class="expect">Dialog closes, no error.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">7</span> Check the recipient inbox.<span class="expect">Email arrived with both attachments downloadable.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">8</span> Open your <strong>own</strong> email account's <strong>Sent</strong> folder (the SMTP account).<span class="expect">The sent email + attachments are there too — that's the long-term source of truth.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">9</span> Back in DealFlow, open the contact's activity feed → click the email row → it opens the activity detail page.<span class="expect">An "Attachments (2)" section lists both files, each with a <strong>Download</strong> link.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">10</span> Click <strong>Download</strong> on each.<span class="expect">Each file downloads with its correct name + content (cache hit).</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">11</span> Try a blocked type: compose again, attempt to attach a <code>.exe</code> (rename any file to <code>test.exe</code>).<span class="expect">It's rejected with a "blocked file type" alert (client-side), and the server would 400 it too.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">12</span> Settings → <strong>Email attachments</strong> section: change "Keep cached attachments for…" to <strong>7 days</strong>, Save.<span class="expect">"Saved" confirmation; the dropdown persists on reload.</span></label></div></li>
-    </ol>
-    <p class="note">Cache-expiry behaviour (file removed after the retention window → "In Sent folder" pointer instead of Download) is hard to test live without waiting/altering the DB. Trust the automated test for that path, or tell me and I'll show you a DB tweak to force it.</p>
+    <div class="ok-box">
+      <strong>✅ Verified 2026-06-05 (automated):</strong>
+      <ul style="margin:6px 0 0 18px;padding:0;">
+        <li>Oversize file (26&nbsp;MB) → red toast <code>"… is larger than 25 MB and was skipped."</code>; the file was <em>not</em> added, and <code>window.alert</code> was confirmed never called.</li>
+        <li>Image + PDF <strong>Preview</strong> in the compose dialog → in-app modal (<code>&lt;img&gt;</code> from a blob URL; PDF in an <code>&lt;iframe&gt;</code> + "Open in new tab").</li>
+        <li>Activity-detail <strong>Preview</strong> on a cached attachment → modal rendered from the local cache blob.</li>
+      </ul>
+    </div>
+
+    <div class="new-box">
+      <strong>Re-verify yourself (optional):</strong>
+      <ol class="steps" data-feature="attachments-new">
+        <li><div class="check-row"><input type="checkbox"><label><span class="num">a</span> Compose an email and attach a file <strong>larger than 25&nbsp;MB</strong>.<span class="expect">Red toast bottom-right; file skipped — no browser <code>alert()</code>.</span></label></div></li>
+        <li><div class="check-row"><input type="checkbox"><label><span class="num">b</span> Attach an image and a PDF, then click <strong>Preview</strong> next to each (compose dialog).<span class="expect">Modal: image renders inline; PDF in a frame with "Open in new tab". Close — no leftover overlay.</span></label></div></li>
+        <li><div class="check-row"><input type="checkbox"><label><span class="num">c</span> Send it, open the email's activity detail, click <strong>Preview</strong> on a cached image/PDF.<span class="expect">Same modal, fetched from cache. Non-previewable types (docx/zip) show only Download.</span></label></div></li>
+      </ol>
+    </div>
+
+    <p class="note">The original 12-step flow (picker, drop zone, paste, send, inbox + Sent-folder check, in-app download, retention dropdown) you already verified. Cache-expiry → "In Sent folder" pointer is covered by automated tests.</p>
   </section>
 
   <!-- ============ REPORTS & DASHBOARD ============ -->
-  <section class="feature">
-    <h2>② Reports &amp; Dashboard <span class="pill todo">Not tested</span></h2>
-    <p class="why">The <code>/app/dashboard</code> home page: KPI tiles, pipeline-value bar chart, won/lost trend line, activity sparkline, and a top-5 open deals table — all from one aggregate endpoint. Fully local.</p>
+  <section class="feature done-feature">
+    <h2>② Reports &amp; Dashboard <span class="pill done">Tested ✓</span></h2>
+    <p class="why">The <code>/app/dashboard</code> home: KPI tiles, pipeline-value bar chart, won/lost trend line, activity sparkline, and a top-5 open-deals table — all from one aggregate endpoint.</p>
+    <div class="ok-box">
+      <strong>✅ Verified 2026-06-05.</strong> Logged in → landed on <code>/app/dashboard</code>, which rendered KPI tiles + charts with <strong>no "Could not load" error</strong> and <code>GET /api/v1/reports/dashboard → 200</code>. Root cause of the old failure: the dashboard was the only page using a bare relative <code>fetch()</code> (hit Vite :5173, got HTML); it now uses the shared <code>apiFetch</code> → API :3001.
+    </div>
     <ol class="steps" data-feature="dashboard">
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Log in. You should land on <code>/app/dashboard</code> (the home route redirects here).<span class="expect">Dashboard renders without errors.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Check the KPI tiles (total pipeline value, open deals, won this month, activities).<span class="expect">Numbers show — zeros are fine on a fresh org.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Seed some data: create 3–4 deals across different pipeline stages, mark one Won and one Lost, log a few activities.</label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Reload the dashboard.<span class="expect">Pipeline-by-stage bar chart shows bars; the won/lost trend line and activity sparkline reflect your data; top-5 open deals table lists your open deals by value.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Log in → land on <code>/app/dashboard</code>.<span class="expect">Renders — no "Could not load".</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Check the KPI tiles (contacts, companies, open deals, pipeline value, overdue tasks).<span class="expect">Numbers show — zeros are fine on a fresh org.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Seed data: a few deals across stages, mark one Won + one Lost, log activities.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Reload.<span class="expect">Pipeline-by-stage bars, won/lost trend, activity sparkline, top-5 open deals all reflect your data.</span></label></div></li>
       <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Click a deal in the top-5 list.<span class="expect">Navigates to that deal's detail page.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Confirm the Dashboard link is in the sidebar and currency formatting matches your org's default currency.</label></div></li>
     </ol>
   </section>
 
   <!-- ============ EMAIL TRACKING ============ -->
-  <section class="feature">
-    <h2>③ Email Tracking — opens &amp; clicks <span class="pill partial">Needs ngrok</span></h2>
-    <p class="why">Open + click tracking only works when the recipient's mail client can reach your API over the public internet. On <code>localhost</code> the tracking pixel/redirect is unreachable, so events never record — that's why your earlier test showed nothing.</p>
-    <div class="prereq">
-      <strong>Prerequisite — expose your API publicly:</strong>
-      <ol style="margin:6px 0 0 18px;padding:0;">
-        <li>In one terminal: <code>ngrok http 3001</code> (the API port — NOT 5173, that's the web app). Copy the <code>https://….ngrok-free.dev</code> URL.</li>
-        <li>In <code>apps/api/.env</code> set <code>PUBLIC_API_URL=https://&lt;your-ngrok&gt;.ngrok-free.dev</code> (no trailing slash) and make sure <code>EMAIL_TRACKING_SECRET</code> is set (64 hex chars).</li>
-        <li>Restart <code>pnpm dev</code> so the API picks up the env.</li>
-        <li>Open the web app at <code>http://localhost:5173</code> (your own browser — not the ngrok URL).</li>
-      </ol>
+  <section class="feature done-feature">
+    <h2>③ Email Tracking — opens &amp; clicks <span class="pill done">Tested ✓</span></h2>
+    <p class="why">Open + click tracking works only when the recipient's mail client can reach your API over the public internet (via the ngrok tunnel). Record <em>and</em> display were verified on 2026-06-05.</p>
+    <div class="ok-box">
+      <strong>✅ Verified 2026-06-05 (record + display):</strong>
+      <ul style="margin:6px 0 0 18px;padding:0;">
+        <li>Tracked email sent through the app — got a real Gmail <code>message-id</code>; activity stored <code>trackingEnabled: true</code>, <code>deliveryStatus: sent</code>.</li>
+        <li>Open pixel → <code>200 image/gif</code> and <code>open_count → 1</code>; click → <code>302</code> redirect to the target and <code>click_count → 1</code> (exercised through the live endpoints).</li>
+        <li>Activity-detail <strong>Engagement</strong> timeline now shows <strong>👁 1 open · 🖱 1 click</strong> with timestamps — after fixing the serializer bug (<code>f23775b</code>).</li>
+      </ul>
     </div>
+    <div class="prereq">
+      <strong>If the tunnel is down</strong> (closed / rebooted), restart it pinned to the static domain so <code>.env</code> stays valid:<br>
+      <code>ngrok http --url=https://adolescently-unsuperficial-tonya.ngrok-free.dev 3001</code>
+      <p style="margin:8px 0 0;"><strong>🔎 Live inspector:</strong> <code>http://localhost:4040</code> logs every <code>/track/open</code> and <code>/track/click</code> hit. <strong>ngrok-free quirks:</strong> opens record cleanly (image <code>Accept</code> header skips the interstitial); clicks show a one-time "Visit Site" warning — click through it and the click still records; Gmail caches the pixel, so the <em>first</em> open is the reliable signal.</p>
+    </div>
+    <p style="font-size:13px;margin:0 0 8px;"><strong>Optional real-Gmail re-verification</strong> — the mechanism is proven; this just confirms it through an actual inbox:</p>
     <ol class="steps" data-feature="tracking">
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Compose an email to an address you control. Keep <strong>"Track opens and clicks"</strong> checked. Put a real link in the body, e.g. <code>https://example.com</code>. Send.</label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Open the email in the recipient inbox (Gmail/Outlook web is fine now — the pixel resolves via ngrok). Make sure image loading is enabled.<span class="expect">Within a few seconds the open is recorded.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Back in DealFlow, refresh the contact's activity feed.<span class="expect">The email row shows <strong>👁 Opened 1×</strong>.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Click the <code>example.com</code> link inside the email.<span class="expect">It redirects through your API to example.com.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Refresh DealFlow.<span class="expect">Row now shows <strong>🖱 Clicked 1×</strong> as well.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Open the email's activity detail page.<span class="expect">"Engagement" timeline lists each open + click event with timestamps.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">7</span> Sidebar → <strong>Emails</strong> dashboard.<span class="expect">The sent email is listed with its open/click counts; clicking any row opens the detail page.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">8</span> Send one more with <strong>tracking unchecked</strong>.<span class="expect">It arrives, but the feed row shows no tracking badge (opt-out works).</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Compose to an address you control, keep <strong>"Track opens and clicks"</strong> checked, put a real link (e.g. <code>https://example.com</code>) in the body. Send.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Open it in the recipient inbox with images enabled.<span class="expect"><code>:4040</code> shows a <code>GET /track/open/…</code> hit within seconds.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Open the email's activity detail in DealFlow.<span class="expect">Engagement shows <strong>👁 Opened</strong> with a timestamp.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Click the link inside the email; click through the ngrok "Visit Site" warning.<span class="expect">Inspector shows <code>GET /track/click/…</code>, then redirect to the URL.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Refresh the activity detail.<span class="expect">Engagement also shows <strong>🖱 Clicked</strong>, and the timeline lists each event.</span></label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">6</span> Send one more with <strong>tracking unchecked</strong>.<span class="expect">Arrives, but Engagement reads "Tracking was disabled for this send" and no <code>/track</code> hit appears.</span></label></div></li>
     </ol>
-    <p class="note">CC/BCC: in the compose dialog click "+ Cc · Bcc", add an address you control, send, and confirm it arrives at the CC address.</p>
+    <p class="note">When done testing, stop the tunnel: <code>Stop-Process -Name ngrok</code> (or close its window). The API + web dev servers and the tunnel are currently running.</p>
   </section>
 
   <!-- ============ CORE CRM ============ -->
-  <section class="feature">
-    <h2>④ Core CRM — optional sanity pass <span class="pill foundational">Foundational</span></h2>
-    <p class="why">These underpin everything and have automated coverage. Only run if you want a fresh-eyes pass.</p>
+  <section class="feature done-feature">
+    <h2>④ Core CRM <span class="pill done">Tested ✓</span></h2>
+    <p class="why">Contacts, companies, deals, pipelines, activities, tasks — sanity-passed, re-exercised on the new Supabase DB today, and covered by automated tests. Steps kept for regression.</p>
     <ol class="steps" data-feature="core">
       <li><div class="check-row"><input type="checkbox"><label><span class="num">1</span> Create a contact, a company, link the contact to the company.</label></div></li>
       <li><div class="check-row"><input type="checkbox"><label><span class="num">2</span> Create a deal, drag it across pipeline stages.<span class="expect">Stage + position persist on reload.</span></label></div></li>
       <li><div class="check-row"><input type="checkbox"><label><span class="num">3</span> Add a note and a task to a contact; mark the task done.<span class="expect">Activity feed updates; task shows completed.</span></label></div></li>
-      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Go to <code>/app/tasks</code>; confirm your open tasks list and a task title links to its detail page.</label></div></li>
+      <li><div class="check-row"><input type="checkbox"><label><span class="num">4</span> Go to <code>/app/tasks</code>; confirm open tasks list and a title links to its detail page.</label></div></li>
       <li><div class="check-row"><input type="checkbox"><label><span class="num">5</span> Try the AI ✨ Draft / Summarize buttons (if AI configured).</label></div></li>
     </ol>
   </section>
@@ -161,7 +203,7 @@
 </main>
 
 <script>
-  const KEY = 'dealflow-test-checklist-v1';
+  const KEY = 'dealflow-test-checklist-v3';
   const boxes = Array.from(document.querySelectorAll('input[type=checkbox]'));
   boxes.forEach((b, i) => (b.dataset.idx = i));
   const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
