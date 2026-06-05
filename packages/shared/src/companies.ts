@@ -1,12 +1,15 @@
 import { z } from 'zod';
+import { blankToUndefined } from './zod-helpers.js';
 
 export const createCompanyBodySchema = z.object({
   name: z.string().min(1).max(200),
-  domain: z.string().min(1).max(200).optional(),
-  industry: z.string().min(1).max(100).optional(),
-  size: z.string().min(1).max(50).optional(),
-  website: z.string().url().max(500).optional(),
-  description: z.string().max(5000).optional(),
+  // Optional text fields: blank form inputs ("") are treated as omitted so the
+  // create/edit dialogs don't silently fail on empty values.
+  domain: blankToUndefined(z.string().min(1).max(200).optional()),
+  industry: blankToUndefined(z.string().min(1).max(100).optional()),
+  size: blankToUndefined(z.string().min(1).max(50).optional()),
+  website: blankToUndefined(z.string().url().max(500).optional()),
+  description: blankToUndefined(z.string().max(5000).optional()),
   customFields: z.record(z.unknown()).optional(),
 });
 

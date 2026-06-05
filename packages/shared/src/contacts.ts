@@ -1,12 +1,5 @@
 import { z } from 'zod';
-
-/**
- * Form text inputs submit "" (empty string) for blank optional fields, which
- * would otherwise fail `.min(1)`/`.email()` and silently block submission.
- * Treat a blank/whitespace-only string as "not provided" (undefined).
- */
-const blankToUndefined = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), schema);
+import { blankToUndefined } from './zod-helpers.js';
 
 export const createContactBodySchema = z.object({
   firstName: z.string().min(1).max(120),
