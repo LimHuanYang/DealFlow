@@ -33,43 +33,45 @@ export function EntityTable<T extends { id: string }>({
 }: EntityTableProps<T>) {
   if (rows.length === 0) {
     return (
-      <div className="rounded border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
         {emptyMessage ?? 'No items yet.'}
       </div>
     );
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {columns.map((c) => (
-            <TableHead key={c.header} className={c.className}>
-              {c.header}
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.id} className="cursor-pointer">
-            {columns.map((c, i) => (
-              <TableCell key={i} className={c.className}>
-                {i === 0 ? (
-                  <Link
-                    to={rowHref(row)}
-                    className="font-medium underline-offset-2 hover:underline"
-                  >
-                    {c.cell(row)}
-                  </Link>
-                ) : (
-                  c.cell(row)
-                )}
-              </TableCell>
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm [&_thead]:bg-slate-50/80">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map((c) => (
+              <TableHead key={c.header} className={c.className}>
+                {c.header}
+              </TableHead>
             ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id} className="cursor-pointer">
+              {columns.map((c, i) => (
+                <TableCell key={i} className={c.className}>
+                  {i === 0 ? (
+                    <Link
+                      to={rowHref(row)}
+                      className="font-medium underline-offset-2 hover:underline"
+                    >
+                      {c.cell(row)}
+                    </Link>
+                  ) : (
+                    c.cell(row)
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

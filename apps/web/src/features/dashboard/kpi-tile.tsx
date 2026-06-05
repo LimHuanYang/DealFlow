@@ -9,18 +9,18 @@ interface KpiTileProps {
 export function KpiTile({ label, value, hint, dim }: KpiTileProps) {
   return (
     <div
-      className="rounded-md border border-neutral-200 bg-white p-4"
+      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid={`kpi-${label.toLowerCase().replace(/\s+/g, '-')}`}
     >
-      <div className="text-xs text-neutral-500">{label}</div>
+      <div className="text-xs font-medium text-slate-500">{label}</div>
       <div
         className={`mt-1 text-2xl font-semibold tracking-tight ${
-          dim ? 'text-neutral-400' : 'text-neutral-900'
+          dim ? 'text-slate-300' : 'text-slate-900'
         }`}
       >
         {value}
       </div>
-      {hint && <div className="mt-1 text-xs text-neutral-400">{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-slate-400">{hint}</div>}
     </div>
   );
 }
