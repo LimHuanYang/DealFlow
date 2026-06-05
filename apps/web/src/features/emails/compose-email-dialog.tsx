@@ -169,24 +169,26 @@ export function ComposeEmailDialog({
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Email {recipientName}</DialogTitle>
-            <p className="text-xs text-neutral-500">{recipientEmail}</p>
-          </DialogHeader>
-          <form onSubmit={onSubmit} onPaste={onPaste} className="flex flex-col gap-4" noValidate>
-            {aiStatus.data?.enabled && (
-              <div className="flex items-center justify-end">
+            <div className="flex items-start justify-between gap-3 pr-8">
+              <div className="min-w-0">
+                <DialogTitle>Email {recipientName}</DialogTitle>
+                <p className="mt-1 truncate text-sm text-slate-500">To: {recipientEmail}</p>
+              </div>
+              {aiStatus.data?.enabled && (
                 <button
                   type="button"
                   onClick={() => setShowDraftPanel((v) => !v)}
-                  className="text-xs font-medium text-amber-700 hover:text-amber-900"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
                   data-testid="ai-draft-toggle"
                 >
                   {showDraftPanel ? 'Hide AI draft' : '✨ AI draft'}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+          </DialogHeader>
+          <form onSubmit={onSubmit} onPaste={onPaste} className="flex flex-col gap-4" noValidate>
             {showDraftPanel && (
-              <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+              <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
                 <Label htmlFor="intent" className="text-amber-900">
                   What should the email do?
                 </Label>
@@ -210,18 +212,15 @@ export function ComposeEmailDialog({
                 )}
               </div>
             )}
-            <div className="flex items-center">
-              <span className="text-xs text-neutral-500">To: {recipientEmail}</span>
-              {!showCcBcc && (
-                <button
-                  type="button"
-                  onClick={() => setShowCcBcc(true)}
-                  className="ml-2 text-xs text-blue-600 hover:underline"
-                >
-                  + Cc · Bcc
-                </button>
-              )}
-            </div>
+            {!showCcBcc && (
+              <button
+                type="button"
+                onClick={() => setShowCcBcc(true)}
+                className="self-start text-xs font-medium text-primary hover:underline"
+              >
+                + Add Cc / Bcc
+              </button>
+            )}
             {showCcBcc && (
               <>
                 <div className="mb-2">
