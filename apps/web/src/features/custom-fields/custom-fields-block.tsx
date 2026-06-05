@@ -15,18 +15,33 @@ interface Props {
   onChange: (fieldId: string, value: unknown) => void;
   /** When true, header label + section divider render. */
   showHeader?: boolean;
+  /** When true, render inside a bordered card (used on detail pages). */
+  card?: boolean;
 }
 
-export function CustomFieldsBlock({ entityType, values, onChange, showHeader = true }: Props) {
+export function CustomFieldsBlock({
+  entityType,
+  values,
+  onChange,
+  showHeader = true,
+  card = false,
+}: Props) {
   const q = useCustomFields(entityType);
   if (q.isPending) return null;
   const defs = q.data ?? [];
   if (defs.length === 0) return null;
 
   return (
-    <section className="space-y-3" data-testid={`custom-fields-${entityType}`}>
+    <section
+      className={
+        card ? 'space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm' : 'space-y-3'
+      }
+      data-testid={`custom-fields-${entityType}`}
+    >
       {showHeader && (
-        <div className="text-xs uppercase tracking-wide text-neutral-400">Custom fields</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Custom fields
+        </div>
       )}
       {defs.map((def) => (
         <FieldRow

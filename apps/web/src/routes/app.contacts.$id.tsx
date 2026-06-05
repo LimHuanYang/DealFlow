@@ -149,15 +149,14 @@ function ContactDetailPage() {
 
       <EmailEngagementRollup entityType="contact" entityId={c.id} />
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <CustomFieldsBlock
-          entityType="contact"
-          values={c.customFields ?? {}}
-          onChange={(fieldId, value) => {
-            void update.mutateAsync({ customFields: { [fieldId]: value } });
-          }}
-        />
-      </section>
+      <CustomFieldsBlock
+        entityType="contact"
+        values={c.customFields ?? {}}
+        onChange={(fieldId, value) => {
+          void update.mutateAsync({ customFields: { [fieldId]: value } });
+        }}
+        card
+      />
 
       <ActivityFeed parent={{ contactId: c.id }} />
     </main>

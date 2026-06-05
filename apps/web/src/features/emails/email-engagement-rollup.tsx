@@ -10,22 +10,24 @@ export function EmailEngagementRollup({ entityType, entityId }: Props) {
   if (!q.data || q.data.sent === 0) return null;
   const r = q.data;
   return (
-    <section className="mt-4 rounded-md border border-neutral-200 bg-white p-3 text-sm">
-      <div className="mb-1 text-xs uppercase tracking-wide text-neutral-400">Email engagement</div>
-      <div className="flex flex-wrap gap-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-6 text-sm shadow-sm">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Email engagement
+      </div>
+      <div className="flex flex-wrap gap-4 text-slate-700">
         <div>
-          📤 <strong>{r.sent}</strong> sent
+          📤 <strong className="text-slate-900">{r.sent}</strong> sent
         </div>
         <div>
-          👁 <strong>{r.opened}</strong> opened{' '}
-          <span className="text-neutral-400">({Math.round(r.openedPct * 100)}%)</span>
+          👁 <strong className="text-slate-900">{r.opened}</strong> opened{' '}
+          <span className="text-slate-400">({Math.round(r.openedPct * 100)}%)</span>
         </div>
         <div>
-          🖱 <strong>{r.clickedWith}</strong> with clicks{' '}
-          <span className="text-neutral-400">({Math.round(r.clickedWithPct * 100)}%)</span>
+          🖱 <strong className="text-slate-900">{r.clickedWith}</strong> with clicks{' '}
+          <span className="text-slate-400">({Math.round(r.clickedWithPct * 100)}%)</span>
         </div>
         {r.lastActivityAt && (
-          <div className="ml-auto text-neutral-400">
+          <div className="ml-auto text-slate-400">
             Last activity: {new Date(r.lastActivityAt).toLocaleString()}
           </div>
         )}

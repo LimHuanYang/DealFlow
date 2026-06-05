@@ -15,6 +15,11 @@ coverage/
 playwright-report/
 test-results/
 .vitest/
+.playwright-mcp/
+
+# Local UI review screenshots
+*-after.png
+*-after-fix.png
 
 # Env / secrets
 .env

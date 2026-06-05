@@ -28,14 +28,19 @@ function TasksPage() {
   const tasks = useTasks({ status, due });
   const update = useUpdateTask();
 
+  const tabClass = (active: boolean) =>
+    active
+      ? 'rounded-md px-3 py-1.5 text-sm font-medium bg-accent text-accent-foreground'
+      : 'rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900';
+
   return (
-    <main className="mx-auto max-w-3xl p-6">
-      <h1 className="mb-1 text-2xl font-semibold tracking-tight">Tasks</h1>
-      <p className="mb-6 text-sm text-neutral-500">
+    <main className="mx-auto max-w-4xl px-6 py-8">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Tasks</h1>
+      <p className="mt-0.5 text-sm text-slate-500">
         Open follow-ups across all your contacts, companies, and deals.
       </p>
 
-      <div className="mb-4 flex flex-wrap items-center gap-4 border-b border-neutral-200 pb-3">
+      <div className="mb-4 mt-6 flex flex-wrap items-center gap-4 border-b border-slate-200 pb-3">
         <div className="flex gap-1" role="tablist" aria-label="Task status">
           {STATUS_TABS.map((t) => (
             <button
@@ -44,11 +49,7 @@ function TasksPage() {
               role="tab"
               aria-selected={status === t.key}
               onClick={() => setStatus(t.key)}
-              className={
-                status === t.key
-                  ? 'rounded px-3 py-1 text-sm font-medium bg-neutral-100 text-neutral-900'
-                  : 'rounded px-3 py-1 text-sm text-neutral-600 hover:bg-neutral-50'
-              }
+              className={tabClass(status === t.key)}
             >
               {t.label}
             </button>
@@ -62,11 +63,7 @@ function TasksPage() {
               role="tab"
               aria-selected={due === d.key}
               onClick={() => setDue(d.key)}
-              className={
-                due === d.key
-                  ? 'rounded px-3 py-1 text-sm font-medium bg-neutral-100 text-neutral-900'
-                  : 'rounded px-3 py-1 text-sm text-neutral-600 hover:bg-neutral-50'
-              }
+              className={tabClass(due === d.key)}
             >
               {d.label}
             </button>
@@ -74,23 +71,27 @@ function TasksPage() {
         </div>
       </div>
 
-      {tasks.isPending && <p className="text-sm text-neutral-500">Loading…</p>}
+      {tasks.isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {tasks.error && <p className="text-sm text-red-600">Couldn't load tasks.</p>}
       {tasks.data?.items.length === 0 && !tasks.isPending && (
-        <p className="text-sm italic text-neutral-400">No tasks match this filter.</p>
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+          No tasks match this filter.
+        </div>
       )}
 
-      <ul className="divide-y divide-neutral-200">
-        {tasks.data?.items.map((task) => (
-          <li key={task.id}>
-            <TaskItem
-              task={task}
-              onToggleDone={(id, patch) => update.mutateAsync({ id, patch })}
-              detailId={task.id}
-            />
-          </li>
-        ))}
-      </ul>
+      {tasks.data && tasks.data.items.length > 0 && (
+        <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          {tasks.data.items.map((task) => (
+            <li key={task.id} className="px-4">
+              <TaskItem
+                task={task}
+                onToggleDone={(id, patch) => update.mutateAsync({ id, patch })}
+                detailId={task.id}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   );
 }
