@@ -31,6 +31,24 @@ jobs:
   unit-integration:
     name: Unit + Integration tests
     runs-on: ubuntu-latest
+    # The integration test harness (apps/api/test/helpers/postgres.ts) spins up a
+    # disposable database per test file via CREATE DATABASE, so it needs a real
+    # Postgres with an admin role. Supabase (the dev/runtime DB) can't do per-test
+    # CREATE DATABASE, hence an ephemeral service container here.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -41,6 +59,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The harness connects as admin `postgres` to create per-test DBs owned by
+      # the app role `dealflow`, then connects as `dealflow`. Create that role.
+      # citext/gen_random_uuid work because this is a real Postgres 16 server.
+      - name: Create app database role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres \
+            -c "CREATE ROLE dealflow LOGIN PASSWORD 'dealflow' CREATEDB;"
       - run: pnpm test
 
   e2e:
