@@ -1,13 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 /* ----------------------------------------------------------------------------
- * shadcn/ui theme tokens (light mode only — dark mode lands later).
- *
- * shadcn primitives reference Tailwind utility classes like `bg-background`,
- * `text-muted-foreground`, `border-border`, `ring-ring`. Under Tailwind v4,
- * these resolve via the @theme block — each `--color-<name>` key creates
- * a corresponding utility. We point each at an HSL CSS variable so the same
- * tokens can flip per-theme in the future without rewriting components.
+ * DealFlow design tokens (light mode). Brand = indigo, neutrals = slate, on a
+ * soft slate-50 canvas so white surfaces lift. shadcn primitives reference
+ * these via the @theme block (bg-background, text-muted-foreground, etc.).
  * ------------------------------------------------------------------------- */
 
 @theme inline {
@@ -31,6 +28,8 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -39,35 +38,38 @@
 :root {
   color-scheme: light;
 
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  /* Soft slate canvas; white cards/popovers lift off it. */
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
 
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 222 47% 11%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
+  --popover-foreground: 222 47% 11%;
 
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
+  /* Brand: indigo-600 / white. */
+  --primary: 243 75% 59%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
 
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
 
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  /* Accent: indigo-50 / indigo-700 (active nav, subtle highlights). */
+  --accent: 226 100% 97%;
+  --accent-foreground: 245 58% 51%;
 
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  --border: 214 32% 91%;
+  --input: 213 27% 84%;
+  --ring: 239 84% 67%;
 
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 }
 
 @layer base {
@@ -79,11 +81,36 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
-    font-family:
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      'Segoe UI',
-      sans-serif;
+    text-rendering: optimizeLegibility;
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Tabular figures for data-heavy UI (tables, money, counts). */
+  th,
+  td,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Subtle, unobtrusive scrollbars to match the refined surfaces. */
+@layer utilities {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(215 20% 80%) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(215 20% 80%);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(215 16% 65%);
   }
 }

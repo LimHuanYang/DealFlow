@@ -7,9 +7,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-  default: 'bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-400',
-  ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100',
-  outline: 'border border-neutral-200 bg-transparent text-neutral-900 hover:bg-neutral-100',
+  default:
+    'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 disabled:bg-slate-300 disabled:text-white disabled:shadow-none',
+  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  outline:
+    'border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900',
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
@@ -18,7 +20,7 @@ const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
 };
 
 const baseClasses =
-  'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 disabled:pointer-events-none';
+  'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0';
 
 /**
  * Class-string helper for composing button-shaped elements (e.g. shadcn
