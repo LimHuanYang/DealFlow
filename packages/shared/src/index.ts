@@ -14,3 +14,4 @@ export * from './integrations.js';
 export * from './reports.js';
 export * from './custom-fields.js';
 export * from './email-tracking.js';
+export * from './team.js';
