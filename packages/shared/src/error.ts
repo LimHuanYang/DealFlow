@@ -26,6 +26,22 @@ export const ERROR_CODES = {
    * admin DELETE route. They must use POST /members/leave instead.
    */
   CANNOT_REMOVE_SELF: 'CANNOT_REMOVE_SELF',
+  /** Invitations: target email already belongs to an active org member. */
+  ALREADY_MEMBER: 'ALREADY_MEMBER',
+  /** Invitations: an unexpired invitation for the same email already exists. */
+  ALREADY_INVITED: 'ALREADY_INVITED',
+  /** Invitations: token does not match any invitation row. */
+  INVITATION_NOT_FOUND: 'INVITATION_NOT_FOUND',
+  /** Invitations: the invitation's expiresAt is in the past. */
+  INVITATION_EXPIRED: 'INVITATION_EXPIRED',
+  /** Invitations: the invitation has already been accepted by another user. */
+  INVITATION_ALREADY_ACCEPTED: 'INVITATION_ALREADY_ACCEPTED',
+  /**
+   * Public accept flow: the invited email already has an account but the
+   * caller has no matching session — the web app should redirect to
+   * /login?next=/invite/<token>.
+   */
+  SIGNIN_REQUIRED: 'SIGNIN_REQUIRED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
