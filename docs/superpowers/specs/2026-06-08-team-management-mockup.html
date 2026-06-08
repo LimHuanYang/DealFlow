@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DealFlow — Team Management (mockup)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --indigo:#4f46e5; --indigo-700:#4338ca; --indigo-50:#eef2ff; --indigo-100:#e0e7ff;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155; --slate-900:#0f172a;
+    --green-100:#dcfce7; --green-700:#15803d; --amber-100:#fef3c7; --amber-700:#b45309;
+    --red-50:#fef2f2; --red-600:#dc2626; --red-700:#b91c1c;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+    --shadow-lg:0 10px 30px rgba(15,23,42,.18);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .board{max-width:1080px;margin:0 auto;padding:40px 24px 120px}
+  .board > h1{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+  .board > .sub{color:var(--slate-500);font-size:14px;margin:0 0 28px}
+  .caption{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:36px 0 10px;display:flex;align-items:center;gap:8px}
+  .caption .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--indigo);color:#fff;font-size:11px}
+  .frame{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .note{font-size:12.5px;color:var(--slate-500);margin:8px 2px 0;padding-left:10px;border-left:2px solid var(--slate-300)}
+
+  /* App chrome */
+  .app{display:flex;height:560px;background:var(--slate-50)}
+  .side{width:210px;background:#fff;border-right:1px solid var(--slate-200);padding:16px 12px;flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px}
+  .brand .logo{width:30px;height:30px;border-radius:8px;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .brand b{font-size:15px}
+  .nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--slate-600);font-size:14px;font-weight:500;text-decoration:none;margin-bottom:2px}
+  .nav a .ic{width:16px;height:16px;border-radius:4px;background:var(--slate-300);display:inline-block}
+  .nav a.active{background:var(--indigo-50);color:var(--indigo-700)}
+  .nav a.active .ic{background:var(--indigo)}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .top{height:56px;border-bottom:1px solid var(--slate-200);background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:12px}
+  .kbd{font-size:11px;color:var(--slate-500);background:var(--slate-100);border:1px solid var(--slate-200);border-radius:6px;padding:2px 8px}
+  .topright{display:flex;align-items:center;gap:14px}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--indigo-100);color:var(--indigo-700);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .content{padding:24px 28px;overflow:auto}
+
+  /* org switcher */
+  .orgsw{position:relative}
+  .orgsw .btn{display:flex;align-items:center;gap:8px;border:1px solid var(--slate-200);background:#fff;border-radius:9px;padding:6px 10px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .orgsw .btn .sq{width:20px;height:20px;border-radius:6px;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .orgsw .menu{position:absolute;top:42px;left:0;width:240px;background:#fff;border:1px solid var(--slate-200);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;z-index:5}
+  .orgsw .menu .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-400);padding:8px 10px 4px;font-weight:600}
+  .orgsw .menu .item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;cursor:pointer}
+  .orgsw .menu .item:hover{background:var(--slate-50)}
+  .orgsw .menu .item .sq{width:22px;height:22px;border-radius:6px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .orgsw .menu .item .chk{margin-left:auto;color:var(--indigo);font-weight:700}
+  .orgsw .menu .new{color:var(--indigo-700);font-weight:600}
+
+  h1.page{font-size:22px;letter-spacing:-.01em;margin:0 0 2px}
+  .page-sub{color:var(--slate-500);font-size:13.5px;margin:0 0 18px}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+
+  .btn-primary{background:var(--indigo);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-primary:hover{background:var(--indigo-700)}
+  .btn-ghost{background:#fff;border:1px solid var(--slate-200);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500;color:var(--slate-700);cursor:pointer}
+  .btn-danger{background:#fff;border:1px solid var(--slate-200);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500;color:var(--red-600);cursor:pointer}
+
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;background:var(--slate-50);color:var(--slate-500);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:10px 16px;border-bottom:1px solid var(--slate-200)}
+  tbody td{padding:12px 16px;border-bottom:1px solid var(--slate-100);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  .person{display:flex;align-items:center;gap:11px}
+  .person .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+  .person .nm{font-weight:600;color:var(--slate-900)}
+  .person .em{font-size:12px;color:var(--slate-500)}
+  .you{font-size:11px;color:var(--slate-400);font-weight:500}
+
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+  .pill.owner{background:var(--indigo-50);color:var(--indigo-700)}
+  .pill.admin{background:var(--green-100);color:var(--green-700)}
+  .pill.member{background:var(--slate-100);color:var(--slate-600)}
+  .pill.pending{background:var(--amber-100);color:var(--amber-700)}
+  .role-select{border:1px solid var(--slate-200);border-radius:8px;padding:5px 8px;font-size:12.5px;background:#fff;color:var(--slate-700);font-weight:500}
+  .muted{color:var(--slate-400)}
+  .actions{display:flex;gap:8px;justify-content:flex-end}
+  .linkact{font-size:12.5px;font-weight:600;color:var(--indigo-700);cursor:pointer}
+  .linkact.danger{color:var(--red-600)}
+
+  /* modal */
+  .modal-wrap{position:relative;padding:30px;background:rgba(15,23,42,.45);display:flex;justify-content:center}
+  .modal{width:440px;background:#fff;border:1px solid var(--slate-200);border-radius:16px;box-shadow:var(--shadow-lg);padding:22px}
+  .modal h3{margin:0 0 4px;font-size:17px}
+  .modal p.d{margin:0 0 18px;color:var(--slate-500);font-size:13px}
+  label.f{display:block;font-size:12.5px;font-weight:600;color:var(--slate-600);margin:0 0 6px}
+  .input{width:100%;border:1px solid var(--slate-300);border-radius:9px;padding:9px 11px;font-size:13.5px;margin-bottom:14px;font-family:inherit}
+  .input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-50)}
+  .inline2{display:flex;gap:10px}
+  .inline2 .grow{flex:1}
+  .modal-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .smtp-note{font-size:12px;color:var(--slate-500);background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:9px 11px;margin:2px 0 16px}
+
+  /* accept page */
+  .auth{background:linear-gradient(180deg,#eef2ff 0%, #f8fafc 40%);padding:40px;display:flex;justify-content:center}
+  .auth .card2{width:400px;background:#fff;border:1px solid var(--slate-200);border-radius:16px;box-shadow:var(--shadow-lg);padding:28px;text-align:center}
+  .auth .logo{width:42px;height:42px;border-radius:11px;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 14px}
+  .auth h2{margin:0 0 4px;font-size:19px}
+  .auth .inv{font-size:13.5px;color:var(--slate-500);margin:0 0 20px}
+  .auth .inv b{color:var(--slate-700)}
+  .auth .input{text-align:left}
+  .auth .btn-primary{width:100%;justify-content:center;padding:11px}
+  .auth .alt{font-size:12.5px;color:var(--slate-500);margin-top:16px}
+  .auth .alt a{color:var(--indigo-700);font-weight:600;text-decoration:none}
+
+  /* matrix */
+  .matrix{font-size:13px}
+  .matrix th,.matrix td{padding:11px 14px;border-bottom:1px solid var(--slate-100);text-align:center}
+  .matrix th:first-child,.matrix td:first-child{text-align:left;font-weight:500;color:var(--slate-700)}
+  .matrix thead th{background:var(--slate-50);font-size:12px;text-transform:none;letter-spacing:0}
+  .matrix thead th .pill{margin:0 auto}
+  .yes{color:var(--green-700);font-weight:700}
+  .no{color:var(--slate-300);font-weight:700}
+  .own{color:var(--amber-700);font-weight:600;font-size:11.5px}
+
+  /* ownership demo */
+  .deals{display:flex;gap:16px;padding:22px;background:var(--slate-50)}
+  .deal{flex:1;background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+  .deal .nm{font-weight:600;margin-bottom:2px}
+  .deal .meta{font-size:12px;color:var(--slate-500);margin-bottom:14px}
+  .deal .own-tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;margin-bottom:14px}
+  .deal .own-tag.mine{background:var(--indigo-50);color:var(--indigo-700)}
+  .deal .own-tag.theirs{background:var(--slate-100);color:var(--slate-500)}
+  .deal .btns{display:flex;gap:8px}
+  .deal .b{font-size:12px;font-weight:600;border-radius:7px;padding:6px 11px;border:1px solid var(--slate-200);background:#fff}
+  .deal .b.on{color:var(--slate-700)}
+  .deal .b.off{color:var(--slate-300);background:var(--slate-50);cursor:not-allowed}
+  .deal .lock{font-size:11.5px;color:var(--slate-400);margin-top:10px}
+  .legend{font-size:12px;color:var(--slate-500);padding:0 22px 18px;background:var(--slate-50)}
+
+  /* api reference */
+  .api-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .api-group{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .api-group > h4{margin:0;padding:11px 16px;background:var(--slate-50);border-bottom:1px solid var(--slate-200);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-500)}
+  .ep{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--slate-100);font-size:12.5px}
+  .ep:last-child{border-bottom:none}
+  .m{font-size:10px;font-weight:700;border-radius:5px;padding:3px 0;flex-shrink:0;width:48px;text-align:center;letter-spacing:.02em}
+  .m.get{background:#dbeafe;color:#1d4ed8}
+  .m.post{background:var(--green-100);color:var(--green-700)}
+  .m.patch{background:var(--amber-100);color:var(--amber-700)}
+  .m.delete{background:var(--red-50);color:var(--red-700)}
+  .m.rbac{background:var(--indigo-50);color:var(--indigo-700)}
+  .ep code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#1e293b}
+  .ep .desc{color:var(--slate-500);margin-left:auto;font-size:11px;text-align:right}
+
+  /* flow */
+  .flow{display:flex;align-items:stretch;padding:22px 12px;background:#fff;overflow-x:auto}
+  .fstep{flex:1;min-width:130px;text-align:center;padding:0 10px;position:relative}
+  .fstep:not(:last-child)::after{content:"\2192";position:absolute;right:-7px;top:12px;color:var(--slate-300);font-size:18px}
+  .fstep .c{width:30px;height:30px;border-radius:50%;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin:0 auto 8px}
+  .fstep .t{font-size:12px;color:var(--slate-600);font-weight:500;line-height:1.35}
+  .fstep .t b{color:var(--slate-900)}
+
+  /* chips + tests */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;padding:16px}
+  .chip{font-size:12px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:999px;padding:5px 11px;color:var(--slate-600)}
+  .chip b{color:var(--slate-900)}
+  .tests{padding:14px 18px}
+  .tests .ti{display:flex;align-items:flex-start;gap:9px;padding:6px 0;font-size:13px;color:var(--slate-700)}
+  .tests .ti .ck{color:var(--green-700);font-weight:700;margin-top:1px}
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>DealFlow — Team Management</h1>
+  <p class="sub">Phase 2 · visual mockup of the design. Static (non-clickable) — just to show the screens &amp; rules. 2026-06-08</p>
+
+  <!-- 1. MEMBERS PAGE -->
+  <div class="caption"><span class="n">1</span> Settings → Members (main screen)</div>
+  <div class="frame">
+    <div class="app">
+      <aside class="side">
+        <div class="brand"><span class="logo">DF</span><b>DealFlow</b></div>
+        <nav class="nav">
+          <a><span class="ic"></span>Dashboard</a>
+          <a><span class="ic"></span>Contacts</a>
+          <a><span class="ic"></span>Companies</a>
+          <a><span class="ic"></span>Deals</a>
+          <a><span class="ic"></span>Tasks</a>
+          <a><span class="ic"></span>Emails</a>
+          <a class="active"><span class="ic"></span>Settings</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="orgsw">
+            <div class="btn"><span class="sq">A</span> Agilec <span class="muted">▾</span></div>
+          </div>
+          <div class="topright">
+            <span class="kbd">Ctrl K</span>
+            <span class="avatar">AD</span>
+          </div>
+        </div>
+        <div class="content">
+          <div class="row-between">
+            <div>
+              <h1 class="page">Members</h1>
+              <p class="page-sub">People with access to <b>Agilec</b>. Invite teammates and manage their roles.</p>
+            </div>
+            <button class="btn-primary">＋ Invite people</button>
+          </div>
+          <div class="card">
+            <table>
+              <thead><tr><th>Member</th><th>Role</th><th>Joined</th><th style="text-align:right">Actions</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div class="person"><span class="av" style="background:var(--indigo-100);color:var(--indigo-700)">AD</span><div><div class="nm">Agile Dev <span class="you">· you</span></div><div class="em">agilec.dev1@gmail.com</div></div></div></td>
+                  <td><span class="pill owner">Owner</span></td>
+                  <td class="muted">Jun 5, 2026</td>
+                  <td><div class="actions"><span class="muted" style="font-size:12px">—</span></div></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="av" style="background:#dbeafe;color:#1d4ed8">HL</span><div><div class="nm">Huan Yang Lim</div><div class="em">huanyang.lim@agilectechnology.com</div></div></div></td>
+                  <td><select class="role-select"><option>Admin</option><option>Member</option></select></td>
+                  <td class="muted">Jun 6, 2026</td>
+                  <td><div class="actions"><span class="linkact danger">Remove</span></div></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="av" style="background:#fae8ff;color:#a21caf">SC</span><div><div class="nm">Sarah Chen</div><div class="em">sarah@example.com</div></div></div></td>
+                  <td><select class="role-select"><option>Member</option><option>Admin</option></select></td>
+                  <td class="muted">Jun 7, 2026</td>
+                  <td><div class="actions"><span class="linkact danger">Remove</span></div></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="av" style="background:var(--amber-100);color:var(--amber-700)">@</span><div><div class="nm">tom@example.com</div><div class="em">Invitation sent · expires in 7 days</div></div></div></td>
+                  <td><span class="pill pending">Pending · Member</span></td>
+                  <td class="muted">—</td>
+                  <td><div class="actions"><span class="linkact">Resend</span><span class="linkact danger">Revoke</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Owner/Admin see role dropdowns + Remove. A <b>member</b> viewing this page sees the list read-only (no Invite button, no dropdowns). The owner row can't be demoted/removed while it's the last owner.</p>
+
+  <!-- 2. INVITE MODAL -->
+  <div class="caption"><span class="n">2</span> Invite dialog</div>
+  <div class="frame">
+    <div class="modal-wrap">
+      <div class="modal">
+        <h3>Invite teammates</h3>
+        <p class="d">They'll get an email link to join <b>Agilec</b>.</p>
+        <div class="inline2">
+          <div class="grow"><label class="f">Email</label><input class="input" value="tom@example.com" /></div>
+          <div style="width:130px"><label class="f">Role</label><select class="input"><option>Member</option><option>Admin</option></select></div>
+        </div>
+        <div class="smtp-note">✉️ Sent via your connected SMTP (<b>agilec.dev1@gmail.com</b>). No SMTP configured? You'll get a copyable invite link instead.</div>
+        <div class="modal-foot">
+          <span class="linkact">🔗 Copy invite link</span>
+          <div><button class="btn-ghost">Cancel</button> <button class="btn-primary">Send invite</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ORG SWITCHER -->
+  <div class="caption"><span class="n">3</span> Org switcher (top-bar dropdown, multi-org)</div>
+  <div class="frame">
+    <div style="background:#fff;padding:24px 20px 150px;border-bottom:1px solid var(--slate-200)">
+      <div class="orgsw" style="display:inline-block">
+        <div class="btn"><span class="sq">A</span> Agilec <span class="muted">▾</span></div>
+        <div class="menu">
+          <div class="lbl">Your organizations</div>
+          <div class="item"><span class="sq" style="background:var(--indigo)">A</span> Agilec <span class="chk">✓</span></div>
+          <div class="item"><span class="sq" style="background:#0ea5e9">AC</span> Acme Inc <span class="muted" style="margin-left:auto;font-size:11px">Member</span></div>
+          <div class="item new" style="border-top:1px solid var(--slate-100);margin-top:4px;padding-top:10px">＋ Create organization</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Switching updates <code>sessions.current_org_id</code> and reloads data for the chosen org. Only orgs you're a member of appear.</p>
+
+  <!-- 4. ACCEPT INVITE -->
+  <div class="caption"><span class="n">4</span> Accept-invite page (new user)</div>
+  <div class="frame">
+    <div class="auth">
+      <div class="card2">
+        <div class="logo">DF</div>
+        <h2>Join Agilec on DealFlow</h2>
+        <p class="inv"><b>Agile Dev</b> invited you to join <b>Agilec</b> as a <b>Member</b>.</p>
+        <input class="input" placeholder="Your name" />
+        <input class="input" type="password" placeholder="Create a password" />
+        <button class="btn-primary">Create account &amp; join</button>
+        <p class="alt">Already have a DealFlow account? <a>Sign in to join →</a></p>
+      </div>
+    </div>
+  </div>
+  <p class="note">Existing user (email already registered) skips name/password — they just confirm “Join Agilec”, then it appears in their org switcher. Expired/invalid token → friendly “This invite has expired” screen.</p>
+
+  <!-- 5. PERMISSIONS MATRIX -->
+  <div class="caption"><span class="n">5</span> Who can do what</div>
+  <div class="card">
+    <table class="matrix">
+      <thead><tr><th>Capability</th><th><span class="pill owner">Owner</span></th><th><span class="pill admin">Admin</span></th><th><span class="pill member">Member</span></th></tr></thead>
+      <tbody>
+        <tr><td>Use CRM · create records</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>View all org records</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Edit / delete <b>any</b> record</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td>Edit / delete <b>own</b> records</td><td class="yes">✓</td><td class="yes">✓</td><td class="own">own only</td></tr>
+        <tr><td>Reassign a record's owner</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td>Invite · remove · change member roles</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td>Promote/demote owner (transfer ownership)</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td>Org settings · integrations · custom fields</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. OWNERSHIP DEMO -->
+  <div class="caption"><span class="n">6</span> What a “member” sees on records (edit/delete own only)</div>
+  <div class="frame">
+    <div class="deals">
+      <div class="deal">
+        <div class="nm">Acme Q3 license</div>
+        <div class="meta">MYR 5,000 · Closed Won</div>
+        <span class="own-tag mine">● Owned by you</span>
+        <div class="btns"><span class="b on">Edit</span><span class="b on">Delete</span></div>
+      </div>
+      <div class="deal">
+        <div class="nm">Globex renewal</div>
+        <div class="meta">MYR 12,000 · Negotiation</div>
+        <span class="own-tag theirs">● Owned by Sarah Chen</span>
+        <div class="btns"><span class="b off">Edit</span><span class="b off">Delete</span></div>
+        <div class="lock">🔒 Only the owner or an admin can edit this</div>
+      </div>
+    </div>
+    <div class="legend">Members can open and read every record, but Edit/Delete are disabled on records they don't own. Owner &amp; admin see them enabled everywhere.</div>
+  </div>
+
+  <!-- 7. API SURFACE -->
+  <div class="caption"><span class="n">7</span> API surface — new endpoints</div>
+  <div class="api-grid">
+    <div class="api-group">
+      <h4>Members &amp; roles</h4>
+      <div class="ep"><span class="m get">GET</span><code>/orgs/current/members</code><span class="desc">members + pending</span></div>
+      <div class="ep"><span class="m patch">PATCH</span><code>…/members/:userId</code><span class="desc">change role</span></div>
+      <div class="ep"><span class="m delete">DEL</span><code>…/members/:userId</code><span class="desc">remove</span></div>
+      <div class="ep"><span class="m post">POST</span><code>…/members/leave</code><span class="desc">leave org (self)</span></div>
+    </div>
+    <div class="api-group">
+      <h4>Invitations</h4>
+      <div class="ep"><span class="m post">POST</span><code>/orgs/current/invitations</code><span class="desc">create + email</span></div>
+      <div class="ep"><span class="m post">POST</span><code>…/invitations/:id/resend</code><span class="desc">re-email</span></div>
+      <div class="ep"><span class="m delete">DEL</span><code>…/invitations/:id</code><span class="desc">revoke</span></div>
+      <div class="ep"><span class="m get">GET</span><code>/invitations/:token</code><span class="desc">public preview</span></div>
+      <div class="ep"><span class="m post">POST</span><code>/invitations/:token/accept</code><span class="desc">accept &amp; join</span></div>
+    </div>
+    <div class="api-group">
+      <h4>Multi-org switching</h4>
+      <div class="ep"><span class="m get">GET</span><code>/orgs</code><span class="desc">your orgs + role</span></div>
+      <div class="ep"><span class="m post">POST</span><code>/orgs/switch</code><span class="desc">set active org</span></div>
+    </div>
+    <div class="api-group">
+      <h4>Existing endpoints — now guarded</h4>
+      <div class="ep"><span class="m post">POST</span><code>contacts·companies·deals·activities</code><span class="desc">owner = me</span></div>
+      <div class="ep"><span class="m patch">PATCH</span><code>…/:id</code><span class="desc">member: own only</span></div>
+      <div class="ep"><span class="m delete">DEL</span><code>…/:id</code><span class="desc">member: own only</span></div>
+      <div class="ep"><span class="m rbac">ROLE</span><code>settings·integrations·custom fields</code><span class="desc">owner/admin</span></div>
+    </div>
+  </div>
+
+  <!-- 8. INVITE FLOW -->
+  <div class="caption"><span class="n">8</span> Invite → accept flow</div>
+  <div class="frame">
+    <div class="flow">
+      <div class="fstep"><div class="c">1</div><div class="t">Owner/admin enters <b>email + role</b></div></div>
+      <div class="fstep"><div class="c">2</div><div class="t"><b>Invitation</b> + token created</div></div>
+      <div class="fstep"><div class="c">3</div><div class="t">Emailed via org <b>SMTP</b> (or copy link)</div></div>
+      <div class="fstep"><div class="c">4</div><div class="t">Invitee opens <b>/invite/:token</b> → preview</div></div>
+      <div class="fstep"><div class="c">5</div><div class="t">New: name+password · Existing: sign in</div></div>
+      <div class="fstep"><div class="c">6</div><div class="t"><b>org_members</b> row → lands in org</div></div>
+    </div>
+  </div>
+
+  <!-- 9. LIFECYCLE -->
+  <div class="caption"><span class="n">9</span> Invitation lifecycle</div>
+  <div class="frame"><div class="chips">
+    <span class="chip">🔑 Token <b>256-bit random</b></span>
+    <span class="chip">⏳ Expires in <b>7 days</b></span>
+    <span class="chip">📧 Sent via <b>org SMTP</b></span>
+    <span class="chip">🔗 Fallback <b>copy link</b> (no SMTP)</span>
+    <span class="chip">↻ <b>Resend</b> re-emails + extends</span>
+    <span class="chip">🗑 <b>Revoke</b> deletes pending</span>
+    <span class="chip">✓ Accept sets <b>acceptedAt</b></span>
+  </div></div>
+
+  <!-- 10. TESTS -->
+  <div class="caption"><span class="n">10</span> Test coverage</div>
+  <div class="card"><div class="tests">
+    <div class="ti"><span class="ck">✓</span><span><b>Tenancy</b> per endpoint — a user in org B can't read/touch org A's members, invites, or records (404/403).</span></div>
+    <div class="ti"><span class="ck">✓</span><span><b>Role gating</b> — a member is blocked from invite / role-change / remove / settings (403).</span></div>
+    <div class="ti"><span class="ck">✓</span><span><b>Member write-own</b> — can edit/delete only owned records; blocked on others' (403).</span></div>
+    <div class="ti"><span class="ck">✓</span><span><b>Last-owner invariant</b> — the final owner can't be demoted, removed, or leave.</span></div>
+    <div class="ti"><span class="ck">✓</span><span><b>Invitations</b> — expired/invalid token rejected; accept joins once (no double-join).</span></div>
+    <div class="ti"><span class="ck">✓</span><span><b>E2E</b> (Playwright) — invite → accept → switch org.</span></div>
+  </div></div>
+
+</div>
+</body>
+</html>
