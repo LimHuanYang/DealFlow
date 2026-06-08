@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/lib/query-keys';
 import { getMe, logout } from '@/lib/auth';
 import { CommandPalette } from '@/components/command-palette';
+import { OrgSwitcher } from '@/features/members/org-switcher';
 
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -89,7 +90,10 @@ function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-6 backdrop-blur">
-          <span className="text-sm font-medium text-slate-400 md:hidden">DealFlow</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-400 md:hidden">DealFlow</span>
+            <OrgSwitcher />
+          </div>
           <div className="ml-auto flex items-center gap-3 text-sm">
             <kbd className="hidden items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-400 md:inline-flex">
               {shortcutLabel}
