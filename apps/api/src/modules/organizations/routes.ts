@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Database, schema } from '@dealflow/db';
 import { ERROR_CODES, updateOrganizationBodySchema } from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
+import { requireRole } from '../../plugins/require-role.js';
 import { OrgsRepo } from '../auth/orgs.repo.js';
 
 function publicOrg(row: typeof schema.organizations.$inferSelect) {
@@ -30,24 +31,28 @@ export async function registerOrganizationsRoutes(
     return reply.send({ organization: publicOrg(org) });
   });
 
-  app.patch('/api/v1/organizations/current', { preHandler: requireOrg }, async (req, reply) => {
-    const parsed = updateOrganizationBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.status(400).send({
-        error: {
-          code: ERROR_CODES.VALIDATION_FAILED,
-          message: 'Invalid organization update payload',
-          details: parsed.error.flatten().fieldErrors,
-        },
-      });
-    }
-    const orgId = req.session!.currentOrgId!;
-    const updated = await orgsRepo.update(orgId, parsed.data);
-    if (!updated) {
-      return reply
-        .status(404)
-        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
-    }
-    return reply.send({ organization: publicOrg(updated) });
-  });
+  app.patch(
+    '/api/v1/organizations/current',
+    { preHandler: [requireOrg, requireRole(['owner', 'admin'])] },
+    async (req, reply) => {
+      const parsed = updateOrganizationBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: ERROR_CODES.VALIDATION_FAILED,
+            message: 'Invalid organization update payload',
+            details: parsed.error.flatten().fieldErrors,
+          },
+        });
+      }
+      const orgId = req.session!.currentOrgId!;
+      const updated = await orgsRepo.update(orgId, parsed.data);
+      if (!updated) {
+        return reply
+          .status(404)
+          .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Organization not found' } });
+      }
+      return reply.send({ organization: publicOrg(updated) });
+    },
+  );
 }
