@@ -1,10 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Building2 } from 'lucide-react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Building2, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { InlineEdit } from '@/components/inline-edit';
 import { DetailPageHeader } from '@/components/detail-page-header';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
-import { useCompany, useUpdateCompany } from '@/features/companies/api';
+import { useCompany, useUpdateCompany, useDeleteCompany } from '@/features/companies/api';
 import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 
 export const Route = createFileRoute('/app/companies/$id')({
@@ -13,8 +15,10 @@ export const Route = createFileRoute('/app/companies/$id')({
 
 function CompanyDetailPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { data, isPending, error } = useCompany(id);
   const update = useUpdateCompany(id);
+  const del = useDeleteCompany();
 
   if (isPending) return <main className="p-8 text-sm text-slate-500">Loading…</main>;
   if (error || !data) {
@@ -30,6 +34,23 @@ function CompanyDetailPage() {
         title={c.name}
         subtitle={`Company · created ${new Date(c.createdAt).toLocaleDateString()}`}
         titleTestId="company-name"
+        action={
+          <ConfirmDialog
+            trigger={
+              <Button variant="outline" size="default" data-testid="delete-company">
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            }
+            title="Delete this company?"
+            description={`"${c.name}" will be permanently removed. This can't be undone.`}
+            confirmLabel="Delete company"
+            destructive
+            onConfirm={() =>
+              del.mutate(c.id, { onSuccess: () => void navigate({ to: '/app/companies' }) })
+            }
+          />
+        }
       />
 
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

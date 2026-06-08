@@ -68,6 +68,16 @@ export function useUpdateDeal(id: string) {
   });
 }
 
+export function useDeleteDeal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteDeal,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.deals.all });
+    },
+  });
+}
+
 /**
  * Optimistic moveDeal: instantly updates the cached list before the server
  * confirms. On failure, rolls back to the previous state and re-fetches.

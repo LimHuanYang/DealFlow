@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { PublicActivity } from '@dealflow/shared';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { useAIStatus, useSummarizeActivity } from '@/features/ai/api';
 import { useActivitiesFor, useDeleteActivity, useUpdateActivity } from './api';
 import { AddNoteForm } from './add-note-form';
@@ -152,18 +153,22 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
             {new Date(activity.createdAt).toLocaleString()}
           </p>
         </Link>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void onDelete(activity.id);
-          }}
-          className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
-          aria-label="Delete email"
-        >
-          ✕
-        </button>
+        <ConfirmDialog
+          trigger={
+            <button
+              type="button"
+              className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
+              aria-label="Delete email"
+            >
+              ✕
+            </button>
+          }
+          title="Delete this email?"
+          description="This logged email will be permanently removed from the activity feed. This can't be undone."
+          confirmLabel="Delete email"
+          destructive
+          onConfirm={() => onDelete(activity.id)}
+        />
       </div>
     );
   }
@@ -181,18 +186,22 @@ function ActivityRow({ activity, onToggleDone, onDelete }: ActivityRowProps) {
           Note · {new Date(activity.createdAt).toLocaleString()}
         </p>
       </Link>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void onDelete(activity.id);
-        }}
-        className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
-        aria-label="Delete note"
-      >
-        ✕
-      </button>
+      <ConfirmDialog
+        trigger={
+          <button
+            type="button"
+            className="shrink-0 text-xs text-neutral-400 hover:text-red-600"
+            aria-label="Delete note"
+          >
+            ✕
+          </button>
+        }
+        title="Delete this note?"
+        description="This note will be permanently removed. This can't be undone."
+        confirmLabel="Delete note"
+        destructive
+        onConfirm={() => onDelete(activity.id)}
+      />
     </div>
   );
 }

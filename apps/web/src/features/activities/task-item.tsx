@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { PublicActivity, UpdateActivityInput } from '@dealflow/shared';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 interface TaskItemProps {
   task: PublicActivity;
@@ -53,14 +54,22 @@ export function TaskItem({ task, onToggleDone, onDelete, contextLabel, detailId 
         </div>
       </div>
       {onDelete && (
-        <button
-          type="button"
-          onClick={() => void onDelete(task.id)}
-          className="text-xs text-neutral-400 hover:text-red-600"
-          aria-label="Delete task"
-        >
-          ✕
-        </button>
+        <ConfirmDialog
+          trigger={
+            <button
+              type="button"
+              className="text-xs text-neutral-400 hover:text-red-600"
+              aria-label="Delete task"
+            >
+              ✕
+            </button>
+          }
+          title="Delete this task?"
+          description="This task will be permanently removed. This can't be undone."
+          confirmLabel="Delete task"
+          destructive
+          onConfirm={() => onDelete(task.id)}
+        />
       )}
     </div>
   );

@@ -1,11 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { CircleDollarSign } from 'lucide-react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { CircleDollarSign, Trash2 } from 'lucide-react';
 import { CURRENCY_OPTIONS, isSupportedCurrency } from '@dealflow/shared';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { InlineEdit } from '@/components/inline-edit';
 import { DetailPageHeader } from '@/components/detail-page-header';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
-import { useDeal, useUpdateDeal } from '@/features/deals/api';
+import { useDeal, useUpdateDeal, useDeleteDeal } from '@/features/deals/api';
 import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 import { formatCurrency } from '@/lib/format';
 
@@ -21,8 +23,10 @@ export const Route = createFileRoute('/app/deals/$id')({
 
 function DealDetailPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { data, isPending, error } = useDeal(id);
   const update = useUpdateDeal(id);
+  const del = useDeleteDeal();
 
   if (isPending) return <main className="p-8 text-sm text-slate-500">Loading…</main>;
   if (error || !data) {
@@ -39,13 +43,30 @@ function DealDetailPage() {
         subtitle={`Deal · ${formatCurrency(d.value, d.currency)}`}
         titleTestId="deal-name"
         action={
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
-              DEAL_STATUS_STYLES[d.status] ?? 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {d.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${
+                DEAL_STATUS_STYLES[d.status] ?? 'bg-slate-100 text-slate-700'
+              }`}
+            >
+              {d.status}
+            </span>
+            <ConfirmDialog
+              trigger={
+                <Button variant="outline" size="default" data-testid="delete-deal">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              }
+              title="Delete this deal?"
+              description={`"${d.name}" will be permanently removed. This can't be undone.`}
+              confirmLabel="Delete deal"
+              destructive
+              onConfirm={() =>
+                del.mutate(d.id, { onSuccess: () => void navigate({ to: '/app/deals' }) })
+              }
+            />
+          </div>
         }
       />
 

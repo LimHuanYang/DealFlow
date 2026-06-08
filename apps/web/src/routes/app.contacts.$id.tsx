@@ -1,11 +1,12 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { Mail } from 'lucide-react';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { Mail, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { InlineEdit } from '@/components/inline-edit';
 import { CompanySelect } from '@/features/companies/company-select';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
-import { useContact, useUpdateContact } from '@/features/contacts/api';
+import { useContact, useUpdateContact, useDeleteContact } from '@/features/contacts/api';
 import { useEmailStatus } from '@/features/emails/api';
 import { ComposeEmailDialog } from '@/features/emails/compose-email-dialog';
 import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
@@ -16,8 +17,10 @@ export const Route = createFileRoute('/app/contacts/$id')({
 
 function ContactDetailPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { data, isPending, error } = useContact(id);
   const update = useUpdateContact(id);
+  const del = useDeleteContact();
   const emailStatus = useEmailStatus();
 
   if (isPending) return <main className="p-8 text-sm text-slate-500">Loading…</main>;
@@ -51,19 +54,36 @@ function ContactDetailPage() {
             </p>
           </div>
         </div>
-        {emailStatus.data?.enabled && c.email && (
-          <ComposeEmailDialog
-            contactId={c.id}
-            recipientName={`${c.firstName}${c.lastName ? ' ' + c.lastName : ''}`}
-            recipientEmail={c.email}
+        <div className="flex items-center gap-2">
+          {emailStatus.data?.enabled && c.email && (
+            <ComposeEmailDialog
+              contactId={c.id}
+              recipientName={`${c.firstName}${c.lastName ? ' ' + c.lastName : ''}`}
+              recipientEmail={c.email}
+              trigger={
+                <Button variant="default" size="default" data-testid="email-contact">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Button>
+              }
+            />
+          )}
+          <ConfirmDialog
             trigger={
-              <Button variant="default" size="default" data-testid="email-contact">
-                <Mail className="h-4 w-4" />
-                Email
+              <Button variant="outline" size="default" data-testid="delete-contact">
+                <Trash2 className="h-4 w-4" />
+                Delete
               </Button>
             }
+            title="Delete this contact?"
+            description={`"${fullName}" will be permanently removed. This can't be undone.`}
+            confirmLabel="Delete contact"
+            destructive
+            onConfirm={() =>
+              del.mutate(c.id, { onSuccess: () => void navigate({ to: '/app/contacts' }) })
+            }
           />
-        )}
+        </div>
       </div>
 
       {/* Details card */}
