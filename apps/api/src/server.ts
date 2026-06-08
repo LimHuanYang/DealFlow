@@ -121,6 +121,16 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
     const { registerMembersRoutes } = await import('./modules/members/routes.js');
     await registerMembersRoutes(app, { db: opts.db });
 
+    const { registerInvitationsRoutes } = await import(
+      './modules/members/invitations.routes.js'
+    );
+    await registerInvitationsRoutes(app, {
+      db: opts.db,
+      encryptionKey,
+      env,
+      emailProviderForOrg: opts.emailProviderForOrg,
+    });
+
     const evict = async () => {
       try {
         const { runAttachmentEvictionSweep } = await import('./jobs/attachments-eviction.js');

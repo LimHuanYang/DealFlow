@@ -6,7 +6,6 @@ import { schema } from '@dealflow/db';
 import {
   ERROR_CODES,
   type OrgRole,
-  type PublicInvitation,
   type PublicOrgSummary,
   switchOrgBodySchema,
   updateMemberRoleBodySchema,
@@ -19,6 +18,7 @@ import {
   MembersRepo,
   OwnerRoleChangeForbiddenError,
 } from './repo.js';
+import { InvitationsRepo } from './invitations.repo.js';
 
 const userIdParamSchema = z.object({ userId: z.string().uuid() });
 
@@ -31,18 +31,21 @@ export async function registerMembersRoutes(
   deps: MembersRoutesDeps,
 ): Promise<void> {
   const repo = new MembersRepo(deps.db);
+  const invitationsRepo = new InvitationsRepo(deps.db);
 
   // ───────────────────────── GET /orgs/current/members ─────────────────────
   // Any member of the active org may list. Mutations are gated by role below.
+  // Pending invitations are also returned so the Settings UI renders both
+  // lists from a single request.
   app.get(
     '/api/v1/orgs/current/members',
     { preHandler: requireOrg },
     async (req, reply) => {
       const orgId = req.session!.currentOrgId!;
-      const members = await repo.listMembers(orgId);
-      // Phase D wires real invitations; for now the response shape is
-      // forward-compatible so the frontend contract is stable.
-      const invitations: PublicInvitation[] = [];
+      const [members, invitations] = await Promise.all([
+        repo.listMembers(orgId),
+        invitationsRepo.listPending(orgId),
+      ]);
       return reply.send({ members, invitations });
     },
   );
