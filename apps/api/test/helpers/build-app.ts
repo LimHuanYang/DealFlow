@@ -38,6 +38,7 @@ export async function buildTestApp(opts: BuildTestAppOptions = {}) {
     CSRF_SECRET: 'test-csrf-secret-32-chars-minimum-xxxxx',
     INTEGRATION_ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
     PUBLIC_API_URL: 'http://localhost:3000',
+    PUBLIC_WEB_URL: 'http://localhost:5173',
     ATTACHMENTS_CACHE_DIR: 'apps/api/.data/cache/attachments',
     ...opts.envOverrides,
     ...opts.env,

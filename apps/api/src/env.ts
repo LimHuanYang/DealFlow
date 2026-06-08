@@ -17,6 +17,11 @@ const envSchema = z
     CSRF_SECRET: z.string().min(32).default('dev-csrf-secret-CHANGE-ME-in-production-please'),
     INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
     PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
+    // Public URL where the *web app* is reachable. Used to build the
+    // invitation link the API embeds in invite emails (e.g.
+    // `${PUBLIC_WEB_URL}/invite/<token>`). Defaults to the same origin as
+    // CORS_ORIGIN so dev keeps working without setting a new var.
+    PUBLIC_WEB_URL: z.string().url().default('http://localhost:5173'),
     EMAIL_TRACKING_SECRET: z.string().min(32).optional(),
     ATTACHMENTS_CACHE_DIR: z.string().default('apps/api/.data/cache/attachments'),
   })
