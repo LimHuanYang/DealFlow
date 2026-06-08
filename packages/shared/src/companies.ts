@@ -13,7 +13,14 @@ export const createCompanyBodySchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const updateCompanyBodySchema = createCompanyBodySchema.partial();
+// `ownerUserId` lets owners/admins *reassign* a record to another user. The
+// route enforces that only owner/admin may set it; a member who includes it is
+// rejected (see companies routes / assertCanWrite). It is intentionally absent
+// from `createCompanyBodySchema` — create always assigns ownership to the
+// acting user server-side.
+export const updateCompanyBodySchema = createCompanyBodySchema.partial().extend({
+  ownerUserId: z.string().uuid().optional(),
+});
 
 export type CreateCompanyInput = z.infer<typeof createCompanyBodySchema>;
 export type UpdateCompanyInput = z.infer<typeof updateCompanyBodySchema>;

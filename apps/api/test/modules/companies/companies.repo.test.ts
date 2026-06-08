@@ -7,6 +7,7 @@ describe('CompaniesRepo', () => {
   let testDb: TestDatabase;
   let repo: CompaniesRepo;
   let orgId: string;
+  let userId: string;
 
   beforeAll(async () => {
     testDb = await startTestPostgres();
@@ -15,18 +16,24 @@ describe('CompaniesRepo', () => {
       .values({ name: 'Acme', slug: `acme-${Date.now()}` })
       .returning();
     orgId = org!.id;
+    const [user] = await testDb.db
+      .insert(schema.users)
+      .values({ email: `u${Date.now()}@example.com`, name: 'U', passwordHash: 'x' })
+      .returning();
+    userId = user!.id;
     repo = new CompaniesRepo(testDb.db);
   }, 30_000);
 
   afterAll(() => testDb.stop());
 
   it('create + findById within org', async () => {
-    const created = await repo.create(orgId, {
+    const created = await repo.create(orgId, userId, {
       name: 'Beta Industries',
       domain: 'beta.com',
     });
     expect(created.name).toBe('Beta Industries');
     expect(created.organizationId).toBe(orgId);
+    expect(created.ownerUserId).toBe(userId);
 
     const found = await repo.findById(orgId, created.id);
     expect(found?.id).toBe(created.id);
@@ -37,14 +44,14 @@ describe('CompaniesRepo', () => {
       .insert(schema.organizations)
       .values({ name: 'Other', slug: `other-${Date.now()}` })
       .returning();
-    const c = await repo.create(otherOrg!.id, { name: 'Foreign Co' });
+    const c = await repo.create(otherOrg!.id, userId, { name: 'Foreign Co' });
     expect(await repo.findById(orgId, c.id)).toBeNull();
   });
 
   it('list returns only the orgs rows, ordered by createdAt desc', async () => {
     await Promise.all([
-      repo.create(orgId, { name: `Z-${Date.now()}` }),
-      repo.create(orgId, { name: `A-${Date.now()}` }),
+      repo.create(orgId, userId, { name: `Z-${Date.now()}` }),
+      repo.create(orgId, userId, { name: `A-${Date.now()}` }),
     ]);
     const result = await repo.list(orgId, { limit: 50 });
     expect(result.items.length).toBeGreaterThanOrEqual(2);
@@ -52,7 +59,7 @@ describe('CompaniesRepo', () => {
   });
 
   it('update merges partial fields', async () => {
-    const c = await repo.create(orgId, { name: 'Patchable' });
+    const c = await repo.create(orgId, userId, { name: 'Patchable' });
     const updated = await repo.update(orgId, c.id, { industry: 'SaaS' });
     expect(updated?.industry).toBe('SaaS');
     expect(updated?.name).toBe('Patchable');
@@ -63,12 +70,12 @@ describe('CompaniesRepo', () => {
       .insert(schema.organizations)
       .values({ name: 'Else', slug: `else-${Date.now()}` })
       .returning();
-    const c = await repo.create(otherOrg!.id, { name: 'NotMine' });
+    const c = await repo.create(otherOrg!.id, userId, { name: 'NotMine' });
     expect(await repo.update(orgId, c.id, { name: 'hijack' })).toBeNull();
   });
 
   it('delete removes only when the id is in the org', async () => {
-    const c = await repo.create(orgId, { name: 'Deleteme' });
+    const c = await repo.create(orgId, userId, { name: 'Deleteme' });
     expect(await repo.delete(orgId, c.id)).toBe(true);
     expect(await repo.findById(orgId, c.id)).toBeNull();
 
@@ -76,7 +83,7 @@ describe('CompaniesRepo', () => {
       .insert(schema.organizations)
       .values({ name: 'NoTouch', slug: `nt-${Date.now()}` })
       .returning();
-    const foreign = await repo.create(otherOrg!.id, { name: 'Foreign' });
+    const foreign = await repo.create(otherOrg!.id, userId, { name: 'Foreign' });
     expect(await repo.delete(orgId, foreign.id)).toBe(false);
   });
 });

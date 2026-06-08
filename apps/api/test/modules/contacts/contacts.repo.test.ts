@@ -44,7 +44,7 @@ describe('ContactsRepo', () => {
   });
 
   it('create with companyId links to a company in the same org', async () => {
-    const company = await companies.create(orgId, { name: 'Linked Co' });
+    const company = await companies.create(orgId, userId, { name: 'Linked Co' });
     const contact = await repo.create(orgId, userId, {
       firstName: 'Bob',
       companyId: company.id,

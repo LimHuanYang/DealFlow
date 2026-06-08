@@ -14,12 +14,14 @@ export class CompaniesRepo {
 
   async create(
     organizationId: string,
+    ownerUserId: string,
     input: CreateCompanyInput,
   ): Promise<typeof schema.companies.$inferSelect> {
     const [row] = await this.db
       .insert(schema.companies)
       .values({
         organizationId,
+        ownerUserId,
         name: input.name,
         domain: input.domain ?? null,
         industry: input.industry ?? null,
