@@ -15,12 +15,14 @@ export class ContactsRepo {
 
   async create(
     organizationId: string,
+    ownerUserId: string,
     input: CreateContactInput,
   ): Promise<typeof schema.contacts.$inferSelect> {
     const [row] = await this.db
       .insert(schema.contacts)
       .values({
         organizationId,
+        ownerUserId,
         firstName: input.firstName,
         lastName: input.lastName ?? null,
         email: input.email ?? null,

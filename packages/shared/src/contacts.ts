@@ -13,8 +13,15 @@ export const createContactBodySchema = z.object({
 
 // `companyId` is nullable on update so the UI can *unassign* a contact's
 // company by sending `null` (a plain `.partial()` would only allow setting it).
+//
+// `ownerUserId` lets owners/admins *reassign* a record to another user. The
+// route enforces that only owner/admin may set it; a member who includes it is
+// rejected (see contacts routes / assertCanWrite). It is intentionally absent
+// from `createContactBodySchema` — create always assigns ownership to the
+// acting user server-side.
 export const updateContactBodySchema = createContactBodySchema.partial().extend({
   companyId: z.string().uuid().nullable().optional(),
+  ownerUserId: z.string().uuid().optional(),
 });
 
 export type CreateContactInput = z.infer<typeof createContactBodySchema>;

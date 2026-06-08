@@ -10,6 +10,7 @@ import {
 import { requireOrg } from '../../plugins/require-org.js';
 import { ContactsRepo } from './contacts.repo.js';
 import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
+import { assertCanWrite, AuthzError } from '../../lib/authz.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -84,7 +85,7 @@ export async function registerContactsRoutes(
         },
       });
     }
-    const created = await repo.create(req.session!.currentOrgId!, {
+    const created = await repo.create(req.session!.currentOrgId!, req.user!.id, {
       ...parsed.data,
       customFields: merge.merged,
     });
@@ -126,6 +127,32 @@ export async function registerContactsRoutes(
         error: { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' },
       });
     }
+    // Record-ownership: owner/admin may edit any row; a member only their own.
+    // (Checked after the 404 so non-owners can't probe which ids exist.)
+    try {
+      assertCanWrite(req.membership!.role, existing.ownerUserId, req.user!.id);
+    } catch (e) {
+      if (e instanceof AuthzError) {
+        return reply.status(403).send({
+          error: { code: ERROR_CODES.FORBIDDEN, message: e.message },
+        });
+      }
+      throw e;
+    }
+    // Only owner/admin may reassign a record to a different user. A member that
+    // includes `ownerUserId` (even on a record they own) is forbidden.
+    if (
+      body.data.ownerUserId !== undefined &&
+      req.membership!.role !== 'owner' &&
+      req.membership!.role !== 'admin'
+    ) {
+      return reply.status(403).send({
+        error: {
+          code: ERROR_CODES.FORBIDDEN,
+          message: 'Only an owner or admin may reassign a record.',
+        },
+      });
+    }
     const merge = await validateAndMergeCustomFields(
       { db: deps.db },
       {
@@ -163,6 +190,24 @@ export async function registerContactsRoutes(
       return reply.status(400).send({
         error: { code: ERROR_CODES.VALIDATION_FAILED, message: 'Invalid id' },
       });
+    }
+    const existing = await repo.findById(req.session!.currentOrgId!, params.data.id);
+    if (!existing) {
+      return reply.status(404).send({
+        error: { code: ERROR_CODES.NOT_FOUND, message: 'Contact not found' },
+      });
+    }
+    // Record-ownership: owner/admin may delete any row; a member only their own.
+    // (Checked after the 404 so non-owners can't probe which ids exist.)
+    try {
+      assertCanWrite(req.membership!.role, existing.ownerUserId, req.user!.id);
+    } catch (e) {
+      if (e instanceof AuthzError) {
+        return reply.status(403).send({
+          error: { code: ERROR_CODES.FORBIDDEN, message: e.message },
+        });
+      }
+      throw e;
     }
     const ok = await repo.delete(req.session!.currentOrgId!, params.data.id);
     if (!ok) {

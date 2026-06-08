@@ -30,7 +30,7 @@ describe('ActivitiesRepo', () => {
     repo = new ActivitiesRepo(testDb.db);
     contacts = new ContactsRepo(testDb.db);
 
-    const c = await contacts.create(orgId, { firstName: 'Alice' });
+    const c = await contacts.create(orgId, userId, { firstName: 'Alice' });
     contactId = c.id;
   }, 30_000);
 
