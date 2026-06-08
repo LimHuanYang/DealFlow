@@ -56,6 +56,135 @@
 
 ---
 
+## Phase 0 — Test infrastructure: schema-per-test on Supabase
+
+> **Why:** the app is Supabase-only (no local Postgres/Docker). The harness must isolate each test file in its own **schema** inside a Supabase database (not a separate database). All ~50 existing `*.test.ts` files import `startTestPostgres()` and use `{ db, stop }` — keep that signature so they need **zero** changes. Tests run sequentially (`singleFork`), so connection use stays low. Default target = `DATABASE_URL` (dev project); set `DEALFLOW_TEST_DATABASE_URL` to point at a **dedicated Supabase test project** (recommended for safety — keeps test schemas out of the dev project). The harness only ever creates/drops `test_*` schemas; it never touches `public`.
+
+### Task 0a: `createDb` accepts a search_path; `runMigrations` accepts a target schema
+
+**Files:**
+- Modify: `packages/db/src/index.ts` (`createDb`)
+- Modify: `packages/db/src/migrator.ts` (`runMigrations`)
+
+- [ ] **Step 1: Implement** — `createDb(connectionString, opts?)`:
+
+```ts
+export function createDb(
+  connectionString: string,
+  opts: { max?: number; searchPath?: string } = {},
+): DealflowConnection {
+  const client = postgres(connectionString, {
+    max: opts.max ?? 10,
+    idle_timeout: 30,
+    ...(opts.searchPath ? { connection: { search_path: opts.searchPath } } : {}),
+  });
+  const db = drizzle(client, { schema: schemaModule });
+  return { db, client, end: () => client.end() };
+}
+```
+
+`runMigrations` — accept a folder **or** an options object (back-compatible):
+
+```ts
+export interface RunMigrationsOptions { folder?: string; migrationsSchema?: string; migrationsTable?: string; }
+export async function runMigrations(
+  db: Database,
+  folderOrOpts: string | RunMigrationsOptions = MIGRATIONS_FOLDER,
+): Promise<void> {
+  const o = typeof folderOrOpts === 'string' ? { folder: folderOrOpts } : folderOrOpts;
+  await migrate(db, {
+    migrationsFolder: o.folder ?? MIGRATIONS_FOLDER,
+    ...(o.migrationsSchema ? { migrationsSchema: o.migrationsSchema } : {}),
+    ...(o.migrationsTable ? { migrationsTable: o.migrationsTable } : {}),
+  });
+}
+```
+
+- [ ] **Step 2:** `pnpm --filter @dealflow/db exec tsc --noEmit` green; existing `runMigrations(db)` / `runMigrations(db, folder)` callers still compile.
+- [ ] **Step 3: Commit** — `git commit -m "feat(db): createDb searchPath + runMigrations target schema"`.
+
+### Task 0b: Rewrite the harness to schema-per-test (same public API)
+
+**Files:**
+- Modify: `apps/api/test/helpers/postgres.ts`
+
+- [ ] **Step 1: Implement** — keep the exported `startTestPostgres()` name and `{ db, url, dbName, stop }` shape (`dbName` now holds the schema name):
+
+```ts
+import { randomBytes } from 'node:crypto';
+import postgres from 'postgres';
+import { createDb, type Database, runMigrations } from '@dealflow/db';
+
+const BASE_URL = process.env.DEALFLOW_TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+if (!BASE_URL) throw new Error('Set DEALFLOW_TEST_DATABASE_URL or DATABASE_URL to run API tests.');
+
+export interface TestDatabase { db: Database; url: string; dbName: string; stop: () => Promise<void>; }
+
+export async function startTestPostgres(): Promise<TestDatabase> {
+  const schema = `test_${randomBytes(8).toString('hex')}`;
+  const admin = postgres(BASE_URL!, { max: 1 });
+  try { await admin.unsafe(`CREATE SCHEMA "${schema}"`); } finally { await admin.end(); }
+
+  // search_path puts unqualified DDL/queries in the test schema; public+extensions
+  // keep Supabase's citext/pgcrypto types resolvable.
+  const conn = createDb(BASE_URL!, { max: 4, searchPath: `"${schema}",public,extensions` });
+  await runMigrations(conn.db, { migrationsSchema: schema }); // journal + tables land in the test schema
+
+  return {
+    db: conn.db,
+    url: BASE_URL!,
+    dbName: schema,
+    stop: async () => {
+      await conn.end();
+      const admin2 = postgres(BASE_URL!, { max: 1 });
+      try { await admin2.unsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`); } finally { await admin2.end(); }
+    },
+  };
+}
+```
+
+- [ ] **Step 2: Commit** — `git commit -m "test(api): schema-per-test harness (Supabase-compatible)"`.
+
+### Task 0c: Load `.env` for tests + sweep leftover schemas
+
+**Files:**
+- Create: `apps/api/test/global-setup.ts`
+- Modify: `apps/api/vitest.config.ts` (add `globalSetup: './test/global-setup.ts'`)
+- Verify `dotenv` is a dependency of `apps/api` (add as devDependency if missing).
+
+- [ ] **Step 1: Implement** `global-setup.ts` — load `apps/api/.env` (so `DATABASE_URL` is available) and drop any orphaned `test_*` schemas from a crashed prior run:
+
+```ts
+import { config } from 'dotenv';
+import postgres from 'postgres';
+
+export default async function () {
+  config({ path: new URL('../.env', import.meta.url) });
+  const url = process.env.DEALFLOW_TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!url) return;
+  const sql = postgres(url, { max: 1 });
+  try {
+    const rows = await sql`SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'test\\_%'`;
+    for (const r of rows) await sql.unsafe(`DROP SCHEMA IF EXISTS "${r.schema_name}" CASCADE`);
+  } finally { await sql.end(); }
+}
+```
+
+> `globalSetup` runs once in the main process before workers fork, so the `.env` it loads is inherited by the (single) fork. If `DATABASE_URL` still isn't seen inside tests, also add a `setupFiles: ['./test/global-setup.ts']`-style dotenv load, or set the env in the `pnpm test` script.
+
+- [ ] **Step 2: Commit** — `git commit -m "test(api): load .env + sweep orphan test schemas in globalSetup"`.
+
+### Task 0d: Verify the harness against Supabase (gate)
+
+- [ ] **Step 1: Run an existing suite** — `pnpm --filter @dealflow/api exec vitest run test/modules/contacts/contacts.repo.test.ts`. Expected: **PASS** (proves CREATE SCHEMA → migrate-into-schema → query → DROP SCHEMA works on Supabase). Then run `test/modules/contacts/contacts.tenancy.test.ts` to confirm tenancy assertions still hold.
+- [ ] **Step 2:** If migrations error on `citext`/extensions, confirm `extensions` is in `search_path` (Task 0b) and that migration files use `CREATE EXTENSION IF NOT EXISTS`. Fix forward; re-run.
+- [ ] **Step 3:** Confirm no `test_*` schemas remain after the run (the sweep + per-file drop clean up).
+- [ ] **Step 4: Commit** any fixes — `git commit -m "test(api): verify schema-per-test on Supabase"`.
+
+> **From here on, every backend task's "run the test" step uses this harness** against Supabase. Tests are network-bound (ap-southeast-2) and therefore slower than local — expect seconds per file; that's acceptable.
+
+---
+
 ## Phase A — Shared schemas + authz primitives + backfill
 
 ### Task A1: Shared team schemas & types
