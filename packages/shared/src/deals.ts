@@ -22,7 +22,14 @@ export const createDealBodySchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const updateDealBodySchema = createDealBodySchema.partial();
+// `ownerUserId` lets owners/admins *reassign* a record to another user. The
+// route enforces that only owner/admin may set it; a member who includes it is
+// rejected (see deals routes / assertCanWrite). It is intentionally absent from
+// `createDealBodySchema` — create always assigns ownership to the acting user
+// server-side.
+export const updateDealBodySchema = createDealBodySchema.partial().extend({
+  ownerUserId: z.string().uuid().optional(),
+});
 
 export const moveDealBodySchema = z.object({
   stageId: z.string().uuid(),

@@ -13,6 +13,7 @@ export class DealsRepo {
 
   async create(
     organizationId: string,
+    ownerUserId: string,
     input: CreateDealInput,
   ): Promise<typeof schema.deals.$inferSelect> {
     // Place at end of target column: max(position_in_stage) + 1.
@@ -33,6 +34,7 @@ export class DealsRepo {
       .insert(schema.deals)
       .values({
         organizationId,
+        ownerUserId,
         pipelineId: input.pipelineId,
         stageId: input.stageId,
         name: input.name,
@@ -93,6 +95,7 @@ export class DealsRepo {
     if (patch.primaryContactId !== undefined) next['primaryContactId'] = patch.primaryContactId;
     if (patch.companyId !== undefined) next['companyId'] = patch.companyId;
     if (patch.expectedCloseDate !== undefined) next['expectedCloseDate'] = patch.expectedCloseDate;
+    if (patch.ownerUserId !== undefined) next['ownerUserId'] = patch.ownerUserId;
     if (patch.customFields !== undefined) next['customFields'] = patch.customFields;
 
     const [row] = await this.db
