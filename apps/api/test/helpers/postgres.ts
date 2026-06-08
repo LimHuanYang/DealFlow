@@ -3,80 +3,89 @@ import postgres from 'postgres';
 import { createDb, type Database, runMigrations } from '@dealflow/db';
 
 /**
- * Connection string for an *admin* role that can CREATE/DROP databases.
- * Defaults to the local `postgres` superuser. Override in CI by setting
- * `DEALFLOW_TEST_ADMIN_URL`.
+ * Base connection string for the test database. The project is Supabase-only,
+ * so this points at the Supabase **session pooler** (the `...pooler.supabase.com:5432`
+ * host) which supports the DDL we need (`CREATE SCHEMA`, `search_path`).
+ *
+ * Resolution order: an explicit `DEALFLOW_TEST_DATABASE_URL` override, otherwise
+ * the app's `DATABASE_URL` (loaded from `apps/api/.env` by the Vitest global
+ * setup). Throws early with a clear message if neither is set.
  */
-const ADMIN_URL =
-  process.env.DEALFLOW_TEST_ADMIN_URL ?? 'postgres://postgres:postgres@localhost:5432/postgres';
-
-/**
- * Credentials that the application uses against the per-test database.
- * Must already exist as a role on the Postgres server.
- * Defaults match the local dev convention: user `dealflow`, password `dealflow`.
- */
-const APP_USER = process.env.DEALFLOW_TEST_USER ?? 'dealflow';
-const APP_PASSWORD = process.env.DEALFLOW_TEST_PASSWORD ?? 'dealflow';
-const PG_HOST = process.env.DEALFLOW_TEST_HOST ?? 'localhost';
-const PG_PORT = process.env.DEALFLOW_TEST_PORT ?? '5432';
+function resolveBaseUrl(): string {
+  const url = process.env.DEALFLOW_TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      'Test database URL is not set. Expected DEALFLOW_TEST_DATABASE_URL or DATABASE_URL ' +
+        '(loaded from apps/api/.env by test/global-setup.ts). Cannot run integration tests.',
+    );
+  }
+  return url;
+}
 
 export interface TestDatabase {
   db: Database;
   url: string;
-  /** Generated database name, e.g. `dealflow_test_a1b2c3...` */
+  /**
+   * Name of the per-test Postgres schema, e.g. `test_a1b2c3d4`. (Historically
+   * this field held a database name; the schema-per-test harness reuses the
+   * field for the schema so the ~50 existing callers don't change.)
+   */
   dbName: string;
-  /** Closes the connection pool AND drops the per-test database. */
+  /** Closes the connection pool AND drops the per-test schema. */
   stop: () => Promise<void>;
 }
 
 /**
- * Create a fresh, disposable Postgres database for one test file.
+ * Create a fresh, isolated Postgres **schema** for one test file on Supabase.
  *
- * Approach (native Postgres, no Docker):
- *  1. Connect as the admin role (`postgres` by default).
- *  2. `CREATE DATABASE dealflow_test_<random>` owned by the app role.
- *  3. Return a Drizzle handle pointed at the new DB.
- *  4. On `stop()`, close the pool and `DROP DATABASE` (terminating any leftover
- *     connections first).
+ * The project has no local Postgres or Docker — every test file runs against
+ * the live Supabase database, isolated by its own schema:
+ *  1. Connect a 1-conn admin client and `CREATE SCHEMA "test_<random>"`.
+ *  2. Return a Drizzle handle whose `search_path` resolves that schema first,
+ *     then `public,extensions` (so Supabase's `citext`/`pgcrypto` types stay
+ *     resolvable).
+ *  3. Run migrations with the journal + tables targeted at the test schema.
+ *  4. On `stop()`, close the pool and `DROP SCHEMA ... CASCADE`.
  *
- * Use in `beforeAll`; call `stop()` in `afterAll`. Sub-Plan 2 will extend this
- * helper to also run Drizzle migrations before returning the db handle.
+ * Use in `beforeAll`; call `stop()` in `afterAll`.
  */
 export async function startTestPostgres(): Promise<TestDatabase> {
-  const dbName = `dealflow_test_${randomBytes(8).toString('hex')}`;
+  const baseUrl = resolveBaseUrl();
+  const schema = `test_${randomBytes(4).toString('hex')}`;
 
-  const admin = postgres(ADMIN_URL, { max: 1 });
+  // 1. Create the schema as a short-lived admin connection, then release it.
+  const admin = postgres(baseUrl, { max: 1 });
   try {
-    // CREATE DATABASE can't be parameterized — interpolating is safe here because
-    // dbName is generated server-side from randomBytes, not user input.
-    await admin.unsafe(`CREATE DATABASE "${dbName}" OWNER "${APP_USER}"`);
+    // CREATE SCHEMA can't be parameterized — interpolating is safe because the
+    // name is generated server-side from randomBytes, not from user input.
+    await admin.unsafe(`CREATE SCHEMA "${schema}"`);
   } finally {
     await admin.end();
   }
 
-  const url = `postgres://${APP_USER}:${APP_PASSWORD}@${PG_HOST}:${PG_PORT}/${dbName}`;
-  const conn = createDb(url);
+  // 2. App handle: resolve the test schema first; keep public + extensions so
+  //    Supabase's citext/pgcrypto types and gen_random_uuid() stay resolvable.
+  const conn = createDb(baseUrl, {
+    max: 4,
+    searchPath: `"${schema}",public,extensions`,
+  });
 
-  // Apply migrations so every test file starts against a fully-built schema.
-  await runMigrations(conn.db);
+  // 3. Apply migrations so every test file starts against a fully-built schema.
+  //    Targeting migrationsSchema lands the drizzle journal AND (via search_path)
+  //    the created tables inside the test schema.
+  await runMigrations(conn.db, { migrationsSchema: schema });
 
   return {
     db: conn.db,
-    url,
-    dbName,
+    url: baseUrl,
+    dbName: schema,
     stop: async () => {
-      // Release our pool first so DROP DATABASE doesn't error on active sessions.
+      // Release our pool first, then drop the schema from a fresh admin client.
       await conn.end();
 
-      const cleanup = postgres(ADMIN_URL, { max: 1 });
+      const cleanup = postgres(baseUrl, { max: 1 });
       try {
-        // Defensively kick any stragglers (Vitest workers, leaked clients).
-        await cleanup.unsafe(
-          `SELECT pg_terminate_backend(pid)
-           FROM pg_stat_activity
-           WHERE datname = '${dbName}' AND pid <> pg_backend_pid()`,
-        );
-        await cleanup.unsafe(`DROP DATABASE IF EXISTS "${dbName}"`);
+        await cleanup.unsafe(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
       } finally {
         await cleanup.end();
       }
