@@ -50,4 +50,19 @@ export const queryKeys = {
   customFields: {
     list: (entityType: string) => ['custom-fields', 'list', entityType] as const,
   },
+  members: {
+    all: ['members'] as const,
+    list: () => ['members', 'list'] as const,
+  },
+  invitations: {
+    all: ['invitations'] as const,
+    list: () => ['invitations', 'list'] as const,
+  },
+  orgs: {
+    all: ['orgs'] as const,
+    list: () => ['orgs', 'list'] as const,
+  },
+  membership: {
+    current: ['membership', 'current'] as const,
+  },
 };
