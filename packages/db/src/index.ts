@@ -42,4 +42,4 @@ export function createDb(connectionString: string, opts: CreateDbOptions = {}): 
 
 export * as schema from './schema/index.js';
 
-export { runMigrations, MIGRATIONS_FOLDER } from './migrator.js';
+export { runMigrations, applyMigrationsToSchema, MIGRATIONS_FOLDER } from './migrator.js';

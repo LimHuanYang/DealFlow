@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import postgres from 'postgres';
-import { createDb, type Database, runMigrations } from '@dealflow/db';
+import { applyMigrationsToSchema, createDb, type Database } from '@dealflow/db';
 
 /**
  * Base connection string for the test database. The project is Supabase-only,
@@ -53,12 +53,16 @@ export async function startTestPostgres(): Promise<TestDatabase> {
   const baseUrl = resolveBaseUrl();
   const schema = `test_${randomBytes(4).toString('hex')}`;
 
-  // 1. Create the schema as a short-lived admin connection, then release it.
+  // 1. Create the schema and build it out using a short-lived admin connection.
+  //    applyMigrationsToSchema rewrites the migrations' hard-coded `"public".`
+  //    FK targets to this schema, so the schema is fully self-contained (the
+  //    shared `public` copy of the tables is never referenced or touched).
   const admin = postgres(baseUrl, { max: 1 });
   try {
     // CREATE SCHEMA can't be parameterized — interpolating is safe because the
     // name is generated server-side from randomBytes, not from user input.
     await admin.unsafe(`CREATE SCHEMA "${schema}"`);
+    await applyMigrationsToSchema(admin, schema);
   } finally {
     await admin.end();
   }
@@ -69,11 +73,6 @@ export async function startTestPostgres(): Promise<TestDatabase> {
     max: 4,
     searchPath: `"${schema}",public,extensions`,
   });
-
-  // 3. Apply migrations so every test file starts against a fully-built schema.
-  //    Targeting migrationsSchema lands the drizzle journal AND (via search_path)
-  //    the created tables inside the test schema.
-  await runMigrations(conn.db, { migrationsSchema: schema });
 
   return {
     db: conn.db,
