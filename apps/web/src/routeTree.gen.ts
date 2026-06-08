@@ -22,6 +22,7 @@ import { Route as AppSettingsIndexRouteImport } from './routes/app.settings.inde
 import { Route as AppDealsIndexRouteImport } from './routes/app.deals.index'
 import { Route as AppContactsIndexRouteImport } from './routes/app.contacts.index'
 import { Route as AppCompaniesIndexRouteImport } from './routes/app.companies.index'
+import { Route as AppSettingsMembersRouteImport } from './routes/app.settings.members'
 import { Route as AppSettingsCustomFieldsRouteImport } from './routes/app.settings.custom-fields'
 import { Route as AppDealsIdRouteImport } from './routes/app.deals.$id'
 import { Route as AppContactsIdRouteImport } from './routes/app.contacts.$id'
@@ -93,6 +94,11 @@ const AppCompaniesIndexRoute = AppCompaniesIndexRouteImport.update({
   path: '/companies/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsMembersRoute = AppSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppSettingsCustomFieldsRoute = AppSettingsCustomFieldsRouteImport.update({
   id: '/custom-fields',
   path: '/custom-fields',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
   '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
+  '/app/settings/members': typeof AppSettingsMembersRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
   '/app/deals/': typeof AppDealsIndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
   '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
+  '/app/settings/members': typeof AppSettingsMembersRoute
   '/app/companies': typeof AppCompaniesIndexRoute
   '/app/contacts': typeof AppContactsIndexRoute
   '/app/deals': typeof AppDealsIndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/app/contacts/$id': typeof AppContactsIdRoute
   '/app/deals/$id': typeof AppDealsIdRoute
   '/app/settings/custom-fields': typeof AppSettingsCustomFieldsRoute
+  '/app/settings/members': typeof AppSettingsMembersRoute
   '/app/companies/': typeof AppCompaniesIndexRoute
   '/app/contacts/': typeof AppContactsIndexRoute
   '/app/deals/': typeof AppDealsIndexRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/settings/custom-fields'
+    | '/app/settings/members'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/settings/custom-fields'
+    | '/app/settings/members'
     | '/app/companies'
     | '/app/contacts'
     | '/app/deals'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/app/contacts/$id'
     | '/app/deals/$id'
     | '/app/settings/custom-fields'
+    | '/app/settings/members'
     | '/app/companies/'
     | '/app/contacts/'
     | '/app/deals/'
@@ -339,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings/members': {
+      id: '/app/settings/members'
+      path: '/members'
+      fullPath: '/app/settings/members'
+      preLoaderRoute: typeof AppSettingsMembersRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/app/settings/custom-fields': {
       id: '/app/settings/custom-fields'
       path: '/custom-fields'
@@ -379,11 +398,13 @@ declare module '@tanstack/react-router' {
 
 interface AppSettingsRouteChildren {
   AppSettingsCustomFieldsRoute: typeof AppSettingsCustomFieldsRoute
+  AppSettingsMembersRoute: typeof AppSettingsMembersRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
   AppSettingsCustomFieldsRoute: AppSettingsCustomFieldsRoute,
+  AppSettingsMembersRoute: AppSettingsMembersRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
 

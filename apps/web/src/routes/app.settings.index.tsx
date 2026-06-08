@@ -117,6 +117,16 @@ function SettingsForm({ org }: SettingsFormProps) {
       <EmailSettingsSection />
 
       <section className="mt-4 rounded-md border border-neutral-200 p-4">
+        <h2 className="mb-1 text-base font-medium">Members</h2>
+        <p className="mb-2 text-sm text-neutral-500">
+          Invite teammates and manage their roles. Members get scoped access to {org.name}.
+        </p>
+        <Link to="/app/settings/members" className="text-sm text-neutral-900 underline">
+          Manage members →
+        </Link>
+      </section>
+
+      <section className="mt-4 rounded-md border border-neutral-200 p-4">
         <h2 className="mb-1 text-base font-medium">Custom fields</h2>
         <p className="mb-2 text-sm text-neutral-500">
           Define structured fields beyond the built-in columns on contacts, companies, deals, notes,
