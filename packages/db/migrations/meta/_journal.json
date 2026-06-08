@@ -85,6 +85,13 @@
       "when": 1780100000000,
       "tag": "0011_backfill_owner_user_id",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780200000000,
+      "tag": "0012_org_members_role_check",
+      "breakpoints": true
     }
   ]
 }
