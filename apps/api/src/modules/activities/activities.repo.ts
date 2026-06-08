@@ -143,6 +143,9 @@ export class ActivitiesRepo {
     if (patch.customFields !== undefined) {
       set.customFields = patch.customFields;
     }
+    if (patch.ownerUserId !== undefined) {
+      set.ownerUserId = patch.ownerUserId;
+    }
 
     const [row] = await this.db
       .update(schema.activities)

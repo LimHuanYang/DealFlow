@@ -54,6 +54,11 @@ export const updateActivityBodySchema = z.object({
   status: z.enum(TASK_STATUSES).optional(),
   dueAt: dueAtInput.nullable().optional(),
   customFields: z.record(z.unknown()).optional(),
+  // `ownerUserId` lets owners/admins *reassign* an activity to another user.
+  // The route enforces that only owner/admin may set it; a member who includes
+  // it is rejected (see activities routes / assertCanWrite). Activities are
+  // owned at create time from the acting user server-side.
+  ownerUserId: z.string().uuid().optional(),
 });
 export type UpdateActivityInput = z.infer<typeof updateActivityBodySchema>;
 

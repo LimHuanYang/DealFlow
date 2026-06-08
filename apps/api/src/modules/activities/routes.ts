@@ -13,6 +13,7 @@ import { requireOrg } from '../../plugins/require-org.js';
 import { validateAndMergeCustomFields } from '../../lib/custom-fields-merge.js';
 import { ActivitiesRepo } from './activities.repo.js';
 import { EmailAttachmentsRepo } from '../emails/email-attachments.repo.js';
+import { assertCanWrite, AuthzError } from '../../lib/authz.js';
 
 const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -252,6 +253,32 @@ export async function registerActivitiesRoutes(
         .status(404)
         .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
     }
+    // Record-ownership: owner/admin may edit any activity; a member only their
+    // own. (Checked after the 404 so non-owners can't probe which ids exist.)
+    try {
+      assertCanWrite(req.membership!.role, existing.ownerUserId, req.user!.id);
+    } catch (e) {
+      if (e instanceof AuthzError) {
+        return reply.status(403).send({
+          error: { code: ERROR_CODES.FORBIDDEN, message: e.message },
+        });
+      }
+      throw e;
+    }
+    // Only owner/admin may reassign a record to a different user. A member that
+    // includes `ownerUserId` (even on a record they own) is forbidden.
+    if (
+      body.data.ownerUserId !== undefined &&
+      req.membership!.role !== 'owner' &&
+      req.membership!.role !== 'admin'
+    ) {
+      return reply.status(403).send({
+        error: {
+          code: ERROR_CODES.FORBIDDEN,
+          message: 'Only an owner or admin may reassign a record.',
+        },
+      });
+    }
     const noteOrTask: 'note' | 'task' = existing.kind === 'task' ? 'task' : 'note';
     const merge = await validateAndMergeCustomFields(
       { db: deps.db },
@@ -292,6 +319,24 @@ export async function registerActivitiesRoutes(
       });
     }
     const orgId = req.session!.currentOrgId!;
+    const existing = await repo.findById(orgId, params.data.id);
+    if (!existing) {
+      return reply
+        .status(404)
+        .send({ error: { code: ERROR_CODES.NOT_FOUND, message: 'Activity not found' } });
+    }
+    // Record-ownership: owner/admin may delete any activity; a member only their
+    // own. (Checked after the 404 so non-owners can't probe which ids exist.)
+    try {
+      assertCanWrite(req.membership!.role, existing.ownerUserId, req.user!.id);
+    } catch (e) {
+      if (e instanceof AuthzError) {
+        return reply.status(403).send({
+          error: { code: ERROR_CODES.FORBIDDEN, message: e.message },
+        });
+      }
+      throw e;
+    }
     const ok = await repo.delete(orgId, params.data.id);
     if (!ok) {
       return reply
