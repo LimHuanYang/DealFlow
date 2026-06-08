@@ -17,6 +17,7 @@ export function requireRole(roles: OrgRole[]) {
       void reply.status(403).send({
         error: { code: ERROR_CODES.FORBIDDEN, message: 'Insufficient role for this action.' },
       });
+      return;
     }
   };
 }
