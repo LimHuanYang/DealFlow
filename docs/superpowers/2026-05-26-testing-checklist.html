@@ -117,7 +117,7 @@
       <li><strong>Destructive actions had no confirmation</strong> — added a reusable <code>ConfirmDialog</code>; note / email / task deletes and the new record deletes now prompt first.</li>
       <li><strong>Command-palette a11y</strong> — the Radix dialog was missing a <code>DialogTitle</code> (screen-reader console error). Added a visually-hidden title + description; the error is gone.</li>
     </ul>
-    <p style="margin:8px 0 0;"><strong>Not yet driven (lower priority):</strong> AI provider "Test" button, SMTP "Send test email", attachment-retention save, full signup → new-org creation, pagination (needs more rows), and real-inbox open/click tracking (environmental — needs the dev stack + ngrok up <em>and</em> the recipient's client to load images).</p>
+    <p style="margin:8px 0 0;"><strong>✅ Owner-verified manually (2026-06-08):</strong> AI provider "Test" button, SMTP "Send test email", attachment-retention save, full signup → new-org creation, and pagination — all work smoothly. <strong>Only remaining caveat:</strong> real-inbox open/click tracking is environmental — it needs the dev stack + ngrok up <em>and</em> the recipient's client to load images.</p>
   </div>
 
   <div class="prereq">
@@ -156,11 +156,11 @@
       <tr><td><strong>Command palette</strong> (Ctrl/⌘-K)</td><td><span class="pill done">Tested ✓</span></td><td>Opens, filters, navigates. a11y title fix (<code>98d777f</code>).</td></tr>
       <tr><td><strong>List search</strong></td><td><span class="pill done">Tested ✓</span></td><td>Contacts list filters live (2026-06-08).</td></tr>
       <tr><td><strong>Delete + confirmation</strong></td><td><span class="pill done">Tested ✓</span></td><td>New delete UI for contacts/companies/deals + confirm on all destructive actions (<code>98d777f</code>).</td></tr>
-      <tr><td><strong>Auth</strong> (login / logout / signup)</td><td><span class="pill partial">Mostly ✓</span></td><td>Login + logout verified; signup page renders (account-creation flow not driven).</td></tr>
-      <tr><td><strong>Settings saves</strong></td><td><span class="pill partial">Partial</span></td><td>Currency save verified; SMTP send-test / AI "Test" / retention save not yet driven.</td></tr>
+      <tr><td><strong>Auth</strong> (login / logout / signup)</td><td><span class="pill done">Tested ✓</span></td><td>Login + logout verified in-browser; signup → new-org creation verified manually by owner (2026-06-08).</td></tr>
+      <tr><td><strong>Settings saves</strong></td><td><span class="pill done">Tested ✓</span></td><td>Currency save verified in-browser; SMTP send-test, AI "Test", and retention save verified manually by owner (2026-06-08).</td></tr>
     </tbody>
   </table>
-  <p class="legend">Core Phase-1 features verified; a few secondary flows remain (see the 2026-06-08 banner). The step lists below are kept for regression / your own re-verification.</p>
+  <p class="legend">All Phase-1 features verified (owner confirmed the last few manually on 2026-06-08); only real-inbox email tracking stays environment-dependent. The step lists below are kept for regression / re-verification.</p>
 
   <!-- ============ EMAIL ATTACHMENTS ============ -->
   <section class="feature done-feature">
