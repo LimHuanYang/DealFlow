@@ -74,7 +74,7 @@
 <body>
 <main class="page">
   <h1>DealFlow — Manual Testing Checklist</h1>
-  <p class="lede">What's verified, what isn't, and exactly how to re-test. Tick boxes as you go — progress saves in this browser. <em>Last updated 2026-06-05.</em></p>
+  <p class="lede">What's verified, what isn't, and exactly how to re-test. Tick boxes as you go — progress saves in this browser. <em>Last updated 2026-06-08.</em></p>
 
   <div class="banner">
     <h3>✅ Full pass on 2026-06-05 — all three open items verified end-to-end</h3>
@@ -101,6 +101,25 @@
     <p style="margin:8px 0 0;"><strong>🆕 New feature shipped:</strong> <strong>link a contact to a company</strong> — a company picker in the create-contact dialog + a Company row (with a link to the company) on the contact detail page; "— No company —" unassigns. Commit <code>0827b72</code>. This closed the one UI gap found (<code>contacts.companyId</code> existed in the schema but had no UI).</p>
   </div>
 
+  <div class="banner">
+    <h3>🔍 2026-06-08 — secondary-feature pass (previously-untested surface) + fixes shipped</h3>
+    Drove the features the earlier passes skipped, live in the app. <strong>All verified working:</strong>
+    <ul>
+      <li><strong>Auth</strong> — login ✓, logout ✓ (redirects to <code>/login</code>), signup page renders ✓.</li>
+      <li><strong>Command palette (Ctrl/⌘-K)</strong> — opens, filters ("deal" → narrowed), and actions navigate ✓.</li>
+      <li><strong>List search</strong> — the contacts list filters as you type ✓.</li>
+      <li><strong>Settings</strong> — every section renders with persisted config; <strong>Default-currency save round-trip</strong> ✓.</li>
+      <li><strong>Notes / Tasks</strong> — create + delete ✓.</li>
+    </ul>
+    <p style="margin:8px 0 0;"><strong>🐞 Issues found &amp; fixed this pass (commit <code>98d777f</code>):</strong></p>
+    <ul>
+      <li><strong>No delete UI for contacts / companies / deals</strong> — the DELETE endpoints and mutation hooks existed, but nothing in the UI called them, so a user couldn't delete a core record. Added a guarded <strong>Delete</strong> button to each detail page (confirm → delete → back to the list). Verified end-to-end on a contact.</li>
+      <li><strong>Destructive actions had no confirmation</strong> — added a reusable <code>ConfirmDialog</code>; note / email / task deletes and the new record deletes now prompt first.</li>
+      <li><strong>Command-palette a11y</strong> — the Radix dialog was missing a <code>DialogTitle</code> (screen-reader console error). Added a visually-hidden title + description; the error is gone.</li>
+    </ul>
+    <p style="margin:8px 0 0;"><strong>Not yet driven (lower priority):</strong> AI provider "Test" button, SMTP "Send test email", attachment-retention save, full signup → new-org creation, pagination (needs more rows), and real-inbox open/click tracking (environmental — needs the dev stack + ngrok up <em>and</em> the recipient's client to load images).</p>
+  </div>
+
   <div class="prereq">
     <strong>⚙️ Environment change — the database moved to Supabase.</strong>
     Local PostgreSQL was uninstalled, which is why login/dashboard were 500ing (every DB call failed). The dev/runtime database is now <strong>Supabase</strong> (region <em>ap-southeast-2</em>). The connection string lives in <code>apps/api/.env</code> as <code>DATABASE_URL</code> (gitignored — never committed; SSL via <code>?sslmode=require</code>). All 12 migrations were applied and the app account + Gmail SMTP were reconnected on the fresh DB.
@@ -113,7 +132,7 @@
   <div class="prereq">
     <strong>🐞 Known issues (pre-existing, not yet fixed):</strong>
     <ul style="margin:6px 0 0 18px;padding:0;">
-      <li><strong>Create-contact dialog rejects blank optional fields.</strong> Last name / title / email use <code>z.string().min(1).optional()</code>, so leaving one blank submits <code>""</code> which fails <code>.min(1)</code>. Email shows "Invalid email"; <strong>last name &amp; title show no error and the form silently won't submit</strong>. Workaround: fill those fields. Proper fix: coerce <code>""</code> → <code>undefined</code> in the form/schema.</li>
+      <li><strong>✅ Fixed — blank optional fields on create-contact / company.</strong> Blank optional fields (last name / title / email / domain / etc.) now coerce <code>""</code> → <code>undefined</code> via a <code>blankToUndefined</code> Zod preprocessor, so they submit cleanly instead of failing <code>.min(1)</code>. (Worth a quick in-browser re-verify.)</li>
       <li><strong>Kanban drag</strong> is hard to drive via automation (dnd-kit needs real pointer-event sequences) — it works fine for humans; the deal-move endpoint has automated test coverage.</li>
       <li><strong>Invitations</strong> &amp; <strong>OAuth login</strong> — DB tables exist but there's no UI yet (Phase-1 foundations, nothing to test).</li>
     </ul>
@@ -133,10 +152,15 @@
       <tr><td><strong>Core CRM</strong> (contacts/companies/deals/pipelines/activities)</td><td><span class="pill done">Tested ✓</span></td><td>Fully exercised 2026-06-05 on Supabase: companies, deals + drag, tasks/notes. <strong>New:</strong> contact↔company link shipped (<code>0827b72</code>).</td></tr>
       <tr><td><strong>Email Attachments</strong></td><td><span class="pill done">Tested ✓</span></td><td>Core flow + the new error <em>toasts</em> &amp; file <em>preview</em> verified 2026-06-05.</td></tr>
       <tr><td><strong>Reports &amp; Dashboard</strong></td><td><span class="pill done">Tested ✓</span></td><td>Verified 2026-06-05 — loads with data, no "could not load".</td></tr>
-      <tr><td><strong>Email Tracking (opens/clicks)</strong></td><td><span class="pill done">Tested ✓</span></td><td>Record + display verified 2026-06-05; serializer display bug fixed (<code>f23775b</code>).</td></tr>
+      <tr><td><strong>Email Tracking (opens/clicks)</strong></td><td><span class="pill partial">Env-dependent</span></td><td>Pipeline verified 2026-06-08 (pixel → ngrok → API → DB increments). But a real open only records when the dev stack + ngrok tunnel are up <em>and</em> the recipient's client loads images (Outlook/M365 blocks by default) — flaky in real inboxes.</td></tr>
+      <tr><td><strong>Command palette</strong> (Ctrl/⌘-K)</td><td><span class="pill done">Tested ✓</span></td><td>Opens, filters, navigates. a11y title fix (<code>98d777f</code>).</td></tr>
+      <tr><td><strong>List search</strong></td><td><span class="pill done">Tested ✓</span></td><td>Contacts list filters live (2026-06-08).</td></tr>
+      <tr><td><strong>Delete + confirmation</strong></td><td><span class="pill done">Tested ✓</span></td><td>New delete UI for contacts/companies/deals + confirm on all destructive actions (<code>98d777f</code>).</td></tr>
+      <tr><td><strong>Auth</strong> (login / logout / signup)</td><td><span class="pill partial">Mostly ✓</span></td><td>Login + logout verified; signup page renders (account-creation flow not driven).</td></tr>
+      <tr><td><strong>Settings saves</strong></td><td><span class="pill partial">Partial</span></td><td>Currency save verified; SMTP send-test / AI "Test" / retention save not yet driven.</td></tr>
     </tbody>
   </table>
-  <p class="legend">All features are now verified. The step lists below are kept for regression / your own re-verification — including an optional real-Gmail confirmation for tracking.</p>
+  <p class="legend">Core Phase-1 features verified; a few secondary flows remain (see the 2026-06-08 banner). The step lists below are kept for regression / your own re-verification.</p>
 
   <!-- ============ EMAIL ATTACHMENTS ============ -->
   <section class="feature done-feature">
