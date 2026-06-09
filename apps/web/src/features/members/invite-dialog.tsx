@@ -127,9 +127,9 @@ export function InviteDialog({ open, onOpenChange }: InviteDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-w-0 flex-col gap-4" noValidate>
           <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <Label htmlFor="invite-email">Email</Label>
               <Input
                 id="invite-email"
@@ -177,7 +177,7 @@ export function InviteDialog({ open, onOpenChange }: InviteDialogProps) {
               <p className="mt-0.5 text-xs text-emerald-800">
                 Anyone with the link can join.
               </p>
-              <code className="mt-2 block w-full overflow-x-auto rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-[11px] text-slate-700">
+              <code className="mt-2 block w-full whitespace-pre-wrap break-all rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-[11px] text-slate-700">
                 {success.inviteUrl}
               </code>
             </div>
@@ -197,7 +197,7 @@ export function InviteDialog({ open, onOpenChange }: InviteDialogProps) {
             </div>
           )}
 
-          <DialogFooter className="!justify-between gap-2 sm:!flex-row sm:items-center">
+          <DialogFooter className="flex-wrap !justify-between gap-2 sm:!flex-row sm:items-center">
             <button
               type="button"
               onClick={handleCopyLink}
