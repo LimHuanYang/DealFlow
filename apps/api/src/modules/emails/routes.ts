@@ -23,7 +23,6 @@ import { requireOrg } from '../../plugins/require-org.js';
 import { ActivitiesRepo } from '../activities/activities.repo.js';
 import { OrgIntegrationsRepo } from '../integrations/repo.js';
 import { loadEnv, type Env } from '../../env.js';
-import { signTrackingToken } from '../../lib/email-tracking-token.js';
 import { wrapBodyAsHtml } from '../../lib/email-html-wrap.js';
 import {
   validateAttachment,
@@ -267,7 +266,6 @@ export async function registerEmailRoutes(
 
     const personalisedFrom = `${userRow.name} <${fromAddress}>`;
     const trackEnabled = parsed.data.trackEnabled ?? true;
-    const trackingActive = trackEnabled && !!resolvedEnv.EMAIL_TRACKING_SECRET;
 
     // 4. Pre-create the activity row so we have an ID to embed in tracking URLs.
     //    subject is stamped here so concurrent reads don't see a subject-less row.
@@ -282,20 +280,11 @@ export async function registerEmailRoutes(
       deliveryStatus: 'sent',
     });
 
-    // 5. Build HTML body if tracking is active.
-    let html: string | undefined;
-    if (trackingActive) {
-      const token = signTrackingToken(created.id, resolvedEnv.EMAIL_TRACKING_SECRET!);
-      const pixelUrl = `${resolvedEnv.PUBLIC_API_URL}/track/open/${token}`;
-      const wrapped = wrapBodyAsHtml(parsed.data.body, {
-        pixelUrl,
-        rewriteLink: (originalUrl) =>
-          `${resolvedEnv.PUBLIC_API_URL}/track/click/${token}?u=${encodeURIComponent(
-            Buffer.from(originalUrl, 'utf8').toString('base64url'),
-          )}`,
-      });
-      html = wrapped.html;
-    }
+    // 5. Build a clean multipart/alternative HTML body. EngineMailer performs
+    //    open/click tracking server-side (reported via webhook), so we no longer
+    //    inject a self-hosted pixel or rewrite links. The per-activity
+    //    `trackEnabled` flag still gates whether webhook opens/clicks are counted.
+    const html = wrapBodyAsHtml(parsed.data.body, { pixelUrl: null, rewriteLink: null }).html;
 
     // 6. Resolve per-org cache settings.
     const integrationsPublic = await integrations.getMasked(orgId);
