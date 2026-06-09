@@ -74,7 +74,20 @@
 <body>
 <main class="page">
   <h1>DealFlow — Manual Testing Checklist</h1>
-  <p class="lede">What's verified, what isn't, and exactly how to re-test. Tick boxes as you go — progress saves in this browser. <em>Last updated 2026-06-08.</em></p>
+  <p class="lede">What's verified, what isn't, and exactly how to re-test. Tick boxes as you go — progress saves in this browser. <em>Last updated 2026-06-09.</em></p>
+
+  <div class="banner">
+    <h3>🚀 Phase 2 shipped (2026-06-09) — Team Management (multi-org, invitations, members, role + ownership permissions)</h3>
+    Built spec → plan → TDD via subagent-driven development. Spec: <code>docs/superpowers/specs/2026-06-08-team-management-design.md</code> · plan: <code>docs/superpowers/plans/2026-06-08-dealflow-team-management.md</code>.
+    <ul>
+      <li><strong>Permissions</strong> — roles owner/admin/member; <code>requireRole</code> gates team-admin/settings/integrations/custom-field mutations; <code>assertCanWrite</code> enforces "members edit/delete only records they own" on contacts/companies/deals/activities (incl. deal <em>move</em>). <code>owner_user_id</code> set on create + backfilled (migration 0011); <code>CHECK</code> constraint on <code>org_members.role</code> (0012).</li>
+      <li><strong>Members</strong> — list/change-role/remove/leave with invariants: ≥1 owner always, only owners touch owners, admins can't modify owners/admins, no self-role-change.</li>
+      <li><strong>Invitations</strong> — invite by email+role (256-bit token, 7-day expiry), per-org SMTP send with copy-link fallback, resend/revoke, public preview, and an accept flow (new user creates account atomically; existing user joins via their session; <code>SIGNIN_REQUIRED</code> → <code>/login?next=…</code>).</li>
+      <li><strong>Multi-org</strong> — <code>GET /orgs</code> + <code>POST /orgs/switch</code>; top-bar org switcher; record edit/delete gated in the UI to mirror the server (lock note on read-only records).</li>
+    </ul>
+    <p style="margin:8px 0 0;"><strong>Verification:</strong> backend is integration-tested against Supabase (schema-per-test harness — added in this phase so tests run with no local Postgres/Docker); the members/invitations security surface alone is <strong>85 passing tests</strong> (tenancy, role gates, last-owner, atomic accept). The accept→session→member-gating flow was driven end-to-end in a real browser. A full code review (no Critical issues) flagged 7 items — all fixed (admin-vs-admin authz, last-owner TOCTOU→transaction, atomic new-user accept, self-role-change block, custom-fields gating, redirect hardening, resend-only-pending).</p>
+    <p style="margin:8px 0 0;"><strong>Deferred follow-ups:</strong> an automated Playwright E2E for invite→accept→switch (the path is integration-tested + manually verified); a logged-in "Create organization" flow (no <code>POST /orgs</code> endpoint yet — switcher TODO'd); re-enable CI (GitHub Actions billing lock) so the suite + E2E run on push.</p>
+  </div>
 
   <div class="banner">
     <h3>✅ Full pass on 2026-06-05 — all three open items verified end-to-end</h3>
