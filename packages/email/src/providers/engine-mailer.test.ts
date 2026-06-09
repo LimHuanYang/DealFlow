@@ -27,7 +27,7 @@ describe('EngineMailerEmailProvider', () => {
     });
 
     expect(out.messageId).toBe('tx-123');
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toContain('/RESTAPI/V2/Submission/SendEmail');
     expect(init.method).toBe('POST');
     expect((init.headers as Record<string, string>).APIKey).toBe('secret');
@@ -48,7 +48,8 @@ describe('EngineMailerEmailProvider', () => {
       fetchImpl: fetchMock as unknown as typeof fetch,
     });
     await p.send({ from: '', to: 'b@x.com', replyTo: 'c@a.com', subject: 's', text: 'plain-only' });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
     expect(body.SubmittedContent).toBe('plain-only');
   });
 
@@ -70,7 +71,8 @@ describe('EngineMailerEmailProvider', () => {
       bcc: ['b1@x.com'],
       attachments: [{ filename: 'a.txt', content: Buffer.from('hello') }],
     });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
     expect(body.CCEmails).toEqual(['c1@x.com']);
     expect(body.BCCEmails).toEqual(['b1@x.com']);
     expect(body.Attachments[0].Filename).toBe('a.txt');
