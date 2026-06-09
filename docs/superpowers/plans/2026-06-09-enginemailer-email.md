@@ -13,6 +13,23 @@
 
 ---
 
+## ✅ REVISION 2026-06-09 (post Task-0 spike) — THIS OVERRIDES the task bodies below where they conflict
+
+Task 0 is **complete** — confirmed contract in `docs/superpowers/research/2026-06-09-enginemailer-api-findings.md`. Decisions:
+
+- **Scope cut:** sending requires the user's own **verified domain** (no shared DealFlow domain) and there is **no Reply-To**. So we adopt the **single verified-domain model** and **shelve the Pro paywall**. → **CUT Task 7** (org plan endpoint) and **CUT Task 12** (custom-domain UI). Keep the cheap `organizations.plan` column in Task 1 (future-proof; nothing reads it yet).
+- **Sender config** is `{ apiKey, fromName, fromEmail }` only (no `replyTo`, no `sendingMode`, no custom domain). `fromEmail`'s domain must be verified in EngineMailer.
+- **Task 3 adapter — confirmed contract:** `POST https://api.enginemailer.com/RESTAPI/V2/Submission/SendEmail`; header **`APIKey: <key>`**; JSON body `{ ToEmail, SenderEmail, SenderName, Subject, SubmittedContent, CCEmails?, BCCEmails?, Attachments? }` (HTML goes in `SubmittedContent`; **drop `replyTo`/`activityId`/`CustomRef`** — unsupported). Success = `res.json().Result.StatusCode === '200'`; return `{ messageId: res.json().Result.TransactionID }`; throw on non-200 or missing Result.
+- **Task 8 webhook — confirmed contract:** verify a **`?key=` query param** equals `ENGINE_MAILER_WEBHOOK_SECRET` via `crypto.timingSafeEqual` (EngineMailer has **no HMAC** — the secret rides in the URL). Event values are lowercase **`opened` / `clicked` / `delivered` / `bounce` / `spam-complaint`** (+ `unsubscribed`). Match by **`payload.details.txid`** → `activities.external_id`. Mapper keys off `details` not a CustomRef.
+- **Task 9:** store `Result.TransactionID` as `activities.external_id` on send (the webhook linkage). `SendEmailInput.activityId` is NOT needed → skip that part of Task 3.
+- **Task 11 UI:** Email card = API key + **Sender email** (on a verified domain) + Sender name + Save + Send test. No Reply-To / managed-domain fields. Add a short "tracking setup" note: in EngineMailer → Domains › your domain › Webhooks, paste `${PUBLIC_API_URL}/api/v1/webhooks/engine-mailer?key=<secret>` under **Open** and **Click** (and Bounce/Spam) and enable each.
+- **Env:** `ENGINE_MAILER_WEBHOOK_SECRET` is the URL key (not an HMAC secret). `PUBLIC_EMAIL_DOMAIN` is no longer needed (drop it). `ENGINE_MAILER_API_KEY` already in `.env`.
+- **Reply-To limitation:** accepted — replies go to the verified-domain mailbox the mail is sent from.
+
+**Net task list:** 0 ✅, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 13. (7 and 12 cut.)
+
+---
+
 ## File Structure (decomposition)
 
 **Create**
