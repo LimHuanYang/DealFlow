@@ -209,7 +209,7 @@ describe('POST /api/v1/integrations/test-email', () => {
     await testDb.stop();
   });
 
-  it('returns ok=false when SMTP is not configured', async () => {
+  it('returns ok=false when email is not configured', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/integrations/test-email',
@@ -220,6 +220,83 @@ describe('POST /api/v1/integrations/test-email', () => {
     const body = res.json() as { ok: boolean; error?: string };
     expect(body.ok).toBe(false);
     expect(body.error).toBeDefined();
+  });
+});
+
+describe('EngineMailer email integration routes', () => {
+  let testDb: TestDatabase;
+  let app: FastifyInstance;
+  let cookie: string;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    app = await buildTestApp({ db: testDb.db });
+    ({ cookie } = await signupTestUser(app));
+  }, 30_000);
+
+  afterAll(async () => {
+    await app.close();
+    await testDb.stop();
+  });
+
+  it('PATCH /integrations/email saves config; GET returns the mask', async () => {
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations/email',
+      payload: { apiKey: 'em-live-7Q4a', fromName: 'Acme Sales', fromEmail: 'crm@acme.com' },
+      headers: { cookie },
+    });
+    expect(patch.statusCode).toBe(200);
+    const pj = patch.json() as { connected: boolean; keyHint: string; fromEmail: string };
+    expect(pj.connected).toBe(true);
+    expect(pj.keyHint).toMatch(/7Q4a$/);
+    expect(pj.fromEmail).toBe('crm@acme.com');
+
+    const get = await app.inject({
+      method: 'GET',
+      url: '/api/v1/integrations/email',
+      headers: { cookie },
+    });
+    const gj = get.json() as { connected: boolean; fromName: string };
+    expect(gj.connected).toBe(true);
+    expect(gj.fromName).toBe('Acme Sales');
+  });
+
+  it('updates fromName without resending the key (unchanged-when-blank)', async () => {
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations/email',
+      payload: { fromName: 'Acme Renamed', fromEmail: 'hello@acme.com' },
+      headers: { cookie },
+    });
+    const get = await app.inject({
+      method: 'GET',
+      url: '/api/v1/integrations/email',
+      headers: { cookie },
+    });
+    const gj = get.json() as { connected: boolean; fromName: string; keyHint: string };
+    expect(gj.connected).toBe(true);
+    expect(gj.fromName).toBe('Acme Renamed');
+    expect(gj.keyHint).toMatch(/7Q4a$/);
+  });
+
+  it('400 on invalid fromEmail', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations/email',
+      payload: { fromName: 'X', fromEmail: 'not-an-email' },
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('401 when not authenticated', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/integrations/email',
+      payload: { fromName: 'X', fromEmail: 'x@y.com' },
+    });
+    expect(res.statusCode).toBe(401);
   });
 });
 

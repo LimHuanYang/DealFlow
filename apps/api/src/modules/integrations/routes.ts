@@ -5,7 +5,12 @@ import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import { buildAIProvider, type AIConfig, AIDisabledError } from '@dealflow/ai';
 import { buildEmailProvider, type EmailConfig, EmailDisabledError } from '@dealflow/email';
-import { ERROR_CODES, testAIBodySchema, updateIntegrationsBodySchema } from '@dealflow/shared';
+import {
+  engineMailerConfigSchema,
+  ERROR_CODES,
+  testAIBodySchema,
+  updateIntegrationsBodySchema,
+} from '@dealflow/shared';
 import { requireOrg } from '../../plugins/require-org.js';
 import { requireRole } from '../../plugins/require-role.js';
 import { OrgIntegrationsRepo } from './repo.js';
@@ -55,6 +60,32 @@ export async function registerIntegrationsRoutes(
       await repo.update(orgId, parsed.data);
       const masked = await repo.getMasked(orgId);
       return reply.send(masked);
+    },
+  );
+
+  // --- EngineMailer email integration (dedicated endpoints) ---
+  app.get('/api/v1/integrations/email', { preHandler: requireOrg }, async (req, reply) => {
+    const orgId = req.session!.currentOrgId!;
+    return reply.send(await repo.getMaskedEmail(orgId));
+  });
+
+  app.patch(
+    '/api/v1/integrations/email',
+    { preHandler: [requireOrg, requireRole(['owner', 'admin'])] },
+    async (req, reply) => {
+      const parsed = engineMailerConfigSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: {
+            code: ERROR_CODES.VALIDATION_FAILED,
+            message: 'Invalid EngineMailer config',
+            details: parsed.error.flatten().fieldErrors,
+          },
+        });
+      }
+      const orgId = req.session!.currentOrgId!;
+      await repo.saveEngineMailer(orgId, parsed.data);
+      return reply.send(await repo.getMaskedEmail(orgId));
     },
   );
 
@@ -118,22 +149,9 @@ export async function registerIntegrationsRoutes(
       const orgId = req.session!.currentOrgId!;
       const userId = req.user!.id;
       const dec = await repo.getDecrypted(orgId);
-      if (!dec.smtp) {
-        return reply.send({ ok: false, error: 'SMTP not configured.' });
-      }
-      const cfg: EmailConfig = {
-        smtp: {
-          host: dec.smtp.host,
-          port: dec.smtp.port,
-          user: dec.smtp.user,
-          pass: dec.smtp.pass,
-          fromEmail: dec.smtp.fromEmail,
-          fromName: dec.smtp.fromName,
-        },
-      };
-      const provider = buildEmailProvider(cfg);
 
-      // Send the test to the logged-in user's own email.
+      // Send the test to the logged-in user's own email (or a caller-supplied
+      // recipient). `replyTo` stays the user's mailbox.
       const [userRow] = await deps.db
         .select({ email: schema.users.email, name: schema.users.name })
         .from(schema.users)
@@ -142,18 +160,44 @@ export async function registerIntegrationsRoutes(
       if (!userRow) {
         return reply.send({ ok: false, error: 'Sender not found.' });
       }
-      // Send to the caller-supplied recipient if given, otherwise to the
-      // logged-in user's own email. Either way `replyTo` stays the user's own
-      // mailbox so any reply lands somewhere they can read it.
+
+      // Prefer EngineMailer; fall back to legacy SMTP; else not configured.
+      let cfg: EmailConfig;
+      let fromLine: string;
+      if (dec.engineMailer) {
+        cfg = {
+          engineMailer: {
+            apiKey: dec.engineMailer.apiKey,
+            fromEmail: dec.engineMailer.fromEmail,
+            fromName: dec.engineMailer.fromName,
+          },
+        };
+        fromLine = `${dec.engineMailer.fromName} <${dec.engineMailer.fromEmail}>`;
+      } else if (dec.smtp) {
+        cfg = {
+          smtp: {
+            host: dec.smtp.host,
+            port: dec.smtp.port,
+            user: dec.smtp.user,
+            pass: dec.smtp.pass,
+            fromEmail: dec.smtp.fromEmail,
+            fromName: dec.smtp.fromName,
+          },
+        };
+        fromLine = `${userRow.name} <${dec.smtp.fromEmail}>`;
+      } else {
+        return reply.send({ ok: false, error: 'Email not configured.' });
+      }
+      const provider = buildEmailProvider(cfg);
       const recipient = parsed.data.to ?? userRow.email;
       try {
         await provider.send({
-          from: `${userRow.name} <${dec.smtp.fromEmail}>`,
+          from: fromLine,
           to: recipient,
           replyTo: userRow.email,
-          subject: 'DealFlow SMTP test',
+          subject: 'DealFlow email test',
           text:
-            'This is a test email sent from DealFlow to verify your SMTP configuration. ' +
+            'This is a test email sent from DealFlow to verify your email configuration. ' +
             'If you can read this, sending works.',
         });
         return reply.send({ ok: true });
