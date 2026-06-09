@@ -47,6 +47,14 @@ export const ERROR_CODES = {
    * /login?next=/invite/<token>.
    */
   SIGNIN_REQUIRED: 'SIGNIN_REQUIRED',
+  /** Email: the org has not configured an EngineMailer API key yet. */
+  EMAIL_NOT_CONFIGURED: 'EMAIL_NOT_CONFIGURED',
+  /**
+   * Email tracking webhook: the `?key=` query param did not match the
+   * configured ENGINE_MAILER_WEBHOOK_SECRET. (EngineMailer has no HMAC; the
+   * shared secret rides in the callback URL.)
+   */
+  WEBHOOK_KEY_INVALID: 'WEBHOOK_KEY_INVALID',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
