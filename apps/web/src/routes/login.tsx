@@ -15,12 +15,21 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const searchSchema = z.object({
+  // Where to send the user after a successful sign-in. Used by the
+  // accept-invite flow (`/login?next=/invite/<token>`). Only relative paths
+  // are honored to avoid open-redirects.
+  next: z.string().optional(),
+});
+
 export const Route = createFileRoute('/login')({
+  validateSearch: searchSchema,
   component: LoginPage,
 });
 
 function LoginPage() {
   const router = useRouter();
+  const { next } = Route.useSearch();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -32,7 +41,8 @@ function LoginPage() {
     setServerError(null);
     try {
       await login(values);
-      await router.navigate({ to: '/app' });
+      const dest = next && next.startsWith('/') ? next : '/app';
+      await router.navigate({ to: dest });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Unknown error');
     }

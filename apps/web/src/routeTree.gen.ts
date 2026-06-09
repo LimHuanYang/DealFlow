@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AppTasksRouteImport } from './routes/app.tasks'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppEmailsRouteImport } from './routes/app.emails'
@@ -53,6 +54,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppTasksRoute = AppTasksRouteImport.update({
   id: '/tasks',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/app/emails': typeof AppEmailsRoute
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
   '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/emails': typeof AppEmailsRoute
   '/app/tasks': typeof AppTasksRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app': typeof AppIndexRoute
   '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/app/emails': typeof AppEmailsRoute
   '/app/settings': typeof AppSettingsRouteWithChildren
   '/app/tasks': typeof AppTasksRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/app/': typeof AppIndexRoute
   '/app/activities/$id': typeof AppActivitiesIdRoute
   '/app/companies/$id': typeof AppCompaniesIdRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/app/emails'
     | '/app/settings'
     | '/app/tasks'
+    | '/invite/$token'
     | '/app/'
     | '/app/activities/$id'
     | '/app/companies/$id'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/emails'
     | '/app/tasks'
+    | '/invite/$token'
     | '/app'
     | '/app/activities/$id'
     | '/app/companies/$id'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/app/emails'
     | '/app/settings'
     | '/app/tasks'
+    | '/invite/$token'
     | '/app/'
     | '/app/activities/$id'
     | '/app/companies/$id'
@@ -256,6 +268,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -294,6 +307,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/tasks': {
       id: '/app/tasks'
@@ -449,6 +469,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
