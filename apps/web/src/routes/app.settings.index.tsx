@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { AIIntegrationsSection } from '@/features/integrations/ai-integrations-section';
-import { SmtpIntegrationSection } from '@/features/integrations/smtp-integration-section';
+import { EmailIntegrationSection } from '@/features/integrations/email-integration-section';
 import { EmailSettingsSection } from '@/features/integrations/email-settings-section';
 import { useCurrentOrg, useUpdateOrg } from '@/features/organizations/api';
 
@@ -112,7 +112,7 @@ function SettingsForm({ org }: SettingsFormProps) {
 
       <AIIntegrationsSection />
 
-      <SmtpIntegrationSection />
+      <EmailIntegrationSection />
 
       <EmailSettingsSection />
 

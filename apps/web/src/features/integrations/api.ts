@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  EngineMailerConfigInput,
+  PublicEmailIntegration,
   PublicIntegrations,
   TestAIInput,
   TestResultResponse,
@@ -7,6 +9,30 @@ import type {
 } from '@dealflow/shared';
 import { apiFetch } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
+
+/** Masked EngineMailer email integration for the Settings → Email section. */
+export function useEmailIntegration() {
+  return useQuery({
+    queryKey: ['integrations', 'email'],
+    queryFn: () => apiFetch<PublicEmailIntegration>('/api/v1/integrations/email'),
+  });
+}
+
+export function useUpdateEmailIntegration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EngineMailerConfigInput) =>
+      apiFetch<PublicEmailIntegration>('/api/v1/integrations/email', {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: (data) => {
+      qc.setQueryData(['integrations', 'email'], data);
+      // The compose "Email" button reads email/status — refresh it.
+      qc.invalidateQueries({ queryKey: ['emails', 'status'] });
+    },
+  });
+}
 
 export function useIntegrations() {
   return useQuery({
