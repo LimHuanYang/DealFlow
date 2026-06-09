@@ -654,6 +654,57 @@ describe('POST /api/v1/invitations/:token/accept', () => {
     await testDb.stop();
   });
 
+  it('new-user accept on an EXPIRED token leaves NO orphaned users row (Fix 3 atomicity)', async () => {
+    // Regression for the orphaned-user bug: the new-user accept path must
+    // create the user + membership atomically *after* re-validating the
+    // invitation, so a late failure (here: expiry) never persists a user row.
+    const testDb = await startTestPostgres();
+    const fake = makeFakeProvider();
+    const app = await buildTestApp({
+      db: testDb.db,
+      emailProviderForOrg: async () => ({
+        provider: fake.provider,
+        fromAddress: 'noreply@dealflow.test',
+      }),
+    });
+    const owner = await signupTestUser(app);
+    const inviteEmail = `orphan.${Date.now()}@external.com`;
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/orgs/current/invitations',
+      headers: { cookie: owner.cookie },
+      payload: { email: inviteEmail, role: 'member' },
+    });
+    const [row] = await testDb.db
+      .select()
+      .from(schema.invitations)
+      .where(eq(schema.invitations.email, inviteEmail.toLowerCase()));
+
+    // Expire the invitation so accept fails on the server.
+    await testDb.db
+      .update(schema.invitations)
+      .set({ expiresAt: new Date(Date.now() - 60_000) })
+      .where(eq(schema.invitations.id, row!.id));
+
+    const res = await app.inject({
+      method: 'POST',
+      url: `/api/v1/invitations/${row!.token}/accept`,
+      payload: { name: 'Would Be Orphan', password: 'CorrectHorseBatteryStaple1' },
+    });
+    expect(res.statusCode).toBe(410);
+    expect(res.json().error.code).toBe('INVITATION_EXPIRED');
+
+    // Critical: the failed accept must not have persisted a user row.
+    const orphan = await testDb.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, inviteEmail.toLowerCase()));
+    expect(orphan).toHaveLength(0);
+
+    await app.close();
+    await testDb.stop();
+  });
+
   it('new-user path missing password → 400 VALIDATION_FAILED', async () => {
     const testDb = await startTestPostgres();
     const fake = makeFakeProvider();

@@ -198,6 +198,24 @@ describe('InvitationsRepo', () => {
       expect(sameToken).not.toBeNull();
       expect(sameToken!.id).toBe(invitation.id);
     });
+
+    it('throws InvitationNotFoundError when the invitation is already accepted (Fix 7)', async () => {
+      const email = `resend-accepted.${Date.now()}@acme.com`;
+      const { invitation } = await repo.create(
+        orgId,
+        { email, role: 'member' },
+        owner.userId,
+      );
+      // Mark it accepted.
+      await testDb.db
+        .update(schema.invitations)
+        .set({ acceptedAt: new Date() })
+        .where(eq(schema.invitations.id, invitation.id));
+
+      await expect(repo.resend(orgId, invitation.id)).rejects.toBeInstanceOf(
+        InvitationNotFoundError,
+      );
+    });
   });
 
   describe('revoke', () => {

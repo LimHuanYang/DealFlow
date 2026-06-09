@@ -25,6 +25,7 @@ import { OrgIntegrationsRepo } from '../integrations/repo.js';
 import { SessionsRepo } from '../auth/sessions.repo.js';
 import { UsersRepo } from '../auth/users.repo.js';
 import {
+  EmailAlreadyRegisteredError,
   InvitationAlreadyAcceptedError,
   InvitationDuplicateError,
   InvitationExpiredError,
@@ -341,17 +342,20 @@ export async function registerInvitationsRoutes(
         error: { code: ERROR_CODES.INVITATION_NOT_FOUND, message: 'Invitation not found.' },
       });
     }
-    if (inv.expiresAt.getTime() <= Date.now() && !inv.acceptedAt) {
-      return reply.status(410).send({
-        error: { code: ERROR_CODES.INVITATION_EXPIRED, message: 'Invitation has expired.' },
-      });
-    }
 
     const inviteEmail = normalizeEmail(inv.email);
     const existingUser = await users.findByEmail(inviteEmail);
 
     // ── Existing-user path ─────────────────────────────────────────────────
     if (existingUser) {
+      // Fast-fail expiry only on the existing-user path. The new-user path
+      // re-validates expiry *inside* its atomic repo txn (acceptAsNewUser), so
+      // a stale pre-check here can't create an orphaned user row.
+      if (inv.expiresAt.getTime() <= Date.now() && !inv.acceptedAt) {
+        return reply.status(410).send({
+          error: { code: ERROR_CODES.INVITATION_EXPIRED, message: 'Invitation has expired.' },
+        });
+      }
       // The accept flow only joins the *currently signed-in* user that
       // matches the invitation email. A different signed-in user or no
       // session → SIGNIN_REQUIRED so the web app can redirect to login.
@@ -426,11 +430,16 @@ export async function registerInvitationsRoutes(
       });
     }
 
+    // Hash the password OUTSIDE the DB txn (argon2 is slow), then create the
+    // user + membership atomically via the repo. If accept fails for any
+    // reason the whole thing rolls back — no orphaned user row is left behind.
     const passwordHash = await hashPassword(password);
-    const user = await users.create({ email: inviteEmail, name, passwordHash });
     let result;
     try {
-      result = await invitationsRepo.accept(params.data.token, user.id);
+      result = await invitationsRepo.acceptAsNewUser(params.data.token, {
+        name,
+        passwordHash,
+      });
     } catch (err) {
       if (err instanceof InvitationExpiredError) {
         return reply.status(410).send({
@@ -447,10 +456,17 @@ export async function registerInvitationsRoutes(
           error: { code: ERROR_CODES.INVITATION_NOT_FOUND, message: err.message },
         });
       }
+      if (err instanceof EmailAlreadyRegisteredError) {
+        // A concurrent signup grabbed this email between our existence check
+        // and the atomic insert — surface a clean 409 rather than a 500.
+        return reply.status(409).send({
+          error: { code: ERROR_CODES.CONFLICT, message: err.message },
+        });
+      }
       throw err;
     }
     const session = await sessions.create({
-      userId: user.id,
+      userId: result.userId,
       currentOrgId: result.organizationId,
       expiresInDays: resolvedEnv.SESSION_DURATION_DAYS,
       userAgent: req.headers['user-agent'] ?? null,

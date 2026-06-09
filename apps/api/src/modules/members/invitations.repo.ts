@@ -3,6 +3,7 @@ import { and, desc, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { Database } from '@dealflow/db';
 import { schema } from '@dealflow/db';
 import type { OrgRole, PublicInvitation } from '@dealflow/shared';
+import { normalizeEmail } from '../../lib/email.js';
 
 /** Thrown when no invitation row matches the supplied token. */
 export class InvitationNotFoundError extends Error {
@@ -53,6 +54,18 @@ export class InvitationForExistingMemberError extends Error {
   constructor(message = 'This person is already a member of the organization.') {
     super(message);
     this.name = 'InvitationForExistingMemberError';
+  }
+}
+
+/**
+ * Thrown by `acceptAsNewUser` when the invited email was registered by another
+ * request between the route's existence check and the atomic insert (a unique
+ * violation on `users.email`). Maps to 409 CONFLICT at the route.
+ */
+export class EmailAlreadyRegisteredError extends Error {
+  constructor(message = 'An account with this email already exists.') {
+    super(message);
+    this.name = 'EmailAlreadyRegisteredError';
   }
 }
 
@@ -196,6 +209,11 @@ export class InvitationsRepo {
   /**
    * Reset `expiresAt` to now + 7d. Token is unchanged so a previously
    * emailed link keeps working.
+   *
+   * Only *pending* (not-yet-accepted) invitations can be resent — re-sending
+   * an already-accepted invite would re-open a consumed link, so the
+   * `acceptedAt IS NULL` guard is part of the match. If no pending row matches
+   * `(id, orgId)` the call throws `InvitationNotFoundError`.
    */
   async resend(orgId: string, id: string): Promise<PublicInvitation> {
     const expiresAt = new Date(Date.now() + SEVEN_DAYS_MS);
@@ -206,6 +224,7 @@ export class InvitationsRepo {
         and(
           eq(schema.invitations.id, id),
           eq(schema.invitations.organizationId, orgId),
+          isNull(schema.invitations.acceptedAt),
         ),
       )
       .returning();
@@ -305,4 +324,85 @@ export class InvitationsRepo {
       return { organizationId: orgId, role: effectiveRole };
     });
   }
+
+  /**
+   * Accept an invitation as a brand-new user, atomically.
+   *
+   * In ONE transaction this re-validates the invitation, creates the `users`
+   * row, inserts the `org_members` row with the invite's role, and stamps
+   * `acceptedAt`. If any step fails the whole transaction rolls back, so a
+   * late validation failure (expired / already-accepted / concurrently
+   * revoked) can NEVER leave an orphaned, passworded user row behind — which
+   * is the bug this method exists to prevent.
+   *
+   * The caller hashes the password and passes the hash in (so argon2 work
+   * happens outside the DB transaction, keeping the txn short).
+   *
+   *  - Unknown token → `InvitationNotFoundError`.
+   *  - `expiresAt` in the past → `InvitationExpiredError`.
+   *  - Already accepted → `InvitationAlreadyAcceptedError`.
+   *  - Email registered concurrently (unique violation) →
+   *    `EmailAlreadyRegisteredError`.
+   */
+  async acceptAsNewUser(
+    token: string,
+    input: { name: string; passwordHash: string },
+  ): Promise<{ userId: string; organizationId: string; role: 'admin' | 'member' }> {
+    try {
+      return await this.db.transaction(async (tx) => {
+        // Re-validate the invitation inside the txn.
+        const [inv] = await tx
+          .select()
+          .from(schema.invitations)
+          .where(eq(schema.invitations.token, token))
+          .limit(1);
+        if (!inv) throw new InvitationNotFoundError();
+        if (inv.acceptedAt) throw new InvitationAlreadyAcceptedError();
+        if (inv.expiresAt.getTime() <= Date.now()) throw new InvitationExpiredError();
+
+        const orgId = inv.organizationId;
+        const role = inv.role as 'admin' | 'member';
+
+        // Create the user row (same insert shape as UsersRepo.create).
+        const [user] = await tx
+          .insert(schema.users)
+          .values({
+            email: normalizeEmail(inv.email),
+            name: input.name,
+            passwordHash: input.passwordHash,
+          })
+          .returning({ id: schema.users.id });
+        if (!user) throw new Error('Failed to insert user');
+
+        // Join them to the org with the invitation's role.
+        await tx
+          .insert(schema.orgMembers)
+          .values({ organizationId: orgId, userId: user.id, role });
+
+        // Stamp acceptedAt — NOW() for a consistent server clock.
+        await tx
+          .update(schema.invitations)
+          .set({ acceptedAt: sql`NOW()` })
+          .where(eq(schema.invitations.id, inv.id));
+
+        return { userId: user.id, organizationId: orgId, role };
+      });
+    } catch (err) {
+      // A concurrent signup with the same email surfaces as a Postgres unique
+      // violation (23505) on users.email — translate to a clean 409 signal
+      // instead of a 500.
+      if (isUniqueViolation(err)) throw new EmailAlreadyRegisteredError();
+      throw err;
+    }
+  }
+}
+
+/** True when `err` is a Postgres unique-constraint violation (SQLSTATE 23505). */
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: unknown }).code === '23505'
+  );
 }
