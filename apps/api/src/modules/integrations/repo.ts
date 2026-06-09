@@ -4,7 +4,9 @@ import { schema } from '@dealflow/db';
 import { decryptSecret, encryptSecret } from '../../lib/crypto.js';
 import type {
   AttachmentCacheDays,
+  EngineMailerConfigInput,
   PublicAIProviderConfig,
+  PublicEmailIntegration,
   PublicIntegrations,
   PublicSmtpConfig,
   UpdateIntegrationsInput,
@@ -24,6 +26,12 @@ interface StoredSmtp {
   fromName?: string;
 }
 
+interface StoredEngineMailer {
+  apiKey: string; // encrypted
+  fromName: string;
+  fromEmail: string;
+}
+
 interface StoredEmail {
   attachmentCacheDays?: string;
 }
@@ -33,6 +41,7 @@ interface StoredIntegrations {
   gemini?: StoredAIProvider | null;
   grok?: StoredAIProvider | null;
   smtp?: StoredSmtp | null;
+  engineMailer?: StoredEngineMailer | null;
   email?: StoredEmail;
 }
 
@@ -50,11 +59,18 @@ export interface DecryptedSmtp {
   fromName?: string;
 }
 
+export interface DecryptedEngineMailer {
+  apiKey: string;
+  fromName: string;
+  fromEmail: string;
+}
+
 export interface DecryptedIntegrations {
   anthropic: DecryptedAIProvider | null;
   gemini: DecryptedAIProvider | null;
   grok: DecryptedAIProvider | null;
   smtp: DecryptedSmtp | null;
+  engineMailer: DecryptedEngineMailer | null;
 }
 
 /**
@@ -77,6 +93,47 @@ export class OrgIntegrationsRepo {
       gemini: this.decryptAI(stored.gemini),
       grok: this.decryptAI(stored.grok),
       smtp: this.decryptSmtp(stored.smtp),
+      engineMailer: this.decryptEngineMailer(stored.engineMailer),
+    };
+  }
+
+  /**
+   * Save the org's EngineMailer config. When `input.apiKey` is omitted/blank,
+   * the existing encrypted key is preserved (unchanged-when-blank, matching the
+   * old SMTP password behavior).
+   */
+  async saveEngineMailer(orgId: string, input: EngineMailerConfigInput): Promise<void> {
+    const current = await this.loadStored(orgId);
+    const existing = current.engineMailer ?? null;
+    const apiKey =
+      input.apiKey && input.apiKey.length > 0
+        ? encryptSecret(input.apiKey, this.encryptionKey)
+        : existing?.apiKey;
+    if (!apiKey) {
+      throw new Error('EngineMailer apiKey is required on first configuration');
+    }
+    const next: StoredIntegrations = {
+      ...current,
+      engineMailer: { apiKey, fromName: input.fromName, fromEmail: input.fromEmail },
+    };
+    await this.db
+      .update(schema.organizations)
+      .set({ integrations: next as unknown as Record<string, unknown>, updatedAt: new Date() })
+      .where(eq(schema.organizations.id, orgId));
+  }
+
+  /** Masked EngineMailer view for the Settings UI (never returns the real key). */
+  async getMaskedEmail(orgId: string): Promise<PublicEmailIntegration> {
+    const stored = await this.loadStored(orgId);
+    const em = this.decryptEngineMailer(stored.engineMailer);
+    if (!em) {
+      return { connected: false, fromName: null, fromEmail: null, keyHint: null };
+    }
+    return {
+      connected: true,
+      fromName: em.fromName,
+      fromEmail: em.fromEmail,
+      keyHint: `••••${em.apiKey.slice(-4)}`,
     };
   }
 
@@ -188,6 +245,17 @@ export class OrgIntegrationsRepo {
       pass: decryptSecret(stored.pass, this.encryptionKey),
       fromEmail: stored.fromEmail,
       fromName: stored.fromName,
+    };
+  }
+
+  private decryptEngineMailer(
+    stored: StoredEngineMailer | null | undefined,
+  ): DecryptedEngineMailer | null {
+    if (!stored) return null;
+    return {
+      apiKey: decryptSecret(stored.apiKey, this.encryptionKey),
+      fromName: stored.fromName,
+      fromEmail: stored.fromEmail,
     };
   }
 }

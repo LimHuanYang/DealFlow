@@ -118,3 +118,62 @@ describe('OrgIntegrationsRepo', () => {
     expect(out.gemini?.apiKey).toBe('g-first');
   });
 });
+
+describe('OrgIntegrationsRepo — EngineMailer', () => {
+  let testDb: TestDatabase;
+  let repo: OrgIntegrationsRepo;
+  let orgId: string;
+
+  beforeAll(async () => {
+    testDb = await startTestPostgres();
+    repo = new OrgIntegrationsRepo(testDb.db, TEST_KEY);
+    const [org] = await testDb.db
+      .insert(schema.organizations)
+      .values({ name: 'EM Co', slug: `em-${Date.now()}` })
+      .returning();
+    orgId = org!.id;
+  }, 30_000);
+
+  afterAll(() => testDb.stop());
+
+  it('engineMailer is null for a fresh org', async () => {
+    expect((await repo.getDecrypted(orgId)).engineMailer).toBeNull();
+  });
+
+  it('saveEngineMailer round-trips and stores the apiKey encrypted', async () => {
+    await repo.saveEngineMailer(orgId, {
+      apiKey: 'em-secret-7Q4a',
+      fromName: 'Acme Sales',
+      fromEmail: 'crm@acme.com',
+    });
+    const out = await repo.getDecrypted(orgId);
+    expect(out.engineMailer).toEqual({
+      apiKey: 'em-secret-7Q4a',
+      fromName: 'Acme Sales',
+      fromEmail: 'crm@acme.com',
+    });
+    const [row] = await testDb.db
+      .select({ integrations: schema.organizations.integrations })
+      .from(schema.organizations)
+      .where(eq(schema.organizations.id, orgId))
+      .limit(1);
+    expect(JSON.stringify(row!.integrations)).not.toContain('em-secret-7Q4a');
+  });
+
+  it('omitting apiKey on update keeps the existing key, updates other fields', async () => {
+    await repo.saveEngineMailer(orgId, { fromName: 'Acme Renamed', fromEmail: 'hello@acme.com' });
+    const out = await repo.getDecrypted(orgId);
+    expect(out.engineMailer?.apiKey).toBe('em-secret-7Q4a'); // unchanged
+    expect(out.engineMailer?.fromName).toBe('Acme Renamed');
+    expect(out.engineMailer?.fromEmail).toBe('hello@acme.com');
+  });
+
+  it('getMaskedEmail exposes a key hint but never the real key', async () => {
+    const masked = await repo.getMaskedEmail(orgId);
+    expect(masked.connected).toBe(true);
+    expect(masked.fromName).toBe('Acme Renamed');
+    expect(masked.fromEmail).toBe('hello@acme.com');
+    expect(masked.keyHint).toMatch(/7Q4a$/);
+    expect(JSON.stringify(masked)).not.toContain('em-secret-7Q4a');
+  });
+});
