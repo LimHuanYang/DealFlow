@@ -22,7 +22,6 @@ const envSchema = z
     // `${PUBLIC_WEB_URL}/invite/<token>`). Defaults to the same origin as
     // CORS_ORIGIN so dev keeps working without setting a new var.
     PUBLIC_WEB_URL: z.string().url().default('http://localhost:5173'),
-    EMAIL_TRACKING_SECRET: z.string().min(32).optional(),
     // Shared secret embedded in the EngineMailer webhook callback URL as
     // `?key=<secret>` (EngineMailer has no HMAC signing). Verified on every
     // inbound POST to /api/v1/webhooks/engine-mailer.
