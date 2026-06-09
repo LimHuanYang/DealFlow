@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DealFlow — Email settings (free vs Pro)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --indigo:#4f46e5;--indigo-700:#4338ca;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;
+    --slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;
+    --slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;
+    --green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;--red-600:#dc2626;
+    --amber-500:#f59e0b;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.16);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .board{max-width:680px;margin:0 auto;padding:40px 24px 120px}
+  .board>h1{font-size:24px;letter-spacing:-.02em;margin:0 0 4px}
+  .board>.sub{color:var(--slate-500);font-size:14px;margin:0 0 8px}
+  .caption{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:32px 0 12px}
+  .ic{width:16px;height:16px;display:inline-block;vertical-align:-3px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .ic.sm{width:14px;height:14px;vertical-align:-2px}
+
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+  .card h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:9px}
+  .card .desc{color:var(--slate-500);font-size:13px;margin:0 0 16px}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .pill.ok{background:var(--green-100);color:var(--green-700)}
+  .pill.pro{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff}
+  .pill.warn{background:var(--amber-100);color:var(--amber-700)}
+  .pill.free{background:var(--slate-100);color:var(--slate-500)}
+
+  label.f{display:block;font-size:12.5px;font-weight:600;color:var(--slate-600);margin:14px 0 6px}
+  label.f:first-of-type{margin-top:0}
+  .req{color:var(--red-600)}
+  .inp{width:100%;border:1px solid var(--slate-300);border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:inherit;background:#fff}
+  .inp:focus-visible{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-50)}
+  .inp.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--slate-700)}
+  .hint{font-size:11.5px;color:var(--slate-400);margin-top:5px}
+  .readonly{display:flex;align-items:center;gap:8px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:9px 11px;font-size:13px;color:var(--slate-600)}
+  .readonly code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#fff;border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px;font-size:12px;color:var(--slate-700)}
+  .foot{display:flex;align-items:center;gap:10px;margin-top:18px}
+  .btn{border:none;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .btn-primary{background:var(--indigo);color:#fff} .btn-primary:hover{background:var(--indigo-700)}
+  .btn-ghost{background:#fff;border:1px solid var(--slate-200);color:var(--slate-700)}
+  .btn-pro{background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff}
+  .saved{font-size:12.5px;color:var(--green-700);font-weight:500;display:inline-flex;align-items:center;gap:5px}
+  .configured{display:flex;align-items:center;gap:8px;background:var(--green-100);border:1px solid #86efac;border-radius:9px;padding:9px 12px;font-size:13px;color:#14532d;margin-bottom:16px}
+
+  /* locked upgrade card */
+  .upsell{position:relative;border:1px solid var(--slate-200);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow);margin-bottom:16px}
+  .upsell .top{display:flex;align-items:flex-start;gap:13px;padding:18px 20px}
+  .upsell .badge-ic{flex-shrink:0;width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#fef3c7,#fde68a);color:#b45309;display:flex;align-items:center;justify-content:center}
+  .upsell h3{margin:0 0 2px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .upsell p{margin:0;font-size:13px;color:var(--slate-500)}
+  .upsell .benefits{list-style:none;margin:12px 0 0;padding:0 20px}
+  .upsell .benefits li{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--slate-600);padding:3px 0}
+  .upsell .benefits .ic{color:var(--green-700);flex-shrink:0;margin-top:1px}
+  .upsell .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--slate-100);background:var(--slate-50);padding:13px 20px;margin-top:14px}
+  .upsell .price{font-size:12.5px;color:var(--slate-500)}
+  .upsell .price b{color:var(--slate-900);font-size:14px}
+
+  /* preview of locked fields (disabled) */
+  .locked-fields{padding:0 20px 4px;position:relative}
+  .locked-fields .inp,.locked-fields .readonly{opacity:.5;pointer-events:none}
+  .locked-fields::after{content:"";position:absolute;inset:0}
+
+  /* DNS table (unlocked) */
+  .dns{margin-top:6px;border:1px solid var(--slate-200);border-radius:9px;overflow:hidden}
+  .dns .dh{background:var(--amber-100);color:var(--amber-700);font-size:11.5px;font-weight:600;padding:7px 11px;display:flex;align-items:center;gap:6px}
+  table.dnsrec{width:100%;border-collapse:collapse;font-size:11px}
+  table.dnsrec th{background:var(--slate-50);text-align:left;padding:6px 9px;color:var(--slate-500);font-size:10px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  table.dnsrec td{padding:6px 9px;border-top:1px solid var(--slate-100);color:var(--slate-700);font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+  .copybtn{background:#fff;border:1px solid var(--slate-300);border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;color:var(--indigo-700);cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+
+  .note{font-size:12.5px;color:var(--slate-500);margin:8px 2px 0;padding-left:10px;border-left:2px solid var(--slate-300)}
+
+  /* modal */
+  .modalwrap{background:rgba(15,23,42,.45);border-radius:14px;padding:28px;display:flex;justify-content:center}
+  .modal{width:420px;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);padding:24px;text-align:center}
+  .modal .crown{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#f97316);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+  .modal h3{margin:0 0 6px;font-size:18px}
+  .modal p{margin:0 0 16px;font-size:13px;color:var(--slate-500)}
+  .modal .benefits{text-align:left;list-style:none;margin:0 0 18px;padding:0}
+  .modal .benefits li{display:flex;gap:8px;font-size:13px;color:var(--slate-700);padding:4px 0}
+  .modal .benefits .ic{color:var(--green-700);flex-shrink:0;margin-top:2px}
+  .modal .btn-pro{width:100%;justify-content:center;padding:11px;font-size:14px}
+  .modal .skip{margin-top:10px;font-size:12.5px;color:var(--slate-400);background:none;border:none;cursor:pointer}
+</style>
+</head>
+<body>
+<main class="board">
+  <h1>Settings → Email · free baseline + Pro custom domain</h1>
+  <p class="sub">Option A is free for everyone. Option B (your own From domain) is a Pro upgrade. Designed with ui-ux-pro-max: locked-state clarity, progressive disclosure, one primary CTA, SVG icons, AA contrast.</p>
+
+  <!-- STATE 1: FREE ORG -->
+  <div class="caption">State 1 · Free org — sending works; custom domain is a locked upgrade</div>
+
+  <div class="card">
+    <h2>
+      <svg class="ic" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      Email <span class="pill ok"><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Connected</span>
+    </h2>
+    <p class="desc">DealFlow sends &amp; tracks email through EngineMailer. Opens and clicks are reported automatically.</p>
+
+    <div class="configured">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+      Connected · API key ending in <code style="background:rgba(255,255,255,.6);border-radius:4px;padding:1px 6px;font-family:ui-monospace">••••7Q4a</code>
+    </div>
+
+    <label class="f" for="fn">From name <span class="req">*</span></label>
+    <input class="inp" id="fn" value="Acme Sales" />
+    <div class="hint">The sender name recipients see.</div>
+
+    <label class="f" for="rt">Reply-To email <span class="req">*</span></label>
+    <input class="inp" id="rt" type="email" value="alice@acme.com" />
+    <div class="hint">Replies from recipients land here.</div>
+
+    <label class="f">Sending address</label>
+    <div class="readonly">
+      <svg class="ic" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <code>notifications@dealflow.app</code> — managed by DealFlow, no setup needed
+    </div>
+
+    <div class="foot">
+      <button class="btn btn-primary">Save</button>
+      <button class="btn btn-ghost">Send test email</button>
+      <span class="saved"><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Saved</span>
+    </div>
+  </div>
+
+  <!-- locked upgrade card -->
+  <div class="upsell">
+    <div class="top">
+      <div class="badge-ic">
+        <svg class="ic" style="width:20px;height:20px" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      </div>
+      <div>
+        <h3>Send from your own domain
+          <span class="pill pro"><svg class="ic sm" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pro</span>
+        </h3>
+        <p>Right now you send as <code style="font-family:ui-monospace;font-size:12px">notifications@dealflow.app</code>. Upgrade to send as <code style="font-family:ui-monospace;font-size:12px">hello@acme.com</code> — your brand in the inbox.</p>
+      </div>
+    </div>
+    <ul class="benefits">
+      <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Your own verified domain in the From address</li>
+      <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> DMARC-aligned — stronger deliverability &amp; trust</li>
+      <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Guided DNS setup with one-click verify</li>
+    </ul>
+    <div class="bar">
+      <span class="price"><b>$12</b> / org / month · cancel anytime</span>
+      <button class="btn btn-pro"><svg class="ic sm" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg> Upgrade to Pro</button>
+    </div>
+  </div>
+  <p class="note">The locked card explains the <em>benefit</em> (not just "locked"), shows the price up-front, uses a lock icon + "Pro" text (not colour alone), and keeps a single primary action. The free card stays fully usable — the paywall never blocks sending.</p>
+
+  <!-- STATE 2: UPGRADE PROMPT -->
+  <div class="caption">State 2 · Clicking "Upgrade to Pro" — confirm dialog</div>
+  <div class="modalwrap">
+    <div class="modal">
+      <div class="crown"><svg class="ic" style="width:24px;height:24px" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></div>
+      <h3>Upgrade Acme to Pro</h3>
+      <p>Unlock custom sending domains and branded email for your whole organization.</p>
+      <ul class="benefits">
+        <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Send from <b>your own domain</b> (hello@acme.com)</li>
+        <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Guided DNS verification</li>
+        <li><svg class="ic sm" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Everything in Free, plus priority support</li>
+      </ul>
+      <button class="btn btn-pro">Continue to payment — $12/mo</button>
+      <div><button class="skip">Maybe later</button></div>
+    </div>
+  </div>
+  <p class="note">Honest scope note: DealFlow has <strong>no billing system yet</strong>. The "Upgrade" CTA is a hook — the spec will treat the Pro entitlement as a simple per-org <code style="font-size:11px">plan</code> flag for now (owner-only), and wiring real payment (Stripe) is a separate future project. The UI is built so dropping Stripe Checkout in later is a one-line href change.</p>
+
+  <!-- STATE 3: PRO UNLOCKED -->
+  <div class="caption">State 3 · Pro org — custom domain unlocked &amp; verifying</div>
+  <div class="card">
+    <h2>
+      <svg class="ic" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+      Custom sending domain <span class="pill pro">Pro</span> <span class="pill warn" style="margin-left:auto"><svg class="ic sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Verifying</span>
+    </h2>
+    <p class="desc">Send from your own domain. Add the records below to your DNS, then verify.</p>
+
+    <label class="f" for="fe">From email <span class="req">*</span></label>
+    <input class="inp" id="fe" type="email" value="hello@acme.com" />
+    <div class="hint">Must be on a domain you can edit DNS for.</div>
+
+    <div class="dns">
+      <div class="dh"><svg class="ic sm" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Add these 3 records to <b>acme.com</b>, then Verify</div>
+      <table class="dnsrec">
+        <thead><tr><th>Type</th><th>Host</th><th>Value</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>TXT</td><td>acme.com</td><td>v=spf1 include:enginemailer.net ~all</td><td><button class="copybtn"><svg class="ic sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button></td></tr>
+          <tr><td>CNAME</td><td>em._domainkey</td><td>dkim.enginemailer.net</td><td><button class="copybtn"><svg class="ic sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button></td></tr>
+          <tr><td>CNAME</td><td>bounce</td><td>rp.enginemailer.net</td><td><button class="copybtn"><svg class="ic sm" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hint">DNS changes can take a few minutes to propagate. We re-check automatically.</div>
+
+    <div class="foot">
+      <button class="btn btn-primary"><svg class="ic sm" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Verify domain</button>
+      <button class="btn btn-ghost">Send test email</button>
+    </div>
+  </div>
+  <p class="note">Once verified, the <span class="pill warn" style="font-size:10px">Verifying</span> pill flips to <span class="pill ok" style="font-size:10px">Verified</span> and the From-email becomes active. Members see this card read-only; only owner/admin can change it. (A downgraded org falls back to the free shared-domain sending automatically — no email is ever lost.)</p>
+</main>
+</body>
+</html>

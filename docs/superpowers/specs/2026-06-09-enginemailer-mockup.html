@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DealFlow — EngineMailer integration (mockup)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --indigo:#4f46e5; --indigo-700:#4338ca; --indigo-50:#eef2ff; --indigo-100:#e0e7ff;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155; --slate-900:#0f172a;
+    --green-100:#dcfce7; --green-700:#15803d; --amber-100:#fef3c7; --amber-700:#b45309;
+    --red-50:#fef2f2; --red-100:#fee2e2; --red-600:#dc2626; --red-700:#b91c1c;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .board{max-width:920px;margin:0 auto;padding:40px 24px 120px}
+  .board>h1{font-size:25px;letter-spacing:-.02em;margin:0 0 4px}
+  .board>.sub{color:var(--slate-500);font-size:14px;margin:0 0 26px}
+  .caption{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:34px 0 10px;display:flex;align-items:center;gap:8px}
+  .caption .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--indigo);color:#fff;font-size:11px}
+  .frame{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;padding:22px}
+  .note{font-size:12.5px;color:var(--slate-500);margin:8px 2px 0;padding-left:10px;border-left:2px solid var(--slate-300)}
+
+  /* settings card */
+  .settings{max-width:620px;margin:0 auto}
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+  .card h2{font-size:16px;margin:0 0 2px;display:flex;align-items:center;gap:10px}
+  .card .desc{color:var(--slate-500);font-size:13px;margin:0 0 16px}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .pill.ok{background:var(--green-100);color:var(--green-700)}
+  .pill.warn{background:var(--amber-100);color:var(--amber-700)}
+  .pill.off{background:var(--slate-100);color:var(--slate-500)}
+  label.f{display:block;font-size:12.5px;font-weight:600;color:var(--slate-600);margin:14px 0 6px}
+  label.f:first-of-type{margin-top:0}
+  .input{width:100%;border:1px solid var(--slate-300);border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:inherit;background:#fff}
+  .input:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-50)}
+  .input.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--slate-700)}
+  .hint{font-size:11.5px;color:var(--slate-400);margin-top:5px}
+  .hint a{color:var(--indigo-700);text-decoration:none;font-weight:500}
+  .row2{display:flex;gap:12px}.row2>div{flex:1}
+  .btn{border:none;border-radius:9px;padding:9px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn-primary{background:var(--indigo);color:#fff}
+  .btn-ghost{background:#fff;border:1px solid var(--slate-200);color:var(--slate-700)}
+  .foot{display:flex;align-items:center;gap:10px;margin-top:18px}
+  .savedmsg{font-size:12.5px;color:var(--green-700);font-weight:500}
+  .configured{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-100);border:1px solid #86efac;border-radius:9px;padding:9px 12px;font-size:13px;color:#14532d;margin-bottom:14px}
+  .configured code{background:rgba(255,255,255,.6);border-radius:4px;padding:1px 6px;font-size:12px}
+
+  .webhook-box{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:12px;margin-top:6px}
+  .webhook-url{display:flex;gap:8px;align-items:center}
+  .webhook-url .input{flex:1}
+  .copybtn{white-space:nowrap;background:#fff;border:1px solid var(--slate-300);border-radius:8px;padding:8px 11px;font-size:12px;font-weight:600;color:var(--indigo-700);cursor:pointer}
+  .steps{margin:10px 0 0;padding:0;list-style:none;counter-reset:s;font-size:12.5px;color:var(--slate-600)}
+  .steps li{position:relative;padding:4px 0 4px 26px}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:3px;width:18px;height:18px;border-radius:50%;background:var(--indigo-100);color:var(--indigo-700);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .fnode{flex:1;min-width:150px;background:#fff;border:1px solid var(--slate-200);border-radius:11px;padding:13px;text-align:center;position:relative;box-shadow:var(--shadow)}
+  .fnode .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 7px;font-size:15px}
+  .fnode .t{font-size:12.5px;font-weight:600;color:var(--slate-900)}
+  .fnode .d{font-size:11px;color:var(--slate-500);margin-top:2px}
+  .arrow{display:flex;align-items:center;justify-content:center;width:30px;color:var(--slate-300);font-size:18px;flex:0 0 30px}
+  .lane{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-400);margin:0 0 8px}
+  .lane.send{color:var(--indigo-700)} .lane.track{color:var(--green-700)}
+
+  /* before/after */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .ba .col{background:#fff;border:1px solid var(--slate-200);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+  .ba .col h3{margin:0 0 10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .ba .rm h3{color:var(--red-700)} .ba .add h3{color:var(--green-700)}
+  .ba li{font-size:12.5px;color:var(--slate-700);padding:4px 0 4px 22px;position:relative;list-style:none}
+  .ba ul{margin:0;padding:0}
+  .ba .rm li::before{content:"\2212";position:absolute;left:4px;color:var(--red-600);font-weight:700}
+  .ba .add li::before{content:"+";position:absolute;left:4px;color:var(--green-700);font-weight:700}
+  .ba code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:var(--slate-100);padding:1px 5px;border-radius:4px}
+
+  /* event table */
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden}
+  thead th{text-align:left;background:var(--slate-50);color:var(--slate-500);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:9px 14px;border-bottom:1px solid var(--slate-200)}
+  td{padding:9px 14px;border-bottom:1px solid var(--slate-100);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:var(--slate-100);padding:1px 5px;border-radius:4px;color:#1e293b}
+  .evpill{font-size:11px;font-weight:600;border-radius:5px;padding:2px 7px}
+  .evpill.green{background:var(--green-100);color:var(--green-700)}
+  .evpill.slate{background:var(--slate-100);color:var(--slate-600)}
+  .evpill.red{background:var(--red-100);color:var(--red-700)}
+</style>
+</head>
+<body>
+<main class="board">
+  <h1>DealFlow — EngineMailer email integration</h1>
+  <p class="sub">Design mockup · replaces per-org Gmail SMTP with EngineMailer's REST API + native open/click webhooks (no pixel, no ngrok). 2026-06-09</p>
+
+  <!-- 1. SETTINGS SECTION -->
+  <div class="caption"><span class="n">1</span> Settings → Email (the new section, replacing SMTP) — CONNECTED state</div>
+  <div class="frame">
+    <div class="settings">
+      <div class="card">
+        <h2>Email (EngineMailer) <span class="pill ok">Connected</span></h2>
+        <p class="desc">DealFlow sends and tracks email through EngineMailer. Opens &amp; clicks are reported automatically — no tracking pixel to host.</p>
+
+        <div class="configured">
+          <span>✓ Connected · API key ending in <code>••••7Q4a</code> · sending as <code>hello@acme.com</code></span>
+          <button class="copybtn" style="color:var(--red-600);border-color:#fecaca">Disconnect</button>
+        </div>
+
+        <label class="f">EngineMailer API key</label>
+        <input class="input" type="password" value="enginemailer_live_key_placeholder" />
+        <div class="hint">Find it in EngineMailer → Settings → API Keys. <a href="#">Open EngineMailer dashboard →</a></div>
+
+        <div class="row2">
+          <div>
+            <label class="f">From name</label>
+            <input class="input" value="Acme Sales" />
+            <div class="hint">Shown as the sender name.</div>
+          </div>
+          <div>
+            <label class="f">From email</label>
+            <input class="input" value="hello@acme.com" />
+            <div class="hint">Must be a <strong>verified sender / domain</strong> in EngineMailer.</div>
+          </div>
+        </div>
+
+        <div class="foot">
+          <button class="btn btn-primary">Save</button>
+          <button class="btn btn-ghost">Send test email</button>
+          <span class="savedmsg">Saved ✓</span>
+        </div>
+      </div>
+
+      <!-- webhook subcard -->
+      <div class="card">
+        <h2>Open &amp; click tracking <span class="pill ok">Webhook active</span></h2>
+        <p class="desc">EngineMailer posts every open/click/bounce to DealFlow. Paste this URL once into your EngineMailer webhook settings.</p>
+        <div class="webhook-box">
+          <label class="f" style="margin-top:0">Your webhook URL</label>
+          <div class="webhook-url">
+            <input class="input mono" readonly value="https://api.dealflow.app/api/v1/webhooks/engine-mailer" />
+            <button class="copybtn">📋 Copy</button>
+          </div>
+          <ol class="steps">
+            <li>In EngineMailer → <strong>Webhooks</strong>, click <strong>Create webhook</strong>.</li>
+            <li>Paste the URL above; subscribe to <strong>Open</strong>, <strong>Click</strong>, <strong>Bounce</strong>, <strong>Spam</strong>.</li>
+            <li>Save. DealFlow verifies the signing key automatically.</li>
+          </ol>
+        </div>
+        <p class="hint" style="margin-top:10px">Last event received: <strong>2 minutes ago</strong> · 14 opens, 6 clicks tracked today.</p>
+      </div>
+    </div>
+  </div>
+  <p class="note">Empty state (not connected) shows just the API-key field + a "Connect EngineMailer" primary button; the From fields and webhook card appear after the key is saved. Owner/admin only (members can't edit integrations).</p>
+
+  <!-- 2. DATA FLOW -->
+  <div class="caption"><span class="n">2</span> How sending + tracking works now</div>
+  <div class="frame">
+    <p class="lane send">Sending — outbound</p>
+    <div class="flow">
+      <div class="fnode"><div class="ic" style="background:var(--indigo-50)">📤</div><div class="t">DealFlow API</div><div class="d">POST email via EngineMailer REST (API key)</div></div>
+      <div class="arrow">→</div>
+      <div class="fnode"><div class="ic" style="background:var(--indigo-50)">⚙️</div><div class="t">EngineMailer</div><div class="d">sends + injects its own tracking</div></div>
+      <div class="arrow">→</div>
+      <div class="fnode"><div class="ic" style="background:var(--green-100)">📬</div><div class="t">Recipient</div><div class="d">opens / clicks the email</div></div>
+    </div>
+    <p class="lane track" style="margin-top:20px">Tracking — inbound (replaces pixel + ngrok)</p>
+    <div class="flow">
+      <div class="fnode"><div class="ic" style="background:var(--green-100)">👁</div><div class="t">EngineMailer</div><div class="d">detects open/click</div></div>
+      <div class="arrow">→</div>
+      <div class="fnode"><div class="ic" style="background:var(--green-100)">🔗</div><div class="t">Webhook POST</div><div class="d">JSON → /webhooks/engine-mailer (signed)</div></div>
+      <div class="arrow">→</div>
+      <div class="fnode"><div class="ic" style="background:var(--indigo-50)">🗄️</div><div class="t">DealFlow</div><div class="d">match by activityId → bump openCount / clickCount</div></div>
+    </div>
+    <p class="note" style="margin-top:16px">Each outgoing email carries a DealFlow <code style="font-size:11px">activityId</code> in a custom header/tag; the webhook echoes it back so we update the right activity. Same <code style="font-size:11px">openCount/clickCount/firstOpenedAt</code> fields — just fed by webhook instead of a pixel. The Engagement timeline on the activity page is unchanged.</p>
+  </div>
+
+  <!-- 3. BEFORE / AFTER -->
+  <div class="caption"><span class="n">3</span> What changes in the codebase</div>
+  <div class="frame">
+    <div class="ba">
+      <div class="col rm">
+        <h3>🗑 Removed</h3>
+        <ul>
+          <li>SMTP section in Settings (Gmail/Outlook/Yahoo)</li>
+          <li><code>SmtpEmailProvider</code> + nodemailer wiring</li>
+          <li><code>/track/open/:token</code> &amp; <code>/track/click/:token</code></li>
+          <li><code>email-tracking-token.ts</code> (HMAC pixel tokens)</li>
+          <li>pixel/redirect injection in <code>email-html-wrap.ts</code></li>
+          <li>the <strong>ngrok</strong> dependency for tracking</li>
+        </ul>
+      </div>
+      <div class="col add">
+        <h3>✦ Added</h3>
+        <ul>
+          <li><code>EngineMailerEmailProvider</code> (REST via fetch)</li>
+          <li>EngineMailer block in <code>OrgIntegrationsRepo</code> (encrypted API key)</li>
+          <li><code>EngineMailerIntegrationSection</code> in Settings</li>
+          <li><code>POST /api/v1/webhooks/engine-mailer</code> (signed ingest)</li>
+          <li>webhook → activity mapper (open/click/bounce)</li>
+          <li>one-time migration prompt for orgs on old SMTP</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note" style="margin-top:14px">The <code style="font-size:11px">EmailProvider</code> interface and the per-org encrypted integrations store already exist — so this is mostly a new adapter + a webhook route, not new architecture.</p>
+  </div>
+
+  <!-- 4. EVENT MAPPING -->
+  <div class="caption"><span class="n">4</span> Webhook event → DealFlow mapping</div>
+  <table>
+    <thead><tr><th>EngineMailer event</th><th>DealFlow effect (on the matched activity)</th></tr></thead>
+    <tbody>
+      <tr><td><span class="evpill green">Open</span></td><td><code>openCount++</code>, set <code>firstOpenedAt</code> if null, <code>lastOpenedAt = now</code></td></tr>
+      <tr><td><span class="evpill green">Click</span></td><td><code>clickCount++</code>, store clicked URL + timestamp on the activity</td></tr>
+      <tr><td><span class="evpill slate">Delivered</span></td><td><code>deliveryStatus = 'delivered'</code></td></tr>
+      <tr><td><span class="evpill red">Bounce</span></td><td><code>deliveryStatus = 'bounced'</code> + surface on the email row</td></tr>
+      <tr><td><span class="evpill red">Spam / Complaint</span></td><td>flag the activity; stop further sends to that address (future)</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:12px"><strong>Accuracy caveat (unchanged by provider):</strong> opens are still pixel-based, so Apple Mail Privacy Protection &amp; image-blocking inflate/miss opens. Clicks are the trustworthy signal — the UI will lean on clicks.</p>
+</main>
+</body>
+</html>

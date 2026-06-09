@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DealFlow — Sender identity options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --indigo:#4f46e5;--indigo-700:#4338ca;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;
+    --slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;
+    --slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;
+    --green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;--red-600:#dc2626;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .board{max-width:980px;margin:0 auto;padding:40px 24px 120px}
+  .board>h1{font-size:25px;letter-spacing:-.02em;margin:0 0 4px}
+  .board>.sub{color:var(--slate-500);font-size:14px;margin:0 0 8px}
+  .tldr{background:var(--indigo-50);border:1px solid var(--indigo-100);border-radius:10px;padding:12px 14px;font-size:13.5px;color:#3730a3;margin:14px 0 8px}
+  .caption{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:30px 0 12px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .opt{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .opt>.h{padding:12px 16px;border-bottom:1px solid var(--slate-200);display:flex;align-items:center;gap:9px}
+  .opt>.h .tag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px}
+  .opt.a>.h{background:#eff6ff} .opt.a .tag{background:#dbeafe;color:#1d4ed8}
+  .opt.b>.h{background:#f0fdf4} .opt.b .tag{background:var(--green-100);color:var(--green-700)}
+  .opt>.h .ttl{font-size:14px;font-weight:600}
+  .opt .body{padding:16px}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.ok{background:var(--green-100);color:var(--green-700)} .pill.warn{background:var(--amber-100);color:var(--amber-700)}
+
+  /* email client header */
+  .mailhdr{border:1px solid var(--slate-200);border-radius:10px;padding:13px;background:var(--slate-50)}
+  .mailhdr .subj{font-size:14px;font-weight:600;margin-bottom:9px}
+  .mailrow{display:flex;align-items:center;gap:10px}
+  .mailrow .av{width:36px;height:36px;border-radius:50%;background:var(--indigo-100);color:var(--indigo-700);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+  .mailrow .who .nm{font-size:13.5px;font-weight:600;color:var(--slate-900)}
+  .mailrow .who .nm .via{font-weight:400;color:var(--slate-500);font-size:12px}
+  .mailrow .who .addr{font-size:12px;color:var(--slate-500)}
+  .mailrow .to{margin-left:auto;font-size:11px;color:var(--slate-400)}
+  .replyto{margin-top:9px;font-size:11.5px;color:var(--slate-500);border-top:1px dashed var(--slate-200);padding-top:8px}
+  .replyto b{color:var(--slate-700)}
+  .verdict{font-size:12.5px;margin-top:11px;padding:8px 11px;border-radius:8px}
+  .verdict.a{background:#eff6ff;color:#1e3a8a} .verdict.b{background:#f0fdf4;color:#14532d}
+
+  /* settings form */
+  label.f{display:block;font-size:12px;font-weight:600;color:var(--slate-600);margin:12px 0 5px}
+  label.f:first-child{margin-top:0}
+  .inp{width:100%;border:1px solid var(--slate-300);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff}
+  .inp.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+  .hint{font-size:11px;color:var(--slate-400);margin-top:4px}
+  .managed{font-size:12px;color:var(--slate-500);background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:8px 10px}
+  .managed code{background:#fff;border-radius:4px;padding:1px 5px;font-size:11px}
+  .dns{margin-top:6px;border:1px solid var(--slate-200);border-radius:8px;overflow:hidden}
+  .dns .dh{background:var(--amber-100);color:var(--amber-700);font-size:11px;font-weight:600;padding:6px 10px;display:flex;align-items:center;gap:6px}
+  table.dnsrec{width:100%;border-collapse:collapse;font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  table.dnsrec th{background:var(--slate-50);text-align:left;padding:5px 8px;color:var(--slate-500);font-family:Inter;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  table.dnsrec td{padding:5px 8px;border-top:1px solid var(--slate-100);color:var(--slate-700);word-break:break-all}
+  .btn{border:none;border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:12px}
+  .btn-primary{background:var(--indigo);color:#fff} .btn-ghost{background:#fff;border:1px solid var(--slate-300);color:var(--slate-700)}
+
+  /* compare table */
+  table.cmp{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden;margin-top:4px}
+  table.cmp th,table.cmp td{padding:9px 13px;border-bottom:1px solid var(--slate-100);text-align:left;vertical-align:top}
+  table.cmp thead th{background:var(--slate-50);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-500)}
+  table.cmp td:first-child{font-weight:500;color:var(--slate-600);width:30%}
+  table.cmp tr:last-child td{border-bottom:none}
+  .yes{color:var(--green-700);font-weight:600}.no{color:var(--red-600);font-weight:600}
+</style>
+</head>
+<body>
+<main class="board">
+  <h1>One EngineMailer key — how the "From" address works</h1>
+  <p class="sub">Both use a single shared DealFlow EngineMailer account. The difference is the <strong>visible From address</strong> your recipient sees.</p>
+  <div class="tldr">⚡ <strong>The rule:</strong> you can only send from a domain that's verified in the EngineMailer account. With one shared key, that's <em>your</em> domain by default — so Option A puts your domain in the From line (replies still go to the user via Reply-To), while Option B lets each org put <em>their own</em> domain in the From line, but only after they add DNS records.</p>
+
+  <!-- WHAT RECIPIENT SEES -->
+  <div class="caption">1 · What your recipient sees in their inbox</div>
+  <div class="cols">
+    <div class="opt a">
+      <div class="h"><span class="tag">OPTION A</span><span class="ttl">Shared domain + Reply-To</span></div>
+      <div class="body">
+        <div class="mailhdr">
+          <div class="subj">Following up on your Q3 proposal</div>
+          <div class="mailrow">
+            <span class="av">AS</span>
+            <div class="who">
+              <div class="nm">Acme Sales</div>
+              <div class="addr">notifications@dealflow.app</div>
+            </div>
+            <span class="to">to me ▾</span>
+          </div>
+          <div class="replyto">↩ Reply-To: <b>alice@acme.com</b> — hitting Reply goes to Alice, not DealFlow.</div>
+        </div>
+        <div class="verdict a">Recipient sees your DealFlow domain in the address, but the <b>name</b> is the org's and <b>replies reach the user</b>. No setup for the org.</div>
+      </div>
+    </div>
+
+    <div class="opt b">
+      <div class="h"><span class="tag">OPTION B</span><span class="ttl">Per-org verified domain</span></div>
+      <div class="body">
+        <div class="mailhdr">
+          <div class="subj">Following up on your Q3 proposal</div>
+          <div class="mailrow">
+            <span class="av">AS</span>
+            <div class="who">
+              <div class="nm">Acme Sales</div>
+              <div class="addr">alice@acme.com</div>
+            </div>
+            <span class="to">to me ▾</span>
+          </div>
+          <div class="replyto">↩ Reply-To: <b>alice@acme.com</b> — same domain, fully native.</div>
+        </div>
+        <div class="verdict b">Fully branded — the From address is the org's <b>own domain</b>. Requires the org to verify acme.com (DNS) once.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS UI -->
+  <div class="caption">2 · What the org configures in DealFlow → Settings → Email</div>
+  <div class="cols">
+    <div class="opt a">
+      <div class="h"><span class="tag">OPTION A</span><span class="ttl">Simple — name + reply-to</span> <span class="pill ok" style="margin-left:auto">Ready instantly</span></div>
+      <div class="body">
+        <label class="f">From name</label>
+        <input class="inp" value="Acme Sales" />
+        <label class="f">Reply-To email</label>
+        <input class="inp" value="alice@acme.com" />
+        <div class="hint">Replies from recipients go here.</div>
+        <label class="f">Sending address</label>
+        <div class="managed">🔒 <code>notifications@dealflow.app</code> — managed by DealFlow, nothing to set up.</div>
+        <button class="btn btn-primary">Save</button>
+        <button class="btn btn-ghost" style="margin-left:8px">Send test</button>
+      </div>
+    </div>
+
+    <div class="opt b">
+      <div class="h"><span class="tag">OPTION B</span><span class="ttl">Branded — verify your domain</span> <span class="pill warn" style="margin-left:auto">DNS setup</span></div>
+      <div class="body">
+        <label class="f">From name</label>
+        <input class="inp" value="Acme Sales" />
+        <label class="f">From email (your domain)</label>
+        <input class="inp" value="alice@acme.com" />
+        <div class="dns">
+          <div class="dh">⚠ Add these records to acme.com's DNS, then click Verify — <span class="pill warn">Pending</span></div>
+          <table class="dnsrec">
+            <thead><tr><th>Type</th><th>Name</th><th>Value</th></tr></thead>
+            <tbody>
+              <tr><td>TXT</td><td>acme.com</td><td>v=spf1 include:enginemailer… ~all</td></tr>
+              <tr><td>CNAME</td><td>em._domainkey.acme.com</td><td>dkim.enginemailer.net</td></tr>
+              <tr><td>CNAME</td><td>bounce.acme.com</td><td>rp.enginemailer.net</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary">Verify domain</button>
+        <button class="btn btn-ghost" style="margin-left:8px">Send test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="caption">3 · Side by side</div>
+  <table class="cmp">
+    <thead><tr><th></th><th>A · Shared domain + Reply-To</th><th>B · Per-org verified domain</th></tr></thead>
+    <tbody>
+      <tr><td>Visible From address</td><td>notifications@<b>dealflow.app</b></td><td><b>alice@acme.com</b> (their own)</td></tr>
+      <tr><td>Per-org setup</td><td class="yes">None — works immediately</td><td>Add 2–3 DNS records + verify</td></tr>
+      <tr><td>Replies reach the user</td><td class="yes">Yes (Reply-To)</td><td class="yes">Yes (native)</td></tr>
+      <tr><td>Branding</td><td>DealFlow domain</td><td class="yes">Org's own domain</td></tr>
+      <tr><td>Deliverability</td><td>Good — your domain's reputation</td><td>Good — DMARC-aligned to their domain</td></tr>
+      <tr><td>Can use a random Gmail/Yahoo as From?</td><td class="no">No</td><td class="no">No</td></tr>
+      <tr><td>Build cost</td><td class="yes">Low (2 fields)</td><td>Higher (domain-verify flow + EngineMailer multi-domain — to confirm)</td></tr>
+      <tr><td>Best for</td><td>Solo / fast start</td><td>Teams wanting branded mail</td></tr>
+    </tbody>
+  </table>
+  <p class="sub" style="margin-top:16px">Recommendation: ship <b>A</b> first (instant, zero friction), add <b>B</b> as an upgrade for orgs that want their own domain. Neither can send from an address the org doesn't control (e.g. a personal @gmail.com) — that always fails SPF/DKIM.</p>
+</main>
+</body>
+</html>
