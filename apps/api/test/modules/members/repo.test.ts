@@ -11,6 +11,7 @@ import {
   MembersRepo,
   LastOwnerError,
   OwnerRoleChangeForbiddenError,
+  AdminCannotManageError,
   MemberNotFoundError,
 } from '../../../src/modules/members/repo.js';
 
@@ -146,28 +147,107 @@ describe('MembersRepo', () => {
   });
 
   it('removeMember removing the sole owner throws LastOwnerError', async () => {
-    await expect(repo.removeMember(orgId, owner.userId)).rejects.toBeInstanceOf(LastOwnerError);
+    await expect(repo.removeMember(orgId, owner.userId, 'owner')).rejects.toBeInstanceOf(
+      LastOwnerError,
+    );
   });
 
   it('removeMember removing a non-owner succeeds; listMembers no longer includes them', async () => {
     // Seed a fresh member just for this case so we don't disturb the baseline.
     const tmp = await seedMemberInOrg(orgId, 'member');
-    await repo.removeMember(orgId, tmp.userId);
+    await repo.removeMember(orgId, tmp.userId, 'owner');
     const rows = await repo.listMembers(orgId);
     expect(rows.map((r) => r.userId)).not.toContain(tmp.userId);
   });
 
   it('removeMember succeeds against one of two owners', async () => {
     const secondOwner = await seedMemberInOrg(orgId, 'owner');
-    await repo.removeMember(orgId, secondOwner.userId);
+    await repo.removeMember(orgId, secondOwner.userId, 'owner');
     const owners = await repo.countOwners(orgId);
     expect(owners).toBe(1);
   });
 
   it('removeMember on a non-existent user throws MemberNotFoundError', async () => {
-    await expect(repo.removeMember(orgId, randomUUID())).rejects.toBeInstanceOf(
+    await expect(repo.removeMember(orgId, randomUUID(), 'owner')).rejects.toBeInstanceOf(
       MemberNotFoundError,
     );
+  });
+
+  // ── Fix 1: an admin may only manage `member`-role users ──────────────────
+
+  it('changeRole: admin demoting another admin throws AdminCannotManageError', async () => {
+    const otherAdmin = await seedMemberInOrg(orgId, 'admin');
+    await expect(
+      repo.changeRole(orgId, otherAdmin.userId, 'member', 'admin'),
+    ).rejects.toBeInstanceOf(AdminCannotManageError);
+    // Cleanup.
+    await repo.removeMember(orgId, otherAdmin.userId, 'owner');
+  });
+
+  it('changeRole: admin modifying an owner throws AdminCannotManageError', async () => {
+    await expect(
+      repo.changeRole(orgId, owner.userId, 'member', 'admin'),
+    ).rejects.toBeInstanceOf(AdminCannotManageError);
+  });
+
+  it('changeRole: admin changing a member to admin still succeeds', async () => {
+    const tmp = await seedMemberInOrg(orgId, 'member');
+    await repo.changeRole(orgId, tmp.userId, 'admin', 'admin');
+    const [row] = await testDb.db
+      .select({ role: schema.orgMembers.role })
+      .from(schema.orgMembers)
+      .where(
+        and(
+          eq(schema.orgMembers.organizationId, orgId),
+          eq(schema.orgMembers.userId, tmp.userId),
+        ),
+      );
+    expect(row?.role).toBe('admin');
+    await repo.removeMember(orgId, tmp.userId, 'owner');
+  });
+
+  it('changeRole: owner demoting another admin still succeeds', async () => {
+    const tmp = await seedMemberInOrg(orgId, 'admin');
+    await repo.changeRole(orgId, tmp.userId, 'member', 'owner');
+    const [row] = await testDb.db
+      .select({ role: schema.orgMembers.role })
+      .from(schema.orgMembers)
+      .where(
+        and(
+          eq(schema.orgMembers.organizationId, orgId),
+          eq(schema.orgMembers.userId, tmp.userId),
+        ),
+      );
+    expect(row?.role).toBe('member');
+    await repo.removeMember(orgId, tmp.userId, 'owner');
+  });
+
+  it('removeMember: admin removing another admin throws AdminCannotManageError', async () => {
+    const otherAdmin = await seedMemberInOrg(orgId, 'admin');
+    await expect(
+      repo.removeMember(orgId, otherAdmin.userId, 'admin'),
+    ).rejects.toBeInstanceOf(AdminCannotManageError);
+    await repo.removeMember(orgId, otherAdmin.userId, 'owner');
+  });
+
+  it('removeMember: admin removing an owner throws AdminCannotManageError', async () => {
+    await expect(
+      repo.removeMember(orgId, owner.userId, 'admin'),
+    ).rejects.toBeInstanceOf(AdminCannotManageError);
+  });
+
+  it('removeMember: admin removing a regular member still succeeds', async () => {
+    const tmp = await seedMemberInOrg(orgId, 'member');
+    await repo.removeMember(orgId, tmp.userId, 'admin');
+    const rows = await repo.listMembers(orgId);
+    expect(rows.map((r) => r.userId)).not.toContain(tmp.userId);
+  });
+
+  it('removeMember: owner removing an admin still succeeds', async () => {
+    const tmp = await seedMemberInOrg(orgId, 'admin');
+    await repo.removeMember(orgId, tmp.userId, 'owner');
+    const rows = await repo.listMembers(orgId);
+    expect(rows.map((r) => r.userId)).not.toContain(tmp.userId);
   });
 
   it('leave as sole owner throws LastOwnerError', async () => {

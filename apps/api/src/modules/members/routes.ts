@@ -13,6 +13,7 @@ import {
 import { requireOrg } from '../../plugins/require-org.js';
 import { requireRole } from '../../plugins/require-role.js';
 import {
+  AdminCannotManageError,
   LastOwnerError,
   MemberNotFoundError,
   MembersRepo,
@@ -75,6 +76,18 @@ export async function registerMembersRoutes(
       const orgId = req.session!.currentOrgId!;
       const actorRole = req.membership!.role;
 
+      // A user cannot change their own role (spec §3). Block before the repo so
+      // an owner can't accidentally demote themselves out of the last-owner
+      // seat via this endpoint either.
+      if (params.data.userId === req.user!.id) {
+        return reply.status(400).send({
+          error: {
+            code: ERROR_CODES.CANNOT_CHANGE_OWN_ROLE,
+            message: 'You cannot change your own role.',
+          },
+        });
+      }
+
       try {
         await repo.changeRole(orgId, params.data.userId, body.data.role, actorRole);
         return reply.send({ ok: true });
@@ -84,7 +97,10 @@ export async function registerMembersRoutes(
             error: { code: ERROR_CODES.LAST_OWNER, message: err.message },
           });
         }
-        if (err instanceof OwnerRoleChangeForbiddenError) {
+        if (
+          err instanceof OwnerRoleChangeForbiddenError ||
+          err instanceof AdminCannotManageError
+        ) {
           return reply.status(403).send({
             error: { code: ERROR_CODES.FORBIDDEN, message: err.message },
           });
@@ -123,13 +139,20 @@ export async function registerMembersRoutes(
         });
       }
 
+      const actorRole = req.membership!.role;
+
       try {
-        await repo.removeMember(orgId, params.data.userId);
+        await repo.removeMember(orgId, params.data.userId, actorRole);
         return reply.status(204).send();
       } catch (err) {
         if (err instanceof LastOwnerError) {
           return reply.status(409).send({
             error: { code: ERROR_CODES.LAST_OWNER, message: err.message },
+          });
+        }
+        if (err instanceof AdminCannotManageError) {
+          return reply.status(403).send({
+            error: { code: ERROR_CODES.FORBIDDEN, message: err.message },
           });
         }
         if (err instanceof MemberNotFoundError) {

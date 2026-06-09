@@ -26,6 +26,11 @@ export const ERROR_CODES = {
    * admin DELETE route. They must use POST /members/leave instead.
    */
   CANNOT_REMOVE_SELF: 'CANNOT_REMOVE_SELF',
+  /**
+   * Team management: a user tried to change their own role via the member
+   * PATCH route. Self-role-change is forbidden (spec §3).
+   */
+  CANNOT_CHANGE_OWN_ROLE: 'CANNOT_CHANGE_OWN_ROLE',
   /** Invitations: target email already belongs to an active org member. */
   ALREADY_MEMBER: 'ALREADY_MEMBER',
   /** Invitations: an unexpired invitation for the same email already exists. */

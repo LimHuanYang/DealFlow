@@ -131,16 +131,19 @@ describe('Members + orgs HTTP routes', () => {
       expect(res.json().error.code).toBe('NOT_FOUND');
     });
 
-    it('409 LAST_OWNER when demoting the sole owner', async () => {
-      // Owner of org A is the only owner.
+    it('400 CANNOT_CHANGE_OWN_ROLE when the sole owner tries to demote themselves', async () => {
+      // The self-role-change guard (Fix 4) fires before the repo, so a sole
+      // owner demoting *themselves* now gets 400 rather than 409 LAST_OWNER.
+      // (The last-owner invariant is still enforced in the repo for any
+      // non-self path and is covered directly in repo.test.ts.)
       const res = await app.inject({
         method: 'PATCH',
         url: `/api/v1/orgs/current/members/${owner.userId}`,
         headers: { cookie: owner.cookie },
         payload: { role: 'admin' },
       });
-      expect(res.statusCode).toBe(409);
-      expect(res.json().error.code).toBe('LAST_OWNER');
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('CANNOT_CHANGE_OWN_ROLE');
     });
 
     it('403 FORBIDDEN when an admin tries to grant the owner role', async () => {
@@ -153,6 +156,51 @@ describe('Members + orgs HTTP routes', () => {
       });
       expect(res.statusCode).toBe(403);
       expect(res.json().error.code).toBe('FORBIDDEN');
+    });
+
+    it('403 FORBIDDEN when an admin tries to demote another admin', async () => {
+      const otherAdmin = await seedMemberInOrg(orgAId, 'admin');
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/orgs/current/members/${otherAdmin.userId}`,
+        headers: { cookie: admin.cookie },
+        payload: { role: 'member' },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.code).toBe('FORBIDDEN');
+    });
+
+    it('403 FORBIDDEN when an admin tries to modify an owner', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/orgs/current/members/${owner.userId}`,
+        headers: { cookie: admin.cookie },
+        payload: { role: 'member' },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.code).toBe('FORBIDDEN');
+    });
+
+    it('owner CAN demote another admin (200)', async () => {
+      const otherAdmin = await seedMemberInOrg(orgAId, 'admin');
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/orgs/current/members/${otherAdmin.userId}`,
+        headers: { cookie: owner.cookie },
+        payload: { role: 'member' },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('400 CANNOT_CHANGE_OWN_ROLE when the owner PATCHes their own role', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/orgs/current/members/${owner.userId}`,
+        headers: { cookie: owner.cookie },
+        payload: { role: 'admin' },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('CANNOT_CHANGE_OWN_ROLE');
     });
   });
 
@@ -176,16 +224,38 @@ describe('Members + orgs HTTP routes', () => {
       expect(body.members.map((m) => m.userId)).not.toContain(victim.userId);
     });
 
-    it('409 LAST_OWNER when admin removes the sole owner', async () => {
-      // Admin tries to delete the sole owner — must hit LAST_OWNER, not
-      // CANNOT_REMOVE_SELF (different caller than target).
+    it('403 FORBIDDEN when an admin removes an owner', async () => {
+      // Admin tries to delete the owner. Per spec §3 an admin may not touch
+      // owners at all, so this is a 403 (the admin guard fires before the
+      // last-owner check).
       const res = await app.inject({
         method: 'DELETE',
         url: `/api/v1/orgs/current/members/${owner.userId}`,
         headers: { cookie: admin.cookie },
       });
-      expect(res.statusCode).toBe(409);
-      expect(res.json().error.code).toBe('LAST_OWNER');
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.code).toBe('FORBIDDEN');
+    });
+
+    it('403 FORBIDDEN when an admin removes another admin', async () => {
+      const otherAdmin = await seedMemberInOrg(orgAId, 'admin');
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/orgs/current/members/${otherAdmin.userId}`,
+        headers: { cookie: admin.cookie },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error.code).toBe('FORBIDDEN');
+    });
+
+    it('owner CAN remove an admin (204)', async () => {
+      const otherAdmin = await seedMemberInOrg(orgAId, 'admin');
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/orgs/current/members/${otherAdmin.userId}`,
+        headers: { cookie: owner.cookie },
+      });
+      expect([200, 204]).toContain(res.statusCode);
     });
 
     it('400 CANNOT_REMOVE_SELF when admin tries to delete themselves', async () => {
