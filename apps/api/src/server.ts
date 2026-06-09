@@ -109,6 +109,14 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
       trackingSecret: env.EMAIL_TRACKING_SECRET,
     });
 
+    const { registerEngineMailerWebhook } = await import(
+      './modules/emails/engine-mailer-webhook.js'
+    );
+    await registerEngineMailerWebhook(app, {
+      db: opts.db,
+      webhookSecret: env.ENGINE_MAILER_WEBHOOK_SECRET,
+    });
+
     const { registerIntegrationsRoutes } = await import('./modules/integrations/routes.js');
     await registerIntegrationsRoutes(app, { db: opts.db, encryptionKey });
 
