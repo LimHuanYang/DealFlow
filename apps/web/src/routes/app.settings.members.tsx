@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { Check, Minus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { OrgRole, PublicInvitation, PublicMember } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
@@ -95,6 +95,79 @@ function PendingPill({ role }: { role: OrgRole }) {
     <span className="inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
       Pending · {role.charAt(0).toUpperCase() + role.slice(1)}
     </span>
+  );
+}
+
+// ───────────────────────────── role permissions ─────────────────────────────
+
+const ROLE_CAPABILITIES: ReadonlyArray<{
+  label: string;
+  owner: boolean;
+  admin: boolean;
+  member: boolean;
+}> = [
+  { label: 'Use the CRM · create records', owner: true, admin: true, member: true },
+  { label: 'View every record in the org', owner: true, admin: true, member: true },
+  { label: 'Edit & delete records they own', owner: true, admin: true, member: true },
+  { label: 'Edit & delete any record', owner: true, admin: true, member: false },
+  { label: "Reassign a record's owner", owner: true, admin: true, member: false },
+  { label: 'Invite, remove & set member roles', owner: true, admin: true, member: false },
+  { label: 'Org settings, integrations & custom fields', owner: true, admin: true, member: false },
+  { label: 'Manage admins & transfer ownership', owner: true, admin: false, member: false },
+];
+
+function CapCell({ allowed }: { allowed: boolean }) {
+  return allowed ? (
+    <Check className="mx-auto h-4 w-4 text-emerald-600" strokeWidth={2.5} aria-label="Yes" />
+  ) : (
+    <Minus className="mx-auto h-4 w-4 text-slate-300" strokeWidth={2.5} aria-label="No" />
+  );
+}
+
+function RolePermissions() {
+  return (
+    <section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <header className="border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          What each role can do
+        </h2>
+      </header>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-100">
+            <th className="px-4 py-2.5 text-left text-xs font-medium text-slate-500">Capability</th>
+            <th className="px-3 py-2.5 text-center">
+              <RolePill role="owner" />
+            </th>
+            <th className="px-3 py-2.5 text-center">
+              <RolePill role="admin" />
+            </th>
+            <th className="px-3 py-2.5 text-center">
+              <RolePill role="member" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {ROLE_CAPABILITIES.map((c) => (
+            <tr key={c.label} className="border-b border-slate-100 last:border-0">
+              <td className="px-4 py-2.5 text-slate-700">{c.label}</td>
+              <td className="px-3 py-2.5">
+                <CapCell allowed={c.owner} />
+              </td>
+              <td className="px-3 py-2.5">
+                <CapCell allowed={c.admin} />
+              </td>
+              <td className="px-3 py-2.5">
+                <CapCell allowed={c.member} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-400">
+        Members can view everything but can only edit or delete records they own.
+      </p>
+    </section>
   );
 }
 
@@ -237,6 +310,8 @@ function MembersPage() {
           </table>
         </section>
       )}
+
+      <RolePermissions />
 
       <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} />
     </main>
