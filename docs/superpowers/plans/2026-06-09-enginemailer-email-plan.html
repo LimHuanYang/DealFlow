@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EngineMailer Email — implementation plan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  :root{
+    --indigo:#4f46e5;--indigo-700:#4338ca;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;
+    --slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;
+    --slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;
+    --green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;
+    --red-100:#fee2e2;--red-700:#b91c1c;--violet-100:#ede9fe;--violet-700:#6d28d9;
+    --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+  .board{max-width:960px;margin:0 auto;padding:40px 24px 120px}
+  h1{font-size:25px;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--slate-500);font-size:14px;margin:0 0 18px}
+  .meta{display:flex;flex-wrap:wrap;gap:16px;background:#fff;border:1px solid var(--slate-200);border-radius:12px;box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px}
+  .meta div{font-size:13px;color:var(--slate-600)}
+  .meta b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-400);margin-bottom:2px}
+  .tldr{background:var(--indigo-50);border:1px solid var(--indigo-100);border-radius:10px;padding:12px 14px;font-size:13px;color:#3730a3;margin-bottom:18px}
+  .caption{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:26px 0 10px}
+
+  .spike{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:18px}
+  .spike .t{font-size:14px;font-weight:600;margin:0 0 3px;color:#92400e}
+  .spike p{margin:0;font-size:12.5px;color:var(--slate-600)}
+  .spike code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:var(--amber-100);padding:1px 5px;border-radius:4px}
+
+  /* file map */
+  .files{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px}
+  .fcol{background:#fff;border:1px solid var(--slate-200);border-radius:12px;box-shadow:var(--shadow);padding:13px 14px}
+  .fcol h3{margin:0 0 8px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.04em}
+  .fcol.create h3{color:var(--green-700)} .fcol.modify h3{color:var(--indigo-700)} .fcol.delete h3{color:var(--red-700)}
+  .fcol li{list-style:none;font-size:11.5px;color:var(--slate-600);padding:2px 0;font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+  .fcol ul{margin:0;padding:0}
+
+  /* task cards */
+  .task{background:#fff;border:1px solid var(--slate-200);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:11px;display:flex;gap:13px}
+  .task .num{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:var(--indigo);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .task.t0 .num{background:#f59e0b}
+  .task .body{flex:1;min-width:0}
+  .task h3{margin:0 0 3px;font-size:14.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .task .desc{font-size:12.5px;color:var(--slate-600);margin:0 0 7px}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tg{font-size:10.5px;font-weight:600;border-radius:5px;padding:2px 7px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .tg.pkg{background:var(--violet-100);color:var(--violet-700)}
+  .tg.tdd{background:var(--green-100);color:var(--green-700)}
+  .tg.del{background:var(--red-100);color:var(--red-700)}
+  .tg.db{background:var(--amber-100);color:var(--amber-700)}
+  .tg.web{background:var(--indigo-100);color:var(--indigo-700)}
+  .phase{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-400);margin:20px 0 9px;display:flex;align-items:center;gap:8px}
+  .phase::after{content:"";flex:1;height:1px;background:var(--slate-200)}
+  .legend{font-size:11.5px;color:var(--slate-500);margin-top:14px;display:flex;gap:14px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+<main class="board">
+  <h1>EngineMailer Email Integration — implementation plan</h1>
+  <p class="sub">13 tasks · TDD (red → green → commit) · subagent-driven · committed to <code>docs/superpowers/plans/2026-06-09-enginemailer-email.md</code></p>
+
+  <div class="meta">
+    <div><b>Goal</b>Replace SMTP with EngineMailer REST send + native open/click webhooks; gate custom domain behind a Pro plan flag.</div>
+  </div>
+  <div class="meta">
+    <div><b>Architecture</b>New provider behind the existing EmailProvider seam · webhook → existing activity counters · plan flag for Pro.</div>
+    <div><b>Stack</b>Fastify 5 · Drizzle/Supabase · React 19 · Vitest · Zod</div>
+    <div><b>Execution</b>subagent-driven-development (fresh agent + 2-stage review / task)</div>
+  </div>
+
+  <div class="tldr">⚡ <strong>Task 0 is a spike, not code.</strong> EngineMailer's exact send/webhook contract isn't confirmed from public docs — Task 0 captures it (endpoint, the custom-ref that round-trips to the webhook, the signature scheme, multi-domain support). Tasks 3 &amp; 8 are written against a clearly-marked <em>default assumed contract</em> isolated to one constants block, so the spike's findings change only those values.</div>
+
+  <div class="spike">
+    <div class="num" style="width:30px;height:30px;border-radius:9px;background:#f59e0b;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">0</div>
+    <div>
+      <p class="t">Spike — confirm EngineMailer API contract</p>
+      <p>Make one real send + capture one live webhook. Record: send endpoint/auth/body fields · the <code>CustomRef</code> field that echoes back · click-URL field · <code>X-EngineMailer-Signature</code> (HMAC) vs key-in-URL · can one account hold multiple verified domains (Option B). Output → <code>research/2026-06-09-enginemailer-api-findings.md</code>.</p>
+    </div>
+  </div>
+
+  <!-- FILE MAP -->
+  <div class="caption">File map</div>
+  <div class="files">
+    <div class="fcol create">
+      <h3>✦ Create</h3>
+      <ul>
+        <li>email/providers/engine-mailer.ts</li>
+        <li>emails/engine-mailer-webhook.ts</li>
+        <li>emails/webhook-event-mapper.ts</li>
+        <li>shared/email-integration.ts</li>
+        <li>web/…/email-integration-section.tsx</li>
+        <li>web/…/custom-domain-section.tsx</li>
+        <li>db/migrations/0013_org_plan…sql</li>
+      </ul>
+    </div>
+    <div class="fcol modify">
+      <h3>✎ Modify</h3>
+      <ul>
+        <li>email/factory.ts · index.ts</li>
+        <li>shared/error.ts · index.ts</li>
+        <li>integrations/repo.ts · routes.ts</li>
+        <li>orgs/routes.ts (plan)</li>
+        <li>lib/email.ts · email-html-wrap.ts</li>
+        <li>server.ts · env.ts · .env.example</li>
+        <li>web/integrations/api.ts · settings route</li>
+      </ul>
+    </div>
+    <div class="fcol delete">
+      <h3>− Delete</h3>
+      <ul>
+        <li>emails/tracking-routes.ts</li>
+        <li>lib/email-tracking-token.ts</li>
+        <li>email/providers/smtp.ts (+test)</li>
+        <li>web/…/smtp-integration-section.tsx</li>
+        <li class="" style="color:var(--slate-400)">+ ngrok-for-tracking dependency</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="caption">Tasks</div>
+
+  <div class="phase">Foundation</div>
+  <div class="task"><div class="num">1</div><div class="body">
+    <h3>organizations.plan column <span class="tags"><span class="tg db">db migration</span></span></h3>
+    <p class="desc">Hand-authored migration 0013 (free/pro CHECK) + ensure activities.external_id. Apply &amp; verify on Supabase.</p>
+  </div></div>
+  <div class="task"><div class="num">2</div><div class="body">
+    <h3>Shared schemas &amp; error codes <span class="tags"><span class="tg pkg">shared</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">engineMailerConfigSchema (custom needs fromEmail; apiKey optional on update), orgPlanSchema, PublicEmailIntegration, CustomDomainStatus + 4 error codes.</p>
+  </div></div>
+
+  <div class="phase">Sending (replaces SMTP)</div>
+  <div class="task"><div class="num">3</div><div class="body">
+    <h3>EngineMailerEmailProvider <span class="tags"><span class="tg pkg">email</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">REST send via fetch; maps fields, sends activityId as CustomRef, returns messageId, throws on non-2xx. (Contract from Task 0.)</p>
+  </div></div>
+  <div class="task"><div class="num">4</div><div class="body">
+    <h3>Factory swap — remove SMTP <span class="tags"><span class="tg pkg">email</span><span class="tg tdd">TDD</span><span class="tg del">delete</span></span></h3>
+    <p class="desc">EmailConfig.engineMailer, buildEmailProvider/describeEmail/isEmailEnabled; delete SmtpEmailProvider + nodemailer.</p>
+  </div></div>
+  <div class="task"><div class="num">5</div><div class="body">
+    <h3>OrgIntegrationsRepo — engineMailer block <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">Encrypted apiKey (AES-256-GCM), unchanged-when-blank on update, masked keyHint for the UI. Replaces the smtp block.</p>
+  </div></div>
+  <div class="task"><div class="num">6</div><div class="body">
+    <h3>Integration routes — save + test email <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">PATCH /integrations (owner/admin; member 403) returns masked; POST /test-email via the provider.</p>
+  </div></div>
+  <div class="task"><div class="num">7</div><div class="body">
+    <h3>Org plan flag endpoint <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">PATCH /orgs/current accepts plan (owner-only) — the temporary "upgrade" path until Stripe.</p>
+  </div></div>
+
+  <div class="phase">Tracking (replaces pixel + ngrok)</div>
+  <div class="task"><div class="num">8</div><div class="body">
+    <h3>Webhook mapper + signed ingestion route <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">Pure mapEngineMailerEvent (open/click/delivery/null) + POST /webhooks/engine-mailer: HMAC-verify (401 on bad sig), match by CustomRef→activity, bump openCount/clickCount, always 200.</p>
+  </div></div>
+  <div class="task"><div class="num">9</div><div class="body">
+    <h3>Wire send sites — stamp externalId, drop pixel <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">Persist messageId as activity.externalId; stop injecting the tracking pixel/redirects into HTML.</p>
+  </div></div>
+  <div class="task"><div class="num">10</div><div class="body">
+    <h3>Remove /track endpoints + HMAC token <span class="tags"><span class="tg pkg">api</span><span class="tg tdd">TDD</span><span class="tg del">delete</span></span></h3>
+    <p class="desc">Delete tracking-routes + email-tracking-token; assert /track/open/:token → 404; drop ngrok-for-tracking.</p>
+  </div></div>
+
+  <div class="phase">UI (ui-ux-pro-max)</div>
+  <div class="task"><div class="num">11</div><div class="body">
+    <h3>Email settings section (free) <span class="tags"><span class="tg web">web</span><span class="tg del">delete SMTP UI</span></span></h3>
+    <p class="desc">Free card: API key, From name, Reply-To, managed sending address, Save + Send test. Owner/admin gated. Replaces SMTP section.</p>
+  </div></div>
+  <div class="task"><div class="num">12</div><div class="body">
+    <h3>Custom-domain section (Pro upsell + verify) <span class="tags"><span class="tg web">web</span><span class="tg pkg">api</span><span class="tg tdd">TDD</span></span></h3>
+    <p class="desc">free → locked upsell + upgrade dialog; pro → DNS records + Verify. Endpoints 403 PLAN_UPGRADE_REQUIRED when not pro.</p>
+  </div></div>
+
+  <div class="phase">Ship</div>
+  <div class="task"><div class="num">13</div><div class="body">
+    <h3>Cross-package validation + browser pass + tag <span class="tags"><span class="tg tdd">verify</span></span></h3>
+    <p class="desc">pnpm -r tsc + tests green · live smoke (send + webhook increments + /track 404 + upsell/verify) · update checklist · tag.</p>
+  </div></div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:#f59e0b"></span> spike</span>
+    <span><span class="dot" style="background:var(--green-700)"></span> TDD</span>
+    <span><span class="dot" style="background:var(--amber-700)"></span> db</span>
+    <span><span class="dot" style="background:var(--violet-700)"></span> package</span>
+    <span><span class="dot" style="background:var(--indigo-700)"></span> web</span>
+    <span><span class="dot" style="background:var(--red-700)"></span> delete</span>
+  </div>
+</main>
+</body>
+</html>
