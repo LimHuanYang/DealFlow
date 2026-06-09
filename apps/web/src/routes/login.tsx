@@ -15,11 +15,27 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+/**
+ * True only for a safe *internal* path: a single leading slash followed by a
+ * non-slash character, and no backslashes anywhere. This rejects open-redirect
+ * vectors that a naive `startsWith('/')` check lets through:
+ *   - `//evil.com`     → protocol-relative URL (browser navigates off-site)
+ *   - `/\evil.com`     → some browsers normalize `\` to `/`, yielding `//`
+ *   - `https://evil…`  → absolute URL (no leading slash, already excluded)
+ */
+function isSafeInternalPath(path: string): boolean {
+  return path.startsWith('/') && !path.startsWith('//') && !path.includes('\\');
+}
+
 const searchSchema = z.object({
   // Where to send the user after a successful sign-in. Used by the
-  // accept-invite flow (`/login?next=/invite/<token>`). Only relative paths
-  // are honored to avoid open-redirects.
-  next: z.string().optional(),
+  // accept-invite flow (`/login?next=/invite/<token>`). Only safe internal
+  // paths are honored to avoid open-redirects; anything else is dropped here
+  // so the rest of the component never sees a hostile value.
+  next: z
+    .string()
+    .optional()
+    .transform((v) => (v && isSafeInternalPath(v) ? v : undefined)),
 });
 
 export const Route = createFileRoute('/login')({
@@ -41,7 +57,7 @@ function LoginPage() {
     setServerError(null);
     try {
       await login(values);
-      const dest = next && next.startsWith('/') ? next : '/app';
+      const dest = next && isSafeInternalPath(next) ? next : '/app';
       await router.navigate({ to: dest });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Unknown error');

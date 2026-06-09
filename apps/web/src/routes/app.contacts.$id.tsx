@@ -206,6 +206,7 @@ function ContactDetailPage() {
           void update.mutateAsync({ customFields: { [fieldId]: value } });
         }}
         card
+        disabled={!canWrite}
       />
 
       <ActivityFeed parent={{ contactId: c.id }} />

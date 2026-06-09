@@ -17,6 +17,13 @@ interface Props {
   showHeader?: boolean;
   /** When true, render inside a bordered card (used on detail pages). */
   card?: boolean;
+  /**
+   * When true, render the fields read-only: inputs are disabled and no
+   * changes can be made. Used on detail pages when the viewer lacks write
+   * access to the record (`disabled={!canWrite}`), so they don't see
+   * editable inputs that the server would 403.
+   */
+  disabled?: boolean;
 }
 
 export function CustomFieldsBlock({
@@ -25,6 +32,7 @@ export function CustomFieldsBlock({
   onChange,
   showHeader = true,
   card = false,
+  disabled = false,
 }: Props) {
   const q = useCustomFields(entityType);
   if (q.isPending) return null;
@@ -49,6 +57,7 @@ export function CustomFieldsBlock({
           def={def}
           value={values[def.id]}
           onChange={(v) => onChange(def.id, v)}
+          disabled={disabled}
         />
       ))}
     </section>
@@ -59,10 +68,12 @@ function FieldRow({
   def,
   value,
   onChange,
+  disabled,
 }: {
   def: CustomFieldDefinition;
   value: unknown;
   onChange: (v: unknown) => void;
+  disabled: boolean;
 }) {
   return (
     <div>
@@ -70,7 +81,7 @@ function FieldRow({
         {def.name}
         {def.required && <span className="ml-1 text-red-500">*</span>}
       </Label>
-      <FieldInput def={def} value={value} onChange={onChange} id={`cf-${def.id}`} />
+      <FieldInput def={def} value={value} onChange={onChange} id={`cf-${def.id}`} disabled={disabled} />
     </div>
   );
 }
@@ -80,11 +91,13 @@ function FieldInput({
   value,
   onChange,
   id,
+  disabled,
 }: {
   def: CustomFieldDefinition;
   value: unknown;
   onChange: (v: unknown) => void;
   id: string;
+  disabled: boolean;
 }) {
   const t: CustomFieldType = def.type;
   if (t === 'long_text') {
@@ -94,7 +107,8 @@ function FieldInput({
         rows={3}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
-        className="block w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        disabled={disabled}
+        className="block w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
       />
     );
   }
@@ -105,6 +119,8 @@ function FieldInput({
         type="checkbox"
         checked={!!value}
         onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="disabled:cursor-not-allowed disabled:opacity-60"
       />
     );
   }
@@ -114,7 +130,8 @@ function FieldInput({
         id={id}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
-        className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300"
+        disabled={disabled}
+        className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
       >
         <option value="">— Select —</option>
         {def.options?.values.map((o) => (
@@ -135,8 +152,9 @@ function FieldInput({
             <button
               key={o.key}
               type="button"
+              disabled={disabled}
               onClick={() => onChange(on ? arr.filter((k) => k !== o.key) : [...arr, o.key])}
-              className={`rounded-md border px-2 py-1 text-xs ${on ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700'}`}
+              className={`rounded-md border px-2 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60 ${on ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-200 bg-white text-neutral-700'}`}
             >
               {o.label}
             </button>
@@ -162,6 +180,7 @@ function FieldInput({
       id={id}
       type={htmlType}
       value={value == null ? '' : String(value)}
+      disabled={disabled}
       onChange={(e) => {
         const raw = e.target.value;
         if (raw === '') return onChange(null);

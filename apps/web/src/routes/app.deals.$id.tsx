@@ -166,6 +166,7 @@ function DealDetailPage() {
           void update.mutateAsync({ customFields: { [fieldId]: value } });
         }}
         card
+        disabled={!canWrite}
       />
 
       <ActivityFeed parent={{ dealId: d.id }} />
