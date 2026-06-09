@@ -7,6 +7,8 @@ interface CompanySelectProps {
   onChange: (companyId: string | null) => void;
   id?: string;
   className?: string;
+  /** Disable the select (e.g. gate by role/ownership). */
+  disabled?: boolean;
 }
 
 /**
@@ -14,7 +16,7 @@ interface CompanySelectProps {
  * company. Emits `null` for the "— No company —" option so callers can clear
  * the association. Companies are loaded via the shared list hook.
  */
-export function CompanySelect({ value, onChange, id, className }: CompanySelectProps) {
+export function CompanySelect({ value, onChange, id, className, disabled }: CompanySelectProps) {
   const { data, isPending } = useCompaniesList();
   const companies = data?.items ?? [];
 
@@ -27,7 +29,7 @@ export function CompanySelect({ value, onChange, id, className }: CompanySelectP
         'w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm disabled:opacity-60'
       }
       value={value ?? ''}
-      disabled={isPending}
+      disabled={isPending || disabled}
       onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
     >
       <option value="">— No company —</option>

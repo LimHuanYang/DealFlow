@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { CircleDollarSign, Trash2 } from 'lucide-react';
+import { CircleDollarSign, Lock, Trash2 } from 'lucide-react';
 import { CURRENCY_OPTIONS, isSupportedCurrency } from '@dealflow/shared';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -8,6 +8,7 @@ import { DetailPageHeader } from '@/components/detail-page-header';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useDeal, useUpdateDeal, useDeleteDeal } from '@/features/deals/api';
+import { useMembership } from '@/features/members/api';
 import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
 import { formatCurrency } from '@/lib/format';
 
@@ -27,6 +28,7 @@ function DealDetailPage() {
   const { data, isPending, error } = useDeal(id);
   const update = useUpdateDeal(id);
   const del = useDeleteDeal();
+  const { isAdmin, currentUserId } = useMembership();
 
   if (isPending) return <main className="p-8 text-sm text-slate-500">Loading…</main>;
   if (error || !data) {
@@ -34,6 +36,8 @@ function DealDetailPage() {
   }
 
   const d = data.deal;
+  const ownerUserId = d.ownerUserId ?? null;
+  const canWrite = isAdmin || (currentUserId !== null && currentUserId === ownerUserId);
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-6 py-8">
@@ -51,24 +55,44 @@ function DealDetailPage() {
             >
               {d.status}
             </span>
-            <ConfirmDialog
-              trigger={
-                <Button variant="outline" size="default" data-testid="delete-deal">
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
-              }
-              title="Delete this deal?"
-              description={`"${d.name}" will be permanently removed. This can't be undone.`}
-              confirmLabel="Delete deal"
-              destructive
-              onConfirm={() =>
-                del.mutate(d.id, { onSuccess: () => void navigate({ to: '/app/deals' }) })
-              }
-            />
+            {canWrite ? (
+              <ConfirmDialog
+                trigger={
+                  <Button variant="outline" size="default" data-testid="delete-deal">
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                }
+                title="Delete this deal?"
+                description={`"${d.name}" will be permanently removed. This can't be undone.`}
+                confirmLabel="Delete deal"
+                destructive
+                onConfirm={() =>
+                  del.mutate(d.id, { onSuccess: () => void navigate({ to: '/app/deals' }) })
+                }
+              />
+            ) : (
+              <Button
+                variant="outline"
+                size="default"
+                data-testid="delete-deal"
+                disabled
+                title="Only the owner or an admin can delete this record."
+              >
+                <Lock className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
           </div>
         }
       />
+
+      {!canWrite && (
+        <div className="flex items-center gap-2 text-sm text-slate-500" data-testid="lock-note">
+          <Lock className="h-4 w-4 shrink-0" />
+          You can view this record, but only the owner or an admin can edit it.
+        </div>
+      )}
 
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -79,6 +103,7 @@ function DealDetailPage() {
           <dd>
             <InlineEdit
               value={d.name}
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ name: v });
               }}
@@ -89,6 +114,7 @@ function DealDetailPage() {
             <InlineEdit
               value={d.value == null ? null : String(d.value)}
               placeholder="0"
+              disabled={!canWrite}
               onSave={async (v) => {
                 const num = v ? Number(v) : undefined;
                 await update.mutateAsync({ value: num });
@@ -100,12 +126,13 @@ function DealDetailPage() {
           <dd>
             <select
               value={d.currency}
+              disabled={!canWrite}
               onChange={async (e) => {
                 const next = e.target.value;
                 if (!isSupportedCurrency(next) || next === d.currency) return;
                 await update.mutateAsync({ currency: next });
               }}
-              className="h-9 w-full max-w-sm rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm"
+              className="h-9 w-full max-w-sm rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
               data-testid="deal-currency-select"
             >
               {CURRENCY_OPTIONS.map((o) => (
@@ -120,6 +147,7 @@ function DealDetailPage() {
             <InlineEdit
               value={d.expectedCloseDate}
               placeholder="YYYY-MM-DD"
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ expectedCloseDate: v || undefined });
               }}

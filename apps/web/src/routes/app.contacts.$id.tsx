@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { Mail, Trash2 } from 'lucide-react';
+import { Lock, Mail, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { InlineEdit } from '@/components/inline-edit';
@@ -7,6 +7,7 @@ import { CompanySelect } from '@/features/companies/company-select';
 import { ActivityFeed } from '@/features/activities/activity-feed';
 import { CustomFieldsBlock } from '@/features/custom-fields/custom-fields-block';
 import { useContact, useUpdateContact, useDeleteContact } from '@/features/contacts/api';
+import { useMembership } from '@/features/members/api';
 import { useEmailStatus } from '@/features/emails/api';
 import { ComposeEmailDialog } from '@/features/emails/compose-email-dialog';
 import { EmailEngagementRollup } from '@/features/emails/email-engagement-rollup';
@@ -22,6 +23,7 @@ function ContactDetailPage() {
   const update = useUpdateContact(id);
   const del = useDeleteContact();
   const emailStatus = useEmailStatus();
+  const { isAdmin, currentUserId } = useMembership();
 
   if (isPending) return <main className="p-8 text-sm text-slate-500">Loading…</main>;
   if (error || !data) {
@@ -29,6 +31,8 @@ function ContactDetailPage() {
   }
 
   const c = data.contact;
+  const ownerUserId = c.ownerUserId ?? null;
+  const canWrite = isAdmin || (currentUserId !== null && currentUserId === ownerUserId);
   const fullName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unnamed contact';
   const avatar = (
     [c.firstName?.[0], c.lastName?.[0]].filter(Boolean).join('') || c.firstName.slice(0, 2)
@@ -68,23 +72,43 @@ function ContactDetailPage() {
               }
             />
           )}
-          <ConfirmDialog
-            trigger={
-              <Button variant="outline" size="default" data-testid="delete-contact">
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            }
-            title="Delete this contact?"
-            description={`"${fullName}" will be permanently removed. This can't be undone.`}
-            confirmLabel="Delete contact"
-            destructive
-            onConfirm={() =>
-              del.mutate(c.id, { onSuccess: () => void navigate({ to: '/app/contacts' }) })
-            }
-          />
+          {canWrite ? (
+            <ConfirmDialog
+              trigger={
+                <Button variant="outline" size="default" data-testid="delete-contact">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              }
+              title="Delete this contact?"
+              description={`"${fullName}" will be permanently removed. This can't be undone.`}
+              confirmLabel="Delete contact"
+              destructive
+              onConfirm={() =>
+                del.mutate(c.id, { onSuccess: () => void navigate({ to: '/app/contacts' }) })
+              }
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="default"
+              data-testid="delete-contact"
+              disabled
+              title="Only the owner or an admin can delete this record."
+            >
+              <Lock className="h-4 w-4" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
+
+      {!canWrite && (
+        <div className="flex items-center gap-2 text-sm text-slate-500" data-testid="lock-note">
+          <Lock className="h-4 w-4 shrink-0" />
+          You can view this record, but only the owner or an admin can edit it.
+        </div>
+      )}
 
       {/* Details card */}
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -96,6 +120,7 @@ function ContactDetailPage() {
           <dd>
             <InlineEdit
               value={c.firstName}
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ firstName: v });
               }}
@@ -106,6 +131,7 @@ function ContactDetailPage() {
             <InlineEdit
               value={c.lastName}
               placeholder="—"
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ lastName: v || undefined });
               }}
@@ -117,6 +143,7 @@ function ContactDetailPage() {
             <InlineEdit
               value={c.email}
               placeholder="user@example.com"
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ email: v || undefined });
               }}
@@ -128,6 +155,7 @@ function ContactDetailPage() {
             <InlineEdit
               value={c.phone}
               placeholder="—"
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ phone: v || undefined });
               }}
@@ -139,6 +167,7 @@ function ContactDetailPage() {
             <InlineEdit
               value={c.title}
               placeholder="—"
+              disabled={!canWrite}
               onSave={async (v) => {
                 await update.mutateAsync({ title: v || undefined });
               }}
@@ -149,6 +178,7 @@ function ContactDetailPage() {
           <dd className="flex items-center gap-3">
             <CompanySelect
               value={c.companyId}
+              disabled={!canWrite}
               onChange={(companyId) => {
                 void update.mutateAsync({ companyId });
               }}
