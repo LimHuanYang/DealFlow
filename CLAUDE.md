@@ -13,8 +13,9 @@
 - Keep commit messages conventional (`feat:`, `fix:`, `docs:`, `ci:`, …) and end
   them with the `Co-Authored-By` trailer.
 - **Never commit secrets.** `apps/api/.env` is gitignored and holds real keys
-  (DATABASE_URL/Supabase, INTEGRATION_ENCRYPTION_KEY, EMAIL_TRACKING_SECRET,
-  AI/SMTP creds) — keep it that way; `.env.example` files hold placeholders only.
+  (DATABASE_URL/Supabase, INTEGRATION_ENCRYPTION_KEY, ENGINE_MAILER_WEBHOOK_SECRET,
+  AI creds, and per-org EngineMailer API keys stored encrypted in the DB) — keep
+  it that way; `.env.example` files hold placeholders only.
 
 ## Environment
 
