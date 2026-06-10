@@ -48,3 +48,4 @@ Thumbs.db
 
 # Per-developer Claude / IDE config (preview launch settings, etc.)
 .claude/
+apps/api/.engine-mailer-webhook-url.txt
