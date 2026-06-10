@@ -20,7 +20,7 @@ export interface SendEmailInput {
 
 export interface SendEmailAttachment {
   filename: string;
-  /** Provide ONE of: `content` (Buffer) or `path` (file on disk). nodemailer reads from whichever is set. */
+  /** Provide ONE of: `content` (Buffer) or `path` (file on disk). The provider reads from whichever is set. */
   content?: Buffer;
   path?: string;
 }

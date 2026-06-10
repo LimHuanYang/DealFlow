@@ -59,25 +59,6 @@ export interface InvitationsRoutesDeps {
   }>;
 }
 
-/** Replicates the same per-org SMTP loader the emails module uses. */
-async function loadEmailConfig(
-  integrations: OrgIntegrationsRepo,
-  orgId: string,
-): Promise<EmailConfig> {
-  const dec = await integrations.getDecrypted(orgId);
-  if (!dec.smtp) return {};
-  return {
-    smtp: {
-      host: dec.smtp.host,
-      port: dec.smtp.port,
-      user: dec.smtp.user,
-      pass: dec.smtp.pass,
-      fromEmail: dec.smtp.fromEmail,
-      fromName: dec.smtp.fromName,
-    },
-  };
-}
-
 /** Per-org inviter name + org name lookup for the email body and preview. */
 async function loadInviteContext(
   db: Database,
@@ -113,15 +94,27 @@ export async function registerInvitationsRoutes(
 
   /**
    * Resolve the per-org email provider the SAME way the emails module does:
-   * test-only override first, otherwise load + decrypt SMTP config and build
-   * a SMTP provider (or Noop when SMTP isn't configured).
+   * test-only override first, otherwise the app-wide EngineMailer API key
+   * (server env) + this org's sender identity. Noop → copy-link fallback when
+   * either is missing.
    */
   async function resolveEmail(orgId: string): Promise<{
     provider: EmailProvider;
     fromAddress: string | null;
   }> {
     if (deps.emailProviderForOrg) return deps.emailProviderForOrg(orgId);
-    const cfg = await loadEmailConfig(integrations, orgId);
+    const dec = await integrations.getDecrypted(orgId);
+    const apiKey = resolvedEnv.ENGINE_MAILER_API_KEY;
+    const cfg: EmailConfig =
+      apiKey && dec.engineMailer
+        ? {
+            engineMailer: {
+              apiKey,
+              fromName: dec.engineMailer.fromName,
+              fromEmail: dec.engineMailer.fromEmail,
+            },
+          }
+        : {};
     const provider = buildEmailProvider(cfg);
     const desc = describeEmail(cfg);
     return { provider, fromAddress: desc.fromAddress };
@@ -129,7 +122,7 @@ export async function registerInvitationsRoutes(
 
   /**
    * Best-effort send. Swallows EmailDisabledError so create/resend still
-   * succeeds when the org hasn't configured SMTP — the UI then offers the
+   * succeeds when the org hasn't configured email — the UI then offers the
    * caller a copy-link fallback.
    */
   async function sendInviteEmail(
@@ -143,7 +136,7 @@ export async function registerInvitationsRoutes(
       resolveEmail(orgId),
       loadInviteContext(deps.db, orgId, inviterId),
     ]);
-    if (!fromAddress) return; // SMTP not configured — silent skip.
+    if (!fromAddress) return; // No email provider configured — silent skip.
     const built = buildInviteEmail({
       orgName: ctx.orgName,
       inviterName: ctx.inviterName,
@@ -193,13 +186,7 @@ export async function registerInvitationsRoutes(
           inviterId,
         );
         const inviteUrl = `${resolvedEnv.PUBLIC_WEB_URL}/invite/${token}`;
-        await sendInviteEmail(
-          orgId,
-          parsed.data.email,
-          inviteUrl,
-          parsed.data.role,
-          inviterId,
-        );
+        await sendInviteEmail(orgId, parsed.data.email, inviteUrl, parsed.data.role, inviterId);
         return reply.status(201).send({ invitation, inviteUrl });
       } catch (err) {
         if (err instanceof InvitationForExistingMemberError) {

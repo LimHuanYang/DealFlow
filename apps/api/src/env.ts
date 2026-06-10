@@ -22,6 +22,10 @@ const envSchema = z
     // `${PUBLIC_WEB_URL}/invite/<token>`). Defaults to the same origin as
     // CORS_ORIGIN so dev keeps working without setting a new var.
     PUBLIC_WEB_URL: z.string().url().default('http://localhost:5173'),
+    // App-wide EngineMailer API key — one EngineMailer account for the whole
+    // deployment. Used to send all transactional email; each org only sets its
+    // From name + From email (sender identity). Email is disabled when unset.
+    ENGINE_MAILER_API_KEY: z.string().optional(),
     // Shared secret embedded in the EngineMailer webhook callback URL as
     // `?key=<secret>` (EngineMailer has no HMAC signing). Verified on every
     // inbound POST to /api/v1/webhooks/engine-mailer.

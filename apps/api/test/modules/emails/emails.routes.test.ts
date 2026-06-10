@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { SmtpEmailProvider } from '@dealflow/email';
+import type { EmailProvider } from '@dealflow/email';
 import { startTestPostgres } from '../../helpers/postgres.js';
 import { buildTestApp } from '../../helpers/build-app.js';
 import { signupTestUser } from '../../helpers/auth.js';
@@ -20,19 +20,12 @@ async function createContact(
   return (res.json() as { contact: { id: string } }).contact.id;
 }
 
-function fakeSmtp(messageId = '<msg_test@dealflow>') {
-  const transport = {
-    sendMail: async () => ({
-      messageId,
-      accepted: ['x'],
-      rejected: [],
-      response: '250 OK',
-    }),
+function fakeSmtp(messageId = '<msg_test@dealflow>'): EmailProvider {
+  return {
+    async send() {
+      return { messageId };
+    },
   };
-  return new SmtpEmailProvider({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    transport: transport as any,
-  });
 }
 
 describe('GET /api/v1/email/status', () => {
@@ -210,15 +203,11 @@ describe('POST /api/v1/emails', () => {
   });
 
   it('502 EMAIL_UPSTREAM_ERROR when provider throws', async () => {
-    const failingTransport = {
-      sendMail: async () => {
+    const failingProvider: EmailProvider = {
+      async send() {
         throw new Error('upstream boom');
       },
     };
-    const failingProvider = new SmtpEmailProvider({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      transport: failingTransport as any,
-    });
     const testDb = await startTestPostgres();
     const app = await buildTestApp({
       db: testDb.db,

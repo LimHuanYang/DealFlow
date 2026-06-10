@@ -6,15 +6,6 @@ const aiProviderConfigSchema = z.object({
   model: z.string().min(1).optional(),
 });
 
-const smtpConfigSchema = z.object({
-  host: z.string().min(1),
-  port: z.coerce.number().int().min(1).max(65535),
-  user: z.string().min(1),
-  pass: z.string().min(1),
-  fromEmail: z.string().email(),
-  fromName: z.string().optional(),
-});
-
 /**
  * Body for PATCH /api/v1/integrations. All fields optional — clients send only
  * what they want to change. `null` clears a provider entirely.
@@ -23,7 +14,6 @@ export const updateIntegrationsBodySchema = z.object({
   anthropic: aiProviderConfigSchema.nullable().optional(),
   gemini: aiProviderConfigSchema.nullable().optional(),
   grok: aiProviderConfigSchema.nullable().optional(),
-  smtp: smtpConfigSchema.nullable().optional(),
   email: z
     .object({
       attachmentCacheDays: attachmentCacheDaysSchema,
@@ -51,23 +41,10 @@ export interface PublicAIProviderConfig {
   model: string | null;
 }
 
-/** Public (masked) view of SMTP. */
-export interface PublicSmtpConfig {
-  configured: boolean;
-  host: string | null;
-  port: number | null;
-  user: string | null;
-  fromEmail: string | null;
-  fromName: string | null;
-  /** Always empty string — we never reveal the SMTP password. */
-  passMask: string;
-}
-
 export interface PublicIntegrations {
   anthropic: PublicAIProviderConfig;
   gemini: PublicAIProviderConfig;
   grok: PublicAIProviderConfig;
-  smtp: PublicSmtpConfig;
   email: {
     attachmentCacheDays: AttachmentCacheDays;
   };

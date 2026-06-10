@@ -34,10 +34,8 @@ describe('GET /api/v1/integrations', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json() as {
       anthropic: { configured: boolean };
-      smtp: { configured: boolean };
     };
     expect(body.anthropic.configured).toBe(false);
-    expect(body.smtp.configured).toBe(false);
   });
 });
 
@@ -99,48 +97,6 @@ describe('PATCH /api/v1/integrations', () => {
       headers: { cookie },
     });
     expect((get.json() as { gemini: { configured: boolean } }).gemini.configured).toBe(false);
-  });
-
-  it('saves SMTP config including masking the password', async () => {
-    await app.inject({
-      method: 'PATCH',
-      url: '/api/v1/integrations',
-      payload: {
-        smtp: {
-          host: 'smtp.gmail.com',
-          port: 587,
-          user: 'a@b.com',
-          pass: 'secret-pw',
-          fromEmail: 'a@b.com',
-          fromName: 'Alice',
-        },
-      },
-      headers: { cookie },
-    });
-    const get = await app.inject({
-      method: 'GET',
-      url: '/api/v1/integrations',
-      headers: { cookie },
-    });
-    const smtp = (
-      get.json() as {
-        smtp: { configured: boolean; host: string; user: string; passMask: string };
-      }
-    ).smtp;
-    expect(smtp.configured).toBe(true);
-    expect(smtp.host).toBe('smtp.gmail.com');
-    expect(smtp.user).toBe('a@b.com');
-    expect(smtp.passMask).toBe('');
-  });
-
-  it('400 on invalid payload (bad port)', async () => {
-    const res = await app.inject({
-      method: 'PATCH',
-      url: '/api/v1/integrations',
-      payload: { smtp: { host: 'h', port: 99999, user: 'u', pass: 'p', fromEmail: 'a@b.com' } },
-      headers: { cookie },
-    });
-    expect(res.statusCode).toBe(400);
   });
 
   it('401 when not authenticated', async () => {
@@ -230,7 +186,12 @@ describe('EngineMailer email integration routes', () => {
 
   beforeAll(async () => {
     testDb = await startTestPostgres();
-    app = await buildTestApp({ db: testDb.db });
+    // The EngineMailer API key is app-wide (server env); inject it via the test
+    // env override so the route reports apiKeyConfigured/connected.
+    app = await buildTestApp({
+      db: testDb.db,
+      env: { ENGINE_MAILER_API_KEY: 'test-em-key-abcdef' },
+    });
     ({ cookie } = await signupTestUser(app));
   }, 30_000);
 
@@ -239,17 +200,21 @@ describe('EngineMailer email integration routes', () => {
     await testDb.stop();
   });
 
-  it('PATCH /integrations/email saves config; GET returns the mask', async () => {
+  it('PATCH /integrations/email saves the sender identity; GET returns the mask', async () => {
     const patch = await app.inject({
       method: 'PATCH',
       url: '/api/v1/integrations/email',
-      payload: { apiKey: 'em-live-7Q4a', fromName: 'Acme Sales', fromEmail: 'crm@acme.com' },
+      payload: { fromName: 'Acme Sales', fromEmail: 'crm@acme.com' },
       headers: { cookie },
     });
     expect(patch.statusCode).toBe(200);
-    const pj = patch.json() as { connected: boolean; keyHint: string; fromEmail: string };
+    const pj = patch.json() as {
+      apiKeyConfigured: boolean;
+      connected: boolean;
+      fromEmail: string;
+    };
+    expect(pj.apiKeyConfigured).toBe(true);
     expect(pj.connected).toBe(true);
-    expect(pj.keyHint).toMatch(/7Q4a$/);
     expect(pj.fromEmail).toBe('crm@acme.com');
 
     const get = await app.inject({
@@ -262,7 +227,7 @@ describe('EngineMailer email integration routes', () => {
     expect(gj.fromName).toBe('Acme Sales');
   });
 
-  it('updates fromName without resending the key (unchanged-when-blank)', async () => {
+  it('updates the sender identity', async () => {
     await app.inject({
       method: 'PATCH',
       url: '/api/v1/integrations/email',
@@ -274,10 +239,10 @@ describe('EngineMailer email integration routes', () => {
       url: '/api/v1/integrations/email',
       headers: { cookie },
     });
-    const gj = get.json() as { connected: boolean; fromName: string; keyHint: string };
+    const gj = get.json() as { connected: boolean; fromName: string; fromEmail: string };
     expect(gj.connected).toBe(true);
     expect(gj.fromName).toBe('Acme Renamed');
-    expect(gj.keyHint).toMatch(/7Q4a$/);
+    expect(gj.fromEmail).toBe('hello@acme.com');
   });
 
   it('400 on invalid fromEmail', async () => {

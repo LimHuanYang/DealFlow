@@ -13,18 +13,18 @@ function isEmailLike(raw: string): boolean {
 }
 
 interface FormState {
-  apiKey: string;
   fromName: string;
   fromEmail: string;
 }
 
-const EMPTY: FormState = { apiKey: '', fromName: '', fromEmail: '' };
+const EMPTY: FormState = { fromName: '', fromEmail: '' };
 
 /**
- * EngineMailer email integration. DealFlow sends and tracks email through
- * EngineMailer's REST API; opens/clicks arrive via a server-side webhook (no
- * tracking pixel). `fromEmail`'s domain must be a sending domain verified in
- * EngineMailer. Owner/admin only — the API enforces the role; members get 403.
+ * EngineMailer email integration. The EngineMailer API key is a single
+ * app-wide server setting (ENGINE_MAILER_API_KEY) — one account for the whole
+ * deployment — so this section only sets the org's sender identity (From name +
+ * From email). `fromEmail`'s domain must be verified in EngineMailer. Opens and
+ * clicks arrive via a server-side webhook (no tracking pixel).
  */
 export function EmailIntegrationSection() {
   const integration = useEmailIntegration();
@@ -37,37 +37,29 @@ export function EmailIntegrationSection() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [testTo, setTestTo] = useState<string>('');
 
-  // Seed everything EXCEPT the API key (never returned). For a fresh org,
-  // prefill From email from the registration email so Save is one paste away.
+  // Seed From fields from the saved config; for a fresh org prefill From email
+  // from the registration email so Save is one click away.
   useEffect(() => {
     const d = integration.data;
-    if (!d || !d.connected) {
-      if (myEmail) setForm((prev) => ({ ...prev, fromEmail: prev.fromEmail || myEmail }));
-      return;
-    }
-    setForm((prev) => ({ ...prev, fromName: d.fromName ?? '', fromEmail: d.fromEmail ?? '' }));
+    if (!d) return;
+    setForm((prev) => ({
+      fromName: prev.fromName || d.fromName || '',
+      fromEmail: prev.fromEmail || d.fromEmail || myEmail || '',
+    }));
   }, [integration.data, myEmail]);
 
   useEffect(() => {
     if (myEmail && !testTo) setTestTo(myEmail);
   }, [myEmail, testTo]);
 
-  const connected = integration.data?.connected ?? false;
-  // API key is required on first configuration; optional (kept) once connected.
-  const canSave =
-    Boolean(form.fromName.trim()) &&
-    isEmailLike(form.fromEmail) &&
-    (connected || Boolean(form.apiKey.trim())) &&
-    !update.isPending;
+  const d = integration.data;
+  const apiKeyConfigured = d?.apiKeyConfigured ?? false;
+  const connected = d?.connected ?? false;
+  const canSave = Boolean(form.fromName.trim()) && isEmailLike(form.fromEmail) && !update.isPending;
 
   async function onSave() {
     if (!canSave) return;
-    await update.mutateAsync({
-      apiKey: form.apiKey.trim() || undefined,
-      fromName: form.fromName.trim(),
-      fromEmail: form.fromEmail.trim(),
-    });
-    setForm((prev) => ({ ...prev, apiKey: '' }));
+    await update.mutateAsync({ fromName: form.fromName.trim(), fromEmail: form.fromEmail.trim() });
   }
 
   async function onTest() {
@@ -79,8 +71,6 @@ export function EmailIntegrationSection() {
     }
   }
 
-  const d = integration.data;
-
   return (
     <section
       className="mt-4 rounded-md border border-neutral-200 p-4"
@@ -89,47 +79,29 @@ export function EmailIntegrationSection() {
       <h2 className="mb-3 text-base font-medium">Email (EngineMailer)</h2>
       <p className="mb-4 text-sm text-neutral-500">
         DealFlow sends &amp; tracks email through EngineMailer. Opens and clicks are reported
-        automatically via webhook — no tracking pixel.{' '}
-        <a
-          href="https://www.enginemailer.com/"
-          target="_blank"
-          rel="noreferrer"
-          className="underline"
-        >
-          Get an API key →
-        </a>
+        automatically via webhook — no tracking pixel. The EngineMailer account is configured once
+        for the whole app; here you just set how email from your organization appears.
       </p>
 
       {integration.isPending && <p className="text-sm text-neutral-500">Loading…</p>}
 
       {d && (
         <>
-          {connected ? (
+          {!apiKeyConfigured ? (
+            <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              ⚠ EngineMailer isn&apos;t set up on the server yet (missing{' '}
+              <code>ENGINE_MAILER_API_KEY</code>). Email sending is disabled until the app owner adds
+              it. You can still save your sender details below.
+            </p>
+          ) : connected ? (
             <p className="mb-3 text-xs text-green-700">
-              ✓ Connected · sending as <code>{d.fromEmail}</code> · key{' '}
-              <code>{d.keyHint ?? '••••'}</code>
+              ✓ Connected · sending as <code>{d.fromEmail}</code>
             </p>
           ) : (
-            <p className="mb-3 text-xs text-neutral-400">Not connected</p>
+            <p className="mb-3 text-xs text-neutral-400">Add your sender details below to start.</p>
           )}
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="col-span-2">
-              <Label htmlFor="em-api-key" className="text-xs">
-                EngineMailer API key
-              </Label>
-              <Input
-                id="em-api-key"
-                type="password"
-                value={form.apiKey}
-                onChange={(e) => setForm((p) => ({ ...p, apiKey: e.target.value }))}
-                placeholder={connected ? '(unchanged)' : 'enginemailer_live_…'}
-                data-testid="em-api-key"
-              />
-              <p className="mt-1 text-[11px] text-neutral-400">
-                Find it in EngineMailer → Settings → API Keys.
-              </p>
-            </div>
             <div>
               <Label htmlFor="em-from-name" className="text-xs">
                 From name
@@ -159,7 +131,7 @@ export function EmailIntegrationSection() {
                 }
               />
               <p className="mt-1 text-[11px] text-neutral-400">
-                Must be on a domain you&apos;ve verified in EngineMailer.
+                Must be on a domain verified in EngineMailer.
               </p>
             </div>
           </div>
@@ -194,7 +166,7 @@ export function EmailIntegrationSection() {
             </code>
           </div>
 
-          {/* Test send — shown once connected. */}
+          {/* Test send — shown once fully connected. */}
           {connected && (
             <div className="mt-4 flex flex-wrap items-end gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-3">
               <div className="min-w-[220px] flex-1">

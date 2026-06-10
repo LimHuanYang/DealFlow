@@ -103,24 +103,6 @@ function emailUpstreamError(reply: FastifyReply) {
   });
 }
 
-async function loadEmailConfig(
-  integrations: OrgIntegrationsRepo,
-  orgId: string,
-): Promise<EmailConfig> {
-  const dec = await integrations.getDecrypted(orgId);
-  if (!dec.smtp) return {};
-  return {
-    smtp: {
-      host: dec.smtp.host,
-      port: dec.smtp.port,
-      user: dec.smtp.user,
-      pass: dec.smtp.pass,
-      fromEmail: dec.smtp.fromEmail,
-      fromName: dec.smtp.fromName,
-    },
-  };
-}
-
 export async function registerEmailRoutes(
   app: FastifyInstance,
   deps: EmailRoutesDeps,
@@ -135,7 +117,21 @@ export async function registerEmailRoutes(
     fromAddress: string | null;
   }> {
     if (deps.emailProviderForOrg) return deps.emailProviderForOrg(orgId);
-    const cfg = await loadEmailConfig(integrations, orgId);
+    // Build the EngineMailer provider from the app-wide API key (server env)
+    // + this org's sender identity (From name/email). Email is disabled if
+    // either is missing.
+    const dec = await integrations.getDecrypted(orgId);
+    const apiKey = resolvedEnv.ENGINE_MAILER_API_KEY;
+    const cfg: EmailConfig =
+      apiKey && dec.engineMailer
+        ? {
+            engineMailer: {
+              apiKey,
+              fromName: dec.engineMailer.fromName,
+              fromEmail: dec.engineMailer.fromEmail,
+            },
+          }
+        : {};
     const provider = buildEmailProvider(cfg);
     const desc = describeEmail(cfg);
     return { provider, fromAddress: desc.fromAddress };

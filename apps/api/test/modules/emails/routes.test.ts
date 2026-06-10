@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import { SmtpEmailProvider } from '@dealflow/email';
+import type { EmailProvider } from '@dealflow/email';
 import { eq } from 'drizzle-orm';
 import { schema } from '@dealflow/db';
 import { startTestPostgres, type TestDatabase } from '../../helpers/postgres.js';
@@ -21,19 +21,12 @@ async function createContactWithEmail(
   return (res.json() as { contact: { id: string } }).contact.id;
 }
 
-function fakeSmtp(messageId = '<msg_test@dealflow>') {
-  const transport = {
-    sendMail: async () => ({
-      messageId,
-      accepted: ['x'],
-      rejected: [],
-      response: '250 OK',
-    }),
+function fakeSmtp(messageId = '<msg_test@dealflow>'): EmailProvider {
+  return {
+    async send() {
+      return { messageId };
+    },
   };
-  return new SmtpEmailProvider({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    transport: transport as any,
-  });
 }
 
 describe('POST /api/v1/emails — tracking + cc/bcc', () => {

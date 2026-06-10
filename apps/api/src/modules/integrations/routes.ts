@@ -18,8 +18,8 @@ import { OrgIntegrationsRepo } from './repo.js';
 /**
  * Body schema for POST /test-email. The recipient is optional — if omitted,
  * the test sends to the logged-in user's own email (legacy behaviour). The
- * Settings UI now exposes a "Send test to:" input so users can verify the
- * SMTP path works for arbitrary recipients without writing a full template.
+ * Settings UI now exposes a "Send test to:" input so users can verify email
+ * sending works for arbitrary recipients without writing a full template.
  */
 const testEmailBodySchema = z.object({
   to: z.string().email().optional(),
@@ -28,6 +28,8 @@ const testEmailBodySchema = z.object({
 export interface IntegrationsRoutesDeps {
   db: Database;
   encryptionKey: Buffer;
+  /** App-wide EngineMailer API key (server env). Undefined = email disabled. */
+  engineMailerApiKey?: string;
 }
 
 export async function registerIntegrationsRoutes(
@@ -66,7 +68,7 @@ export async function registerIntegrationsRoutes(
   // --- EngineMailer email integration (dedicated endpoints) ---
   app.get('/api/v1/integrations/email', { preHandler: requireOrg }, async (req, reply) => {
     const orgId = req.session!.currentOrgId!;
-    return reply.send(await repo.getMaskedEmail(orgId));
+    return reply.send(await repo.getMaskedEmail(orgId, Boolean(deps.engineMailerApiKey)));
   });
 
   app.patch(
@@ -85,7 +87,7 @@ export async function registerIntegrationsRoutes(
       }
       const orgId = req.session!.currentOrgId!;
       await repo.saveEngineMailer(orgId, parsed.data);
-      return reply.send(await repo.getMaskedEmail(orgId));
+      return reply.send(await repo.getMaskedEmail(orgId, Boolean(deps.engineMailerApiKey)));
     },
   );
 
@@ -161,33 +163,19 @@ export async function registerIntegrationsRoutes(
         return reply.send({ ok: false, error: 'Sender not found.' });
       }
 
-      // Prefer EngineMailer; fall back to legacy SMTP; else not configured.
-      let cfg: EmailConfig;
-      let fromLine: string;
-      if (dec.engineMailer) {
-        cfg = {
-          engineMailer: {
-            apiKey: dec.engineMailer.apiKey,
-            fromEmail: dec.engineMailer.fromEmail,
-            fromName: dec.engineMailer.fromName,
-          },
-        };
-        fromLine = `${dec.engineMailer.fromName} <${dec.engineMailer.fromEmail}>`;
-      } else if (dec.smtp) {
-        cfg = {
-          smtp: {
-            host: dec.smtp.host,
-            port: dec.smtp.port,
-            user: dec.smtp.user,
-            pass: dec.smtp.pass,
-            fromEmail: dec.smtp.fromEmail,
-            fromName: dec.smtp.fromName,
-          },
-        };
-        fromLine = `${userRow.name} <${dec.smtp.fromEmail}>`;
-      } else {
+      // EngineMailer is the only provider. Needs the app-wide API key plus this
+      // org's sender identity; otherwise not configured.
+      if (!deps.engineMailerApiKey || !dec.engineMailer) {
         return reply.send({ ok: false, error: 'Email not configured.' });
       }
+      const cfg: EmailConfig = {
+        engineMailer: {
+          apiKey: deps.engineMailerApiKey,
+          fromEmail: dec.engineMailer.fromEmail,
+          fromName: dec.engineMailer.fromName,
+        },
+      };
+      const fromLine = `${dec.engineMailer.fromName} <${dec.engineMailer.fromEmail}>`;
       const provider = buildEmailProvider(cfg);
       const recipient = parsed.data.to ?? userRow.email;
       try {
