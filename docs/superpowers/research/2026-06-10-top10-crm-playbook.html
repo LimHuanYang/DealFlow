@@ -1,0 +1,278 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DealFlow — Top-10 CRM teardown & build playbook</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--indigo:#4f46e5;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;--indigo-700:#4338ca;--violet-100:#ede9fe;--violet-700:#6d28d9;--slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;--green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;--red-100:#fee2e2;--red-700:#b91c1c;--teal-100:#ccfbf1;--teal-700:#0f766e;}
+*{box-sizing:border-box}body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding:34px 22px 120px}
+.hero{background:linear-gradient(135deg,#4f46e5,#6d28d9);color:#fff;border-radius:18px;padding:24px 26px;box-shadow:0 10px 30px rgba(79,70,229,.25)}
+.hero .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.85}
+.hero h1{font-size:21px;font-weight:800;margin:6px 0 10px;line-height:1.3}
+.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600}
+.cap-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--indigo-700);margin:34px 0 12px;display:flex;align-items:center;gap:9px}
+.cap-title .em{font-size:18px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden;font-size:12.5px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+thead th{background:var(--slate-50);text-align:left;padding:9px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-500);font-weight:700;border-bottom:1px solid var(--slate-200)}
+td{padding:9px 11px;border-bottom:1px solid var(--slate-100);vertical-align:top;color:var(--slate-700)}
+tr:last-child td{border-bottom:none}
+.rank{font-weight:800;color:var(--indigo);width:24px}.cname{font-weight:700;color:var(--slate-900);white-space:nowrap}
+.why{color:var(--green-700)}.price{font-weight:600;white-space:nowrap}.lim{color:var(--red-700)}.take{color:var(--indigo-700);font-weight:500}
+.prio{font-size:12.5px;font-weight:700;margin:16px 0 9px;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:8px}
+.prio.P0{background:var(--indigo-100);color:var(--indigo-700)}.prio.P1{background:var(--violet-100);color:var(--violet-700)}.prio.P2{background:var(--slate-200);color:var(--slate-600)}
+.prio .cnt{background:#fff;border-radius:6px;padding:0 7px;font-size:11px}
+.capgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.cap{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.cap-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.cap-name{font-size:14px;font-weight:700}
+.badge{font-size:10px;font-weight:700;border-radius:6px;padding:2px 8px}.eff-S{background:var(--green-100);color:var(--green-700)}.eff-M{background:var(--amber-100);color:var(--amber-700)}.eff-L{background:var(--red-100);color:var(--red-700)}
+.cap-insp{font-size:11px;color:var(--violet-700);margin:3px 0 6px}
+.cap-what{font-size:12.5px;color:var(--slate-700);margin:0 0 9px}
+.cap-tech-label,.cap-setup-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-400);margin:8px 0 4px}
+.techtbl{display:flex;flex-direction:column;gap:3px}
+.techrow{display:grid;grid-template-columns:1fr 1.1fr auto;gap:6px;font-size:11px;background:var(--slate-50);border-radius:6px;padding:4px 7px}
+.ttool{font-weight:700;color:var(--slate-800)}.trole{color:var(--slate-500)}.tcost{color:var(--teal-700);font-weight:600;white-space:nowrap}
+.setup{margin:0;padding-left:18px;font-size:11.5px;color:var(--slate-600)}.setup li{padding:1px 0}
+.cost .cost,td.cost{color:var(--teal-700);font-weight:600;white-space:nowrap}.layer{font-weight:700;color:var(--slate-800);white-space:nowrap}.choice{font-weight:600}
+.citem{font-weight:700;color:var(--slate-800)}.cmonth{font-weight:700;color:var(--teal-700);white-space:nowrap}.cnote{color:var(--slate-500)}
+.phase{display:flex;gap:13px;background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-bottom:10px}
+.pn{flex:0 0 32px;height:32px;border-radius:50%;background:var(--indigo);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ptitle{font-size:14px;font-weight:700}.pgoal{font-size:12px;color:var(--slate-500);margin:2px 0 8px}
+.psteps{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.pstep{background:var(--indigo-50);color:var(--indigo-700);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:500}.psep{color:var(--slate-300);font-weight:700}
+.flow{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:15px;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-bottom:11px}
+.flow-h{display:flex;align-items:baseline;gap:10px;margin-bottom:11px}.flow-t{font-size:14.5px;font-weight:700}.flow-p{font-size:12px;color:var(--slate-500)}
+.flow-steps{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fchip{display:inline-flex;align-items:center;gap:6px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:5px 10px;font-size:12px;color:var(--slate-700)}
+.fnum{width:18px;height:18px;border-radius:50%;background:var(--indigo);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.farrow{color:var(--indigo);font-weight:800}
+.note{font-size:12.5px;color:var(--slate-500);background:#fff;border:1px solid var(--slate-200);border-radius:11px;padding:13px 15px}.note .ok{color:var(--green-700);font-weight:500;margin:0}.flag{margin:0;padding-left:18px}.flag li{padding:3px 0}
+.meta{font-size:11.5px;color:var(--slate-400);margin-top:10px}
+@media(max-width:760px){.capgrid{grid-template-columns:1fr}table{font-size:11.5px}}
+</style></head><body><main class="wrap">
+<div class="hero"><div class="k">DealFlow · top-10 CRM teardown → build playbook</div>
+<h1>DealFlow's path to #1 SEA SMB CRM: an AI-native, WhatsApp-first wedge built on engines you already ship.</h1>
+<div class="chips"><span class="chip">10 CRMs torn down</span><span class="chip">27 agents · 14 claims checked</span><span class="chip">SEA SMB · AI-native + local</span><span class="chip">solo-buildable</span></div></div>
+
+<div class="cap-title"><span class="em">🏆</span> Top-10 CRMs — niche · why chosen · price · limitation · what DealFlow takes</div>
+<table><thead><tr><th>#</th><th>CRM</th><th>Niche</th><th>Why people choose it</th><th>From</th><th>Top limitation</th><th>DealFlow takeaway</th></tr></thead><tbody><tr>
+  <td class="rank">1</td>
+  <td class="cname">Salesforce Sales Cloud</td>
+  <td>Enterprise platform; infinite customization + AppExchange</td>
+  <td class="why">Future-proof, molds to any sales process</td>
+  <td class="price">$25/user/mo (free 2-user tier)</td>
+  <td class="lim">Costly, needs dedicated admin</td>
+  <td class="take">Steal: Einstein lead scoring + forecasting. Avoid: admin-heavy bloat.</td></tr><tr>
+  <td class="rank">2</td>
+  <td class="cname">HubSpot Sales Hub</td>
+  <td>All-in-one; easy onboarding, free CRM tier</td>
+  <td class="why">Fast time-to-value, unified record</td>
+  <td class="price">$0 free; $15/user/mo Starter</td>
+  <td class="lim">Steep price cliff to Pro</td>
+  <td class="take">Steal: sequences + free tier funnel. Avoid: $100 paywall cliff.</td></tr><tr>
+  <td class="rank">3</td>
+  <td class="cname">Zoho CRM</td>
+  <td>Best value; Zia AI + full Zoho suite</td>
+  <td class="why">Near-enterprise depth at low price</td>
+  <td class="price">$0 (3 users); $14/user/mo</td>
+  <td class="lim">Clunky dated UI, weak support</td>
+  <td class="take">Steal: Blueprint guided-stage process. Avoid: feature overload, dated UX.</td></tr><tr>
+  <td class="rank">4</td>
+  <td class="cname">Microsoft Dynamics 365 Sales</td>
+  <td>Microsoft-stack natives; Outlook/Teams/Copilot</td>
+  <td class="why">One vendor, one identity, one Copilot</td>
+  <td class="price">$65/user/mo (no free tier)</td>
+  <td class="lim">Heavy, costly, partner-led setup</td>
+  <td class="take">Steal: in-inbox AI summaries. Avoid: enterprise weight, MS lock-in.</td></tr><tr>
+  <td class="rank">5</td>
+  <td class="cname">Pipedrive</td>
+  <td>Simple visual pipeline for small sales teams</td>
+  <td class="why">Easy, affordable, sales-only focus</td>
+  <td class="price">$14/user/mo (no free tier)</td>
+  <td class="lim">No calling; add-ons inflate cost</td>
+  <td class="take">Steal: activity-based 'next-step' nudges. Avoid: shallow automation.</td></tr><tr>
+  <td class="rank">6</td>
+  <td class="cname">Freshsales (Freshworks)</td>
+  <td>Omnichannel SMB CRM with built-in comms</td>
+  <td class="why">Phone/WhatsApp/email + AI bundled cheap</td>
+  <td class="price">$0 (3 users); $9/user/mo</td>
+  <td class="lim">Weak reporting, paywalled AI</td>
+  <td class="take">Steal: WhatsApp+LINE unified timeline. This is our wedge.</td></tr><tr>
+  <td class="rank">7</td>
+  <td class="cname">monday CRM</td>
+  <td>Visual no-code CRM into project delivery</td>
+  <td class="why">Most flexible, sales-to-delivery handoff</td>
+  <td class="price">$12/seat/mo (3-seat min)</td>
+  <td class="lim">Sluggish; basic tier is a demo</td>
+  <td class="take">Steal: closed-deal-to-project handoff. Avoid: 3-seat bucket pricing.</td></tr><tr>
+  <td class="rank">8</td>
+  <td class="cname">Close</td>
+  <td>Phone-first inside-sales CRM with native dialer</td>
+  <td class="why">Best-in-class built-in dialer, same-day setup</td>
+  <td class="price">$9/user/mo solo; $35 team</td>
+  <td class="lim">Thin reporting + tasks; SaaS-only fit</td>
+  <td class="take">Steal: unified call/SMS inbox + AI summaries. Avoid: SaaS-only tuning.</td></tr><tr>
+  <td class="rank">9</td>
+  <td class="cname">Attio</td>
+  <td>AI-native, object-model CRM you mold yourself</td>
+  <td class="why">Notion-like flexible data + built-in AI</td>
+  <td class="price">$0 (3 seats); $29/user/mo</td>
+  <td class="lim">Immature reporting; credit creep</td>
+  <td class="take">Steal: Ask-Attio NL search + MCP. Mirrors our nlFilter wedge.</td></tr><tr>
+  <td class="rank">10</td>
+  <td class="cname">Folk</td>
+  <td>Fast relationship CRM; one-click LinkedIn capture</td>
+  <td class="why">Zero-setup, folkX + Magic Field enrichment</td>
+  <td class="price">$24/user/mo (no free tier)</td>
+  <td class="lim">No mobile app; weak automation</td>
+  <td class="take">Steal: one-click enrichment + Magic Fields. Avoid: no-mobile gap.</td></tr></tbody></table>
+
+<div class="cap-title"><span class="em">🧩</span> Features to build — each with its tech, cost &amp; setup</div>
+<div class="prio P0">P0 · Build now <span class="cnt">3</span></div><div class="capgrid"><div class="cap">
+        <div class="cap-h"><span class="cap-name">AI natural-language search (command bar)</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by Attio (Ask Attio) / Salesforce Einstein</div>
+        <p class="cap-what">Type 'deals over RM50k closing this month, no activity 2 weeks' -&gt; filtered list</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">@dealflow/ai nlFilter (existing stub)</span><span class="trole">Query -&gt; FilterDSL via prompt</span><span class="tcost">Reuses AI chain; near-zero</span></div><div class="techrow"><span class="ttool">Gemini 2.5 Flash (OpenRouter)</span><span class="trole">LLM that emits FilterDSL JSON</span><span class="tcost">~$0.075/M input; &lt;1 cent/query</span></div><div class="techrow"><span class="ttool">Drizzle where-translator</span><span class="trole">FilterDSL -&gt; SQL where clauses</span><span class="tcost">Free (in-repo)</span></div><div class="techrow"><span class="ttool">shadcn Command (cmdk)</span><span class="trole">Web command-bar UI</span><span class="tcost">Free</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add nlFilter prompt in packages/ai prompts.ts</li><li>Wire /ai/nl-filter route mirroring summarize-activity</li><li>Build FilterDSL-&gt;Drizzle translator over DealsRepo.list</li><li>Add cmdk command bar in apps/web</li><li>Run AI output through Zod validation</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Two-way WhatsApp inbox + AI replies</span><span class="badge eff eff-L">L</span></div>
+        <div class="cap-insp">↳ inspired by Freshsales (omnichannel) / Close (unified inbox)</div>
+        <p class="cap-what">Inbound WhatsApp logs to contact timeline; AI drafts Malay/Manglish reply</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">Meta Cloud API via 360dialog</span><span class="trole">WhatsApp send/receive, zero markup</span><span class="tcost">~$49/mo/number + MY msg ~$0.014-0.086</span></div><div class="techrow"><span class="ttool">Fastify signed webhook</span><span class="trole">Ingest inbound, correlate by phone</span><span class="tcost">Free (in-repo)</span></div><div class="techrow"><span class="ttool">activities table kind='message'</span><span class="trole">Store conversation on timeline</span><span class="tcost">Free (existing schema)</span></div><div class="techrow"><span class="ttool">OrgIntegrationsRepo (AES-256-GCM)</span><span class="trole">Encrypted per-org WhatsApp token</span><span class="tcost">Free (existing vault)</span></div><div class="techrow"><span class="ttool">@dealflow/ai draftEmail (reused)</span><span class="trole">Suggest reply in Malay/Manglish</span><span class="tcost">&lt;1 cent/draft</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Provision 360dialog number, store token in integrations vault</li><li>Add webhook modeled on engine-mailer-webhook (signed)</li><li>Upsert inbound as activity kind='message' matched by phone</li><li>Build shadcn chat pane in contact view</li><li>Outbound POST to Cloud API + AI reply suggest</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Job/queue layer (automation backbone)</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by All incumbents (sequences need async)</div>
+        <p class="cap-what">Runs sequence steps, reminders, async AI scoring reliably</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">pg-boss on Supabase Postgres</span><span class="trole">Durable job queue, SKIP LOCKED</span><span class="tcost">$0 (uses existing DB)</span></div><div class="techrow"><span class="ttool">Existing setInterval pattern</span><span class="trole">Bootstrap recurring sweeps now</span><span class="tcost">Free (server.ts:140)</span></div><div class="techrow"><span class="ttool">Upstash Redis + BullMQ (ALT)</span><span class="trole">Upgrade path at scale</span><span class="tcost">~$10/mo fixed if needed</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add pg-boss + jobs table on Supabase</li><li>Create @dealflow/jobs worker package</li><li>Migrate eviction sweep onto queue</li><li>Define job handlers: sequence-step, reminder, score</li><li>Reuse onClose cleanup hook</li></ol>
+      </div></div><div class="prio P1">P1 · Next <span class="cnt">4</span></div><div class="capgrid"><div class="cap">
+        <div class="cap-h"><span class="cap-name">Email sequences / cadences</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by HubSpot (Sequences) / Freshsales</div>
+        <p class="cap-what">Wait N days -&gt; send templated email; stops on reply/unsub</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">@dealflow/email (EngineMailer)</span><span class="trole">Send each step</span><span class="tcost">$0 beyond existing volume</span></div><div class="techrow"><span class="ttool">pg-boss delayed jobs</span><span class="trole">Schedule each step</span><span class="tcost">$0</span></div><div class="techrow"><span class="ttool">Drizzle sequences/enrollments tables</span><span class="trole">Define + track cadence</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">EngineMailer webhook</span><span class="trole">Reply/open detection -&gt; halt or branch</span><span class="tcost">Free (existing)</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add sequences + enrollments schema</li><li>Enqueue delayed job per step</li><li>Re-check reply/unsub before send</li><li>Log each send as email activity</li><li>Reuse AI draft for step body</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Engagement-based lead/deal scoring</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by Salesforce Einstein / Zoho Zia / Freddy</div>
+        <p class="cap-what">Computes 0-100 hot/warm/cold from opens, clicks, recency, stage prob</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">activities openCount/clickCount</span><span class="trole">Engagement signal source</span><span class="tcost">Free (existing)</span></div><div class="techrow"><span class="ttool">pipeline_stages.winProbability</span><span class="trole">Stage weighting</span><span class="tcost">Free (existing)</span></div><div class="techrow"><span class="ttool">Custom-field definition 'leadScore'</span><span class="trole">Store score per record</span><span class="tcost">Free (existing CF system)</span></div><div class="techrow"><span class="ttool">pg-boss recurring job</span><span class="trole">Recompute nightly + on webhook</span><span class="tcost">$0</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Seed 'leadScore' custom-field definition</li><li>Write scoring fn over engagement + recency + stage</li><li>Recompute on nightly job + on webhook write</li><li>Add hot/warm/cold badge to cards</li><li>Surface sort/filter by score</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Weighted pipeline forecast + deal-rot alerts</span><span class="badge eff eff-S">S</span></div>
+        <div class="cap-insp">↳ inspired by Salesforce Forecasting / Pipedrive</div>
+        <p class="cap-what">Expected revenue = value x stage prob; flags deals with no activity N days</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">ReportsRepo (new methods)</span><span class="trole">Weighted forecast + rot query</span><span class="tcost">Free (existing repo)</span></div><div class="techrow"><span class="ttool">pipeline_stages.winProbability</span><span class="trole">Forecast multiplier</span><span class="tcost">Free (existing)</span></div><div class="techrow"><span class="ttool">activities timestamps</span><span class="trole">Detect rotting deals</span><span class="tcost">Free (existing)</span></div><div class="techrow"><span class="ttool">dashboard feature (apps/web)</span><span class="trole">Surface tiles + alerts</span><span class="tcost">Free</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add weighted-forecast method to ReportsRepo</li><li>Add no-activity-N-days rot query</li><li>Add KPI tile + rot list to dashboard</li><li>Optional: rot -&gt; create follow-up task job</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Deal stage-change automation hook</span><span class="badge eff eff-S">S</span></div>
+        <div class="cap-insp">↳ inspired by Zoho Blueprint / HubSpot workflows</div>
+        <p class="cap-what">On stage move: auto-log note, enroll sequence, notify owner</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">deals.repo moveToStage (add hook)</span><span class="trole">Single insertion point for events</span><span class="tcost">Free (existing gap)</span></div><div class="techrow"><span class="ttool">activities table</span><span class="trole">Auto-log stage-change note</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">pg-boss</span><span class="trole">Fire downstream actions</span><span class="tcost">$0</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add event emit inside moveToStage()</li><li>Write stage-change activity row</li><li>Map stage-&gt;action (sequence/notify) config</li><li>Enqueue actions on the queue</li></ol>
+      </div></div><div class="prio P2">P2 · Later <span class="cnt">6</span></div><div class="capgrid"><div class="cap">
+        <div class="cap-h"><span class="cap-name">AI account brief / call-meeting summary</span><span class="badge eff eff-S">S</span></div>
+        <div class="cap-insp">↳ inspired by Dynamics Copilot / Close AI summaries</div>
+        <p class="cap-what">One-click 'Summarize this record' across whole timeline</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">@dealflow/ai summarizeActivity (existing)</span><span class="trole">Summarize over buildActivityContext</span><span class="tcost">&lt;1 cent/summary</span></div><div class="techrow"><span class="ttool">activities kind='meeting'/'call'</span><span class="trole">New timeline entry types</span><span class="tcost">Free (existing schema)</span></div><div class="techrow"><span class="ttool">buildActivityContext (existing)</span><span class="trole">Assemble full timeline</span><span class="tcost">Free</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add meeting/call kinds to activities</li><li>Add 'Summarize record' button</li><li>Call existing summarize route over full timeline</li><li>Render brief in record header</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Lead/contact enrichment</span><span class="badge eff eff-S">S</span></div>
+        <div class="cap-insp">↳ inspired by Folk (Magic Fields) / Zoho Zia enrich</div>
+        <p class="cap-what">One click fills title, company, phone from public signals</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">Apollo.io API</span><span class="trole">Email/phone/company enrichment</span><span class="tcost">~$0.20/credit (email~1, full~9)</span></div><div class="techrow"><span class="ttool">OrgIntegrationsRepo</span><span class="trole">Encrypted Apollo key</span><span class="tcost">Free (existing vault)</span></div><div class="techrow"><span class="ttool">pg-boss + cache</span><span class="trole">Async call + credit cache</span><span class="tcost">$0 infra</span></div><div class="techrow"><span class="ttool">customFields merge (existing)</span><span class="trole">Write enriched fields</span><span class="tcost">Free</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Store Apollo key in integrations vault</li><li>On Enrich, enqueue Apollo call</li><li>Cache results to save credits</li><li>Merge into customFields</li><li>Show enriched-field provenance</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Bulk CSV import with AI dedupe + enrich</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by All incumbents (migration / switching cost)</div>
+        <p class="cap-what">Import spreadsheet/WhatsApp contacts; AI parses messy rows, dedupes by email</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">@dealflow/ai extractContact (existing)</span><span class="trole">Parse messy rows</span><span class="tcost">&lt;1 cent/row</span></div><div class="techrow"><span class="ttool">contacts citext email index (existing)</span><span class="trole">Case-insensitive dedupe match</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">pg-boss</span><span class="trole">Process large files async</span><span class="tcost">$0</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Build CSV upload + column mapper</li><li>Match by citext email to dedupe</li><li>Route messy rows through extractContact</li><li>Queue large imports</li><li>Show import preview + conflicts</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Built-in calling + SMS</span><span class="badge eff eff-M">M</span></div>
+        <div class="cap-insp">↳ inspired by Close (native dialer) / Freshsales</div>
+        <p class="cap-what">Click-to-call from record; logs + transcribes; SMS in timeline</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">Twilio Voice + SMS</span><span class="trole">Calling/SMS infrastructure</span><span class="tcost">SMS ~$0.008-0.02; voice ~$0.014/min</span></div><div class="techrow"><span class="ttool">Telnyx / Plivo (ALT)</span><span class="trole">Cheaper SEA voice</span><span class="tcost">Plivo ~$0.0055/min</span></div><div class="techrow"><span class="ttool">activities kind='call'/'sms'</span><span class="trole">Log to timeline by external_id</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">@dealflow/ai</span><span class="trole">Call transcript summary</span><span class="tcost">&lt;1 cent/call</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add Twilio Voice SDK + TwiML route</li><li>Webhook call/SMS events -&gt; activities</li><li>Store Twilio creds in integrations vault</li><li>Add click-to-call in record UI</li><li>AI-summarize recordings</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">Activity-based next-step nudges</span><span class="badge eff eff-S">S</span></div>
+        <div class="cap-insp">↳ inspired by Pipedrive (activity-based selling)</div>
+        <p class="cap-what">Flags every open deal lacking a scheduled next activity</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">activities task fields (existing)</span><span class="trole">Detect missing next task</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">ReportsRepo / dashboard</span><span class="trole">Surface 'needs next step' list</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">pg-boss recurring job</span><span class="trole">Daily nudge recompute</span><span class="tcost">$0</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Query deals with no open future task</li><li>Add 'no next step' dashboard widget</li><li>Quick-add task inline</li><li>Optional daily reminder email</li></ol>
+      </div><div class="cap">
+        <div class="cap-h"><span class="cap-name">MyInvois / SEA locale + tax polish</span><span class="badge eff eff-L">L</span></div>
+        <div class="cap-insp">↳ inspired by Local wedge (none of the 10 do this)</div>
+        <p class="cap-what">RM/SGD/IDR formatting, SST fields, MyInvois e-invoice export on won deals</p>
+        <div class="cap-tech-label">Tech</div><div class="techtbl"><div class="techrow"><span class="ttool">organizations.defaultCurrency (existing)</span><span class="trole">Currency threading</span><span class="tcost">Free</span></div><div class="techrow"><span class="ttool">Seeded SST/tax custom fields</span><span class="trole">Tax-aware deal data</span><span class="tcost">Free (CF system)</span></div><div class="techrow"><span class="ttool">LHDN MyInvois API</span><span class="trole">e-Invoice submission on won deal</span><span class="tcost">Free gov API (dev effort only)</span></div><div class="techrow"><span class="ttool">Intl + date-fns locale</span><span class="trole">RM/date/number formatting</span><span class="tcost">Free</span></div></div>
+        <div class="cap-setup-label">Setup</div><ol class="setup"><li>Add RM/SGD/IDR formatters in web app</li><li>Seed SST + tax-ID custom fields</li><li>Build MyInvois export on deal-won</li><li>Localize date/number rendering</li><li>Validate against LHDN sandbox</li></ol>
+      </div></div>
+
+<div class="cap-title"><span class="em">🛠️</span> The tech stack</div>
+<table><thead><tr><th>Layer</th><th>Choice</th><th>Purpose</th><th>Cost</th></tr></thead><tbody><tr><td class="layer">Backend API</td><td class="choice">Fastify + Drizzle (existing)</td><td>Routes, repos, webhooks</td><td class="cost">Free</td></tr><tr><td class="layer">Database</td><td class="choice">Supabase Postgres (existing)</td><td>Multi-tenant data, citext, JSONB</td><td class="cost">~$25/mo Pro</td></tr><tr><td class="layer">Job queue</td><td class="choice">pg-boss on Supabase</td><td>Sequences, reminders, async AI</td><td class="cost">$0 (shared DB)</td></tr><tr><td class="layer">Queue upgrade (later)</td><td class="choice">Upstash Redis + BullMQ</td><td>Scale-out worker option</td><td class="cost">~$10/mo if needed</td></tr><tr><td class="layer">AI / LLM</td><td class="choice">@dealflow/ai chain -&gt; Gemini 2.5 Flash via OpenRouter</td><td>NL search, scoring, drafts, summaries</td><td class="cost">~$0.075/M input; a few $/mo</td></tr><tr><td class="layer">Email</td><td class="choice">EngineMailer (existing)</td><td>Send + open/click webhooks</td><td class="cost">Existing plan</td></tr><tr><td class="layer">WhatsApp</td><td class="choice">Meta Cloud API via 360dialog</td><td>SEA messaging wedge</td><td class="cost">~$49/mo/number + per-msg</td></tr><tr><td class="layer">Calling / SMS</td><td class="choice">Twilio (ALT Plivo/Telnyx)</td><td>Native dialer + SMS</td><td class="cost">Usage-based</td></tr><tr><td class="layer">Enrichment</td><td class="choice">Apollo.io API</td><td>Contact/company enrichment</td><td class="cost">~$0.20/credit</td></tr><tr><td class="layer">Secrets vault</td><td class="choice">OrgIntegrationsRepo AES-256-GCM (existing)</td><td>Per-org encrypted tokens</td><td class="cost">Free</td></tr><tr><td class="layer">Frontend</td><td class="choice">React 19 + TanStack + shadcn (existing)</td><td>UI, command bar, chat pane</td><td class="cost">Free</td></tr><tr><td class="layer">e-Invoice</td><td class="choice">LHDN MyInvois API</td><td>Malaysia compliance export</td><td class="cost">Free gov API</td></tr></tbody></table>
+
+<div class="cap-title"><span class="em">💵</span> Monthly running cost (solo founder, small scale)</div>
+<table><thead><tr><th>Item</th><th>Plan</th><th>Monthly</th><th>Notes</th></tr></thead><tbody><tr><td class="citem">Supabase</td><td>Pro</td><td class="cmonth">$25 / ~RM118</td><td class="cnote">DB + auth + storage; hosts pg-boss</td></tr><tr><td class="citem">App hosting</td><td>Fly.io / Railway small</td><td class="cmonth">$5-10 / ~RM24-47</td><td class="cnote">Fastify API + worker</td></tr><tr><td class="citem">WhatsApp number</td><td>360dialog</td><td class="cmonth">$49 / ~RM230</td><td class="cnote">Per number; + Meta per-message fees</td></tr><tr><td class="citem">WhatsApp messages</td><td>Meta pay-as-you-go</td><td class="cmonth">~$10-30 / ~RM47-140</td><td class="cnote">MY ~$0.014-0.086/msg; service window free</td></tr><tr><td class="citem">LLM (AI features)</td><td>Gemini 2.5 Flash via OpenRouter</td><td class="cmonth">~$5-15 / ~RM24-71</td><td class="cnote">NL search, scoring, drafts; sub-cent each</td></tr><tr><td class="citem">EngineMailer</td><td>Existing</td><td class="cmonth">Existing</td><td class="cnote">Email send + tracking already in use</td></tr><tr><td class="citem">Enrichment</td><td>Apollo pay-as-you-go</td><td class="cmonth">~$0-20 / ~RM0-94</td><td class="cnote">Cache credits; only on demand</td></tr><tr><td class="citem">Calling/SMS</td><td>Twilio usage</td><td class="cmonth">~$0-20 / ~RM0-94</td><td class="cnote">Optional; only when calling shipped</td></tr><tr><td class="citem">Redis (optional)</td><td>Upstash</td><td class="cmonth">$0-10 / ~RM0-47</td><td class="cnote">Only if migrating off pg-boss</td></tr><tr><td class="citem">TOTAL (lean start)</td><td>Solo small scale</td><td class="cmonth">~$95-130 / ~RM450-615</td><td class="cnote">Before customer volume; mostly fixed WhatsApp + DB</td></tr></tbody></table>
+
+<div class="cap-title"><span class="em">🚧</span> Implementation flow</div>
+<div class="phase">
+  <div class="pn">1</div>
+  <div class="pbody"><div class="ptitle">Phase 0 — Foundations</div><div class="pgoal">Automation backbone + AI-search wedge live</div>
+  <div class="psteps"><span class="pstep">Add pg-boss queue on Supabase + @dealflow/jobs worker</span><span class="psep">›</span><span class="pstep">Migrate eviction sweep onto queue (proves pattern)</span><span class="psep">›</span><span class="pstep">Finish nlFilter prompt + /ai/nl-filter route</span><span class="psep">›</span><span class="pstep">Build FilterDSL-&gt;Drizzle translator + cmdk command bar</span><span class="psep">›</span><span class="pstep">Add deal stage-change event hook in moveToStage()</span></div></div></div><div class="phase">
+  <div class="pn">2</div>
+  <div class="pbody"><div class="ptitle">Phase 1 — SEA wedge</div><div class="pgoal">WhatsApp two-way inbox + AI replies</div>
+  <div class="psteps"><span class="pstep">Store 360dialog token in integrations vault</span><span class="psep">›</span><span class="pstep">Build signed inbound webhook (model on engine-mailer-webhook)</span><span class="psep">›</span><span class="pstep">Log messages as activities kind='message' matched by phone</span><span class="psep">›</span><span class="pstep">Build shadcn chat pane in contact view</span><span class="psep">›</span><span class="pstep">Wire outbound + AI reply suggestion (Malay/Manglish)</span></div></div></div><div class="phase">
+  <div class="pn">3</div>
+  <div class="pbody"><div class="ptitle">Phase 2 — Sales engine</div><div class="pgoal">Sequences, scoring, forecast, nudges</div>
+  <div class="psteps"><span class="pstep">Build email sequences (delayed jobs + EngineMailer)</span><span class="psep">›</span><span class="pstep">Seed leadScore custom field + scoring job</span><span class="psep">›</span><span class="pstep">Add weighted forecast + deal-rot to ReportsRepo + dashboard</span><span class="psep">›</span><span class="pstep">Add activity-based next-step nudges</span><span class="psep">›</span><span class="pstep">Wire stage-change -&gt; sequence/notify automation</span></div></div></div><div class="phase">
+  <div class="pn">4</div>
+  <div class="pbody"><div class="ptitle">Phase 3 — Onboarding + enrichment</div><div class="pgoal">Lower switching cost, richer data</div>
+  <div class="psteps"><span class="pstep">Build CSV import with AI extractContact + citext dedupe</span><span class="psep">›</span><span class="pstep">Add Apollo enrichment (vault key, cached, queued)</span><span class="psep">›</span><span class="pstep">Add AI account-brief / call-meeting summaries</span></div></div></div><div class="phase">
+  <div class="pn">5</div>
+  <div class="pbody"><div class="ptitle">Phase 4 — Comms + local compliance</div><div class="pgoal">Calling/SMS + Malaysia tax fit</div>
+  <div class="psteps"><span class="pstep">Add Twilio calling + SMS to timeline with AI summaries</span><span class="psep">›</span><span class="pstep">Add RM/SGD/IDR + SST locale polish</span><span class="psep">›</span><span class="pstep">Build MyInvois e-invoice export on deal-won</span><span class="psep">›</span><span class="pstep">Validate against LHDN sandbox</span></div></div></div>
+
+<div class="cap-title"><span class="em">👤</span> How a user uses DealFlow</div>
+<div class="flow">
+  <div class="flow-h"><span class="flow-t">WhatsApp lead to closed deal</span><span class="flow-p">Aisyah — SMB sales rep, Selangor</span></div>
+  <div class="flow-steps"><span class="fchip"><span class="fnum">1</span>Prospect messages company WhatsApp asking about pricing</span><span class="farrow">→</span><span class="fchip"><span class="fnum">2</span>Inbound auto-logs to a new contact's timeline (kind='message')</span><span class="farrow">→</span><span class="fchip"><span class="fnum">3</span>AI scores contact 'hot' from quick reply + link click</span><span class="farrow">→</span><span class="fchip"><span class="fnum">4</span>AI drafts a Manglish reply; Aisyah edits and sends</span><span class="farrow">→</span><span class="fchip"><span class="fnum">5</span>Deal auto-created; stage-change hook enrolls follow-up sequence</span><span class="farrow">→</span><span class="fchip"><span class="fnum">6</span>Deal won -&gt; MyInvois e-invoice exported automatically</span></div></div><div class="flow">
+  <div class="flow-h"><span class="flow-t">Morning AI command-bar triage</span><span class="flow-p">Daniel — sales manager, KL</span></div>
+  <div class="flow-steps"><span class="fchip"><span class="fnum">1</span>Opens command bar, types 'deals over RM50k closing this month no activity 2 weeks'</span><span class="farrow">→</span><span class="fchip"><span class="fnum">2</span>nlFilter -&gt; FilterDSL -&gt; filtered deal list appears</span><span class="farrow">→</span><span class="fchip"><span class="fnum">3</span>Dashboard shows weighted forecast + rotting-deal alerts</span><span class="farrow">→</span><span class="fchip"><span class="fnum">4</span>Clicks a cold deal; AI 'Summarize record' gives full brief</span><span class="farrow">→</span><span class="fchip"><span class="fnum">5</span>Assigns next-step task inline to clear the nudge</span></div></div><div class="flow">
+  <div class="flow-h"><span class="flow-t">Outbound cadence with auto-stop</span><span class="flow-p">Mei Ling — SDR, Penang</span></div>
+  <div class="flow-steps"><span class="fchip"><span class="fnum">1</span>Imports CSV of event leads; AI parses + dedupes by email</span><span class="farrow">→</span><span class="fchip"><span class="fnum">2</span>Enriches top accounts via Apollo (title, phone filled)</span><span class="farrow">→</span><span class="fchip"><span class="fnum">3</span>Enrolls them in a 4-step email sequence</span><span class="farrow">→</span><span class="fchip"><span class="fnum">4</span>Queue sends step 1; EngineMailer webhook tracks opens</span><span class="farrow">→</span><span class="fchip"><span class="fnum">5</span>Lead replies -&gt; sequence auto-halts, follow-up task created</span><span class="farrow">→</span><span class="fchip"><span class="fnum">6</span>Lead score jumps to 'hot'; surfaced on Mei Ling's board</span></div></div><div class="flow">
+  <div class="flow-h"><span class="flow-t">Phone-first inside sale</span><span class="flow-p">Ravi — inside-sales rep, Johor</span></div>
+  <div class="flow-steps"><span class="fchip"><span class="fnum">1</span>Clicks call from contact record (Twilio)</span><span class="farrow">→</span><span class="fchip"><span class="fnum">2</span>Call auto-logs as activity kind='call' with recording</span><span class="farrow">→</span><span class="fchip"><span class="fnum">3</span>AI transcribes + summarizes; action items added to timeline</span><span class="farrow">→</span><span class="fchip"><span class="fnum">4</span>SMS follow-up sent and logged on same timeline</span><span class="farrow">→</span><span class="fchip"><span class="fnum">5</span>Stage-change hook notifies owner deal advanced</span></div></div><div class="flow">
+  <div class="flow-h"><span class="flow-t">Manager forecast review</span><span class="flow-p">Sarah — RevOps lead, Singapore</span></div>
+  <div class="flow-steps"><span class="fchip"><span class="fnum">1</span>Opens dashboard; weighted forecast = value x stage win-prob</span><span class="farrow">→</span><span class="fchip"><span class="fnum">2</span>Filters via NL: 'deals with no next step this week'</span><span class="farrow">→</span><span class="fchip"><span class="fnum">3</span>Spots 3 rotting deals flagged by activity recency</span><span class="farrow">→</span><span class="fchip"><span class="fnum">4</span>Bulk-assigns follow-up tasks to reps</span><span class="farrow">→</span><span class="fchip"><span class="fnum">5</span>Reviews team lead-score distribution to prioritize coaching</span></div></div>
+
+<div class="cap-title"><span class="em">✅</span> Fact-check</div>
+<div class="note"><ul class="flag"><li><b>doubtful</b> — Salesforce ranks #1 in sales applications for the 14th consecutive year and generated about $8.32B in Sales Cloud revenue in FY2025 (~23% of subscription &amp; support revenue). <em>(Mixed: the revenue figures check out, but the headline ranking claim does not. (1) RANKING — DOUBTFUL/LIKELY WRONG: IDC's overall "#1 CRM provider" ranking is currently the 13th consecutive year (salesforce.com idc-crm-market-share-ranking-2026). For the specific "Sales applications" category, sources conflict: one secondary source stated "14th consecutive year" but a corroborating source (sqmagazine.co.uk) explicitly said "#1 in Sales for the 13th consecutive year per the same IDC assessment." The "14th" count is not reliably corroborated; the best evidence points to 13. (2) SALES CLOUD REVENUE — SUPPORTED: Multiple independent sources confirm Sales Cloud generated $8.32B in fiscal 2025 (year ended Jan 31, 2025); Service Cloud at $9.05B has overtaken it as the largest segment. (3) ~23% OF SUBSCRIPTION &amp; SUPPORT — SUPPORTED: FY2025 total subscription &amp; support revenue was ~$35.68B ($35,679M); $8.32B / $35.68B = 23.3% ≈ 23%. Could not load the primary SEC 8-K/10-K directly (EDGAR returned HTTP 403), so the exact Sales-offering line item ($8,322M) was confirmed via consistent secondary reporting rather than the filing itself. Verdict is 'doubtful' rather than 'supported' because a load-bearing element — the "14th consecutive year" ranking — is most likely off by one (should be 13th) and is not consistently corroborated.)</em></li><li><b>doubtful</b> — G2 reviewers cite high cost, fast-escalating licensing/add-on fees, high total cost of ownership requiring a dedicated admin ($80K–$120K/yr), steep learning curve, non-plug-and-play setup, and a UI that can feel clunky/slow. (Unnamed product; evidence points to Salesforce Sales Cloud/Platform.) <em>(The claim names no product, but every signal points to Salesforce Sales Cloud / Salesforce Platform, and against that target the QUALITATIVE complaints are well-supported by actual G2 reviewer text: high cost; licenses + add-ons "adding up quickly" / "hidden" costs for reports, API access, storage (fast-escalating fees); steep learning curve (esp. Einstein); "not plug-and-play... require time, technical skill, sometimes external consultants" (non-plug-and-play setup); UI that "can still feel clunky and slow," esp. Classic view. G2 reviewers also genuinely say it requires dedicated admins/consultants, supporting the high-TCO point.
+
+The defect is the specific parenthetical "$80K–$120K/yr." That dollar range is REAL as a labor-market figure — independent salary aggregators put a US Salesforce Admin at roughly $80K–$125K (ZipRecruiter 25th–75th pct $80,390–$125,160; corroborated by Glassdoor, Salesforce Ben, Salary.com). But it is NOT something "G2 reviewers cite." It comes from salary data and third-party TCO analyses (e.g., SyncGTM's Salesforce review explicitly presents the $80K–$120K admin cost as its OWN analysis, separate from the G2 cost complaints). The claim conflates a salary statistic with G2 review content and stitches it into one sentence as if reviewers stated the figure.
+
+Verdict: doubtful rather than supported because (1) the claim attributes a quantitative salary figure to "G2 reviewers" that G2 reviewers do not state — an attribution error — and (2) the claim omits the product name, so the G2 attribution cannot be cleanly verified as written; it is only defensible if read as Salesforce. The qualitative substance is accurate; the specific figure's sourcing is misattributed. Sources: g2.com/products/salesforce-salesforce-sales-cloud/reviews (pros-and-cons), g2.com/products/salesforce-platform/reviews, syncgtm.com/blog/salesforce-review, ziprecruiter.com/Salaries/Salesforce-Administrator-Salary, salesforceben.com/salesforce-administrator-salary, glassdoor.com Salesforce Administrator salary.)</em></li><li><b>doubtful</b> — HubSpot wins on usability, total cost of ownership, included marketing tools, and time-to-value; best fit is SMB and mid-market (1-500 employees). <em>(Four of five sub-claims are well-supported by current (2025-2026) evidence; one — "wins on total cost of ownership" — is overstated and contradicted by the weight of sources, so the bundled claim cannot be marked fully supported.
+
+SUPPORTED elements:
+- Usability: G2 rates HubSpot Sales Hub 8.7 vs Salesforce 8.0 on ease of use (Marketing Hub 8.6 vs 7.6); HubSpot is consistently rated higher on usability across G2/Capterra/TrustRadius. Reps typically productive within a week, no dedicated admin needed.
+- Included marketing tools: HubSpot's free CRM bundles marketing tools (forms, landing pages, email, ad campaigns), and Marketing Hub is a recognized core strength/differentiator. Supported.
+- Time-to-value: HubSpot has one of the fastest onboarding/time-to-value profiles; most teams in production in 2-6 weeks vs Salesforce 3-6+ months (up to 12 for enterprise). Supported.
+- SMB + mid-market fit (1-500 employees): Supported. ~72% of HubSpot's 2024 revenue came from businesses with 2-500 employees; ~75.8% of customers have &lt;=50 employees; it is the dominant/fastest-growing CRM in SMB and mid-market. The 1-500 employee framing is accurate.
+
+DOUBTFUL/OVERSTATED element:
+- Total cost of ownership: TCO is one of HubSpot's most commonly cited WEAKNESSES, not a clear win. Sources document contact-tier pricing that escalates as the database grows, stacked per-Hub licensing (Sales/Marketing/Service sold separately), mandatory onboarding fees ($1,500-$6,000+), and full automation/reporting/AI gated behind Professional/Enterprise tiers (Marketing Hub Pro ~$800/mo, Enterprise ~$3,600/mo base). HubSpot genuinely "wins" on the FREE/low entry point and on cost-relative-to-fast-value, but the unqualified assertion that it "wins on total cost of ownership" is contradicted at scale and in mid-market/enterprise scenarios.
+
+VERDICT RATIONALE: The claim's overall thrust (HubSpot leads on usability, marketing tooling, time-to-value, and SMB/mid-market fit) is accurate and well-evidenced. But it bundles in "total cost of ownership" as an unqualified win, which the evidence does not support — TCO is widely characterized as a HubSpot pain point. Because the claim presents TCO as a definitive win without qualification, the bundled statement is "doubtful" rather than "supported." A reworded claim listing TCO as "low entry cost / fast cost-to-value" rather than "total cost of ownership" would be supportable.
+
+Sources: G2 HubSpot Sales Hub vs Salesforce comparison (g2.com); Resonate HubSpot market-share and HubSpot-vs-Salesforce analyses (resonatehq.com); Nutshell "why is HubSpot so expensive" (nutshell.com); Huble HubSpot TCO (huble.com); EngageBay HubSpot pricing guide (engagebay.com); HubSpot product/pricing pages (hubspot.com); PortersFiveForce HubSpot target market (portersfiveforce.com).)</em></li><li><b>false</b> — Sales Hub tiers: Free ($0, unlimited users), Starter ($15/seat/mo annual, $20 monthly), Professional ($100/seat/mo annual + $1,500 onboarding), Enterprise ($150/seat/mo annual + $3,500 onboarding). <em>(Refers to HubSpot Sales Hub. The dollar figures are essentially correct, but the "Free = unlimited users" detail is FALSE, which is why the overall claim cannot be marked supported.
+
+CONFIRMED by HubSpot's official pricing page (hubspot.com/pricing/sales) and corroborating 2026 sources:
+- Starter: $15/seat/mo annual, $20/seat/mo monthly. CORRECT.
+- Professional: $100/seat/mo annual (+$1,500 one-time onboarding). CORRECT. (Note: HubSpot's per-seat label "starts at $90/mo/seat" is the monthly-equivalent framing; the effective annual-billed rate is $100/seat/mo and the monthly-billed rate is higher — sources agree the $100 annual + $1,500 onboarding figure is right.)
+- Enterprise: $150/seat/mo annual (+$3,500 one-time onboarding). CORRECT.
+
+FALSE element:
+- Free is NOT unlimited users. HubSpot's official page states "Free for up to 2 users," and multiple 2026 sources confirm the free tier is capped at 2 users (HubSpot tightened limits in 2024). The single fetch that said "unlimited users" was a summarizer error contradicted by the primary hubspot.com source and corroborating reporting.
+
+Because a stated attribute (unlimited users) is materially wrong, the claim as written is false even though the pricing/onboarding numbers check out.
+
+Sources: https://www.hubspot.com/pricing/sales ; https://blog.hubspot.com/sales/hubspot-sales-hub-pricing ; https://docket.io/resources/research/hubspot-sales-hub-pricing ; https://www.engagebay.com/blog/is-hubspot-free/)</em></li></ul></div>
+<p class="meta">From a 27-agent workflow: one researcher per CRM + a build-tech agent + a repo-fit agent → adversarial verification → product/engineering synthesis. Pricing &amp; product facts move fast — confirm before committing budget.</p>
+</main></body></html>
