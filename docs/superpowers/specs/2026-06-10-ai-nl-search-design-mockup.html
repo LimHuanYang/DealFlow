@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DealFlow — AI natural-language search · design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--indigo:#4f46e5;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;--indigo-700:#4338ca;--violet-100:#ede9fe;--violet-700:#6d28d9;--slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;--green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;--red-100:#fee2e2;--red-700:#b91c1c;}
+*{box-sizing:border-box}body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:34px 22px 120px}
+.hero{background:linear-gradient(135deg,#4f46e5,#6d28d9);color:#fff;border-radius:18px;padding:22px 26px;box-shadow:0 10px 30px rgba(79,70,229,.25)}
+.hero .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.9}
+.hero h1{font-size:22px;font-weight:800;margin:5px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600}
+.cap{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--indigo-700);margin:34px 0 13px;display:flex;align-items:center;gap:9px}.cap .em{font-size:18px}
+
+/* command palette mockup */
+.scrim{background:#0f172a;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:16px 16px;border-radius:16px;padding:36px 20px;display:flex;justify-content:center}
+.palette{width:560px;max-width:100%;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden}
+.p-input{display:flex;align-items:center;gap:10px;padding:15px 16px;border-bottom:1px solid var(--slate-200)}
+.p-input .mag{font-size:17px;color:var(--slate-400)}
+.p-input .q{flex:1;font-size:15px;color:var(--slate-900);font-weight:500}
+.p-input .cur{width:2px;height:18px;background:var(--indigo);display:inline-block;animation:b 1s steps(2) infinite}@keyframes b{50%{opacity:0}}
+.p-input .kbd{font-size:10px;color:var(--slate-400);border:1px solid var(--slate-200);border-radius:5px;padding:1px 6px}
+.interp{padding:10px 16px;background:var(--indigo-50);border-bottom:1px solid var(--indigo-100);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.interp .lbl{font-size:11px;font-weight:700;color:var(--indigo-700);margin-right:2px}
+.fchip{background:#fff;border:1px solid var(--indigo-100);border-radius:7px;padding:3px 9px;font-size:11.5px;color:var(--indigo-700);font-weight:600}
+.fchip .x{color:var(--slate-300);margin-left:5px}
+.res{max-height:240px;overflow:hidden}
+.r{display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--slate-100)}
+.r:last-child{border-bottom:none}
+.r .ravatar{flex:0 0 30px;height:30px;border-radius:8px;background:var(--indigo-50);color:var(--indigo-700);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.r .rname{font-size:13px;font-weight:600}.r .rsub{font-size:11px;color:var(--slate-500)}
+.r .rval{margin-left:auto;text-align:right}.r .rmoney{font-size:13px;font-weight:700;color:var(--green-700)}.r .rstage{font-size:10.5px;color:var(--slate-400)}
+.p-foot{display:flex;gap:14px;padding:9px 16px;background:var(--slate-50);font-size:11px;color:var(--slate-500)}
+.p-foot b{color:var(--slate-700)}
+
+/* example queries */
+.exg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ex{background:#fff;border:1px solid var(--slate-200);border-radius:11px;padding:12px 14px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.ex .q{font-size:13px;font-weight:600;color:var(--slate-900)}.ex .q::before{content:"\201C"}.ex .q::after{content:"\201D"}
+.ex .r2{font-size:11.5px;color:var(--slate-500);margin-top:4px}.ex .r2::before{content:"\2192 ";color:var(--indigo)}
+.ex .bm{font-size:10px;font-weight:700;color:var(--violet-700);background:var(--violet-100);border-radius:5px;padding:1px 6px;margin-left:6px}
+
+/* flow */
+.flow{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:15px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.flow-steps{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.st{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:6px 11px;font-size:12px;color:var(--slate-700)}
+.st.safe{background:var(--green-100);border-color:#86efac;color:var(--green-700);font-weight:600}
+.ar{color:var(--indigo);font-weight:800}
+.flow-note{font-size:12px;color:var(--slate-500);margin-top:10px;padding-left:10px;border-left:2px solid var(--indigo)}
+
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden;font-size:12.5px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+thead th{background:var(--slate-50);text-align:left;padding:8px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-500);font-weight:700}
+td{padding:8px 11px;border-top:1px solid var(--slate-100);vertical-align:top;color:var(--slate-700)}
+.ent{font-weight:700;color:var(--slate-900);white-space:nowrap}
+.fld{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+
+.apibox{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.7}
+.apibox .m{color:#a5b4fc;font-weight:700}.apibox .c{color:#64748b}.apibox .s{color:#86efac}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:15px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.col h3{margin:0 0 9px;font-size:13px;font-weight:700}.col.inld h3{color:var(--green-700)}.col.outld h3{color:var(--slate-500)}
+.col li{list-style:none;font-size:12.5px;color:var(--slate-700);padding:4px 0 4px 22px;position:relative}.col ul{margin:0;padding:0}
+.col.inld li::before{content:"\2713";position:absolute;left:3px;color:var(--green-700);font-weight:700}.col.outld li::before{content:"\2192";position:absolute;left:2px;color:var(--slate-400)}
+.reuse{display:flex;flex-wrap:wrap;gap:7px}.rchip{background:var(--green-100);color:var(--green-700);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:600}
+.note{font-size:12.5px;color:var(--slate-500);margin-top:14px;padding-left:10px;border-left:2px solid var(--slate-300)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:var(--slate-100);border-radius:4px;padding:1px 5px}
+@media(max-width:720px){.exg,.two{grid-template-columns:1fr}.palette{width:100%}}
+</style></head><body><main class="wrap">
+<div class="hero"><div class="k">DealFlow · P0 · design</div>
+<h1>🔎 Ask DealFlow in plain English — get the exact list, instantly</h1>
+<div class="chips"><span class="chip">⌘K command bar</span><span class="chip">AI → safe FilterDSL</span><span class="chip">BM / Manglish</span><span class="chip">reuses nlFilter stub + AI chain</span><span class="chip">no external accounts</span></div></div>
+
+<div class="cap"><span class="em">⌨️</span> What it looks like (press ⌘K anywhere)</div>
+<div class="scrim"><div class="palette">
+  <div class="p-input"><span class="mag">🔎</span><span class="q">deals over RM50k closing this month with no activity in 2 weeks</span><span class="cur"></span><span class="kbd">esc</span></div>
+  <div class="interp"><span class="lbl">✨ Interpreted as</span>
+    <span class="fchip">Deals<span class="x">×</span></span>
+    <span class="fchip">value &gt; RM50,000<span class="x">×</span></span>
+    <span class="fchip">closing: this month<span class="x">×</span></span>
+    <span class="fchip">no activity: 14 days<span class="x">×</span></span></div>
+  <div class="res">
+    <div class="r"><div class="ravatar">AC</div><div><div class="rname">Acme — Q3 Bulk Supply</div><div class="rsub">Aisyah Lim · last touch 18 days ago</div></div><div class="rval"><div class="rmoney">RM 76,000</div><div class="rstage">Proposal</div></div></div>
+    <div class="r"><div class="ravatar">TH</div><div><div class="rname">Teh Hardware — Reorder</div><div class="rsub">Raj · last touch 21 days ago</div></div><div class="rval"><div class="rmoney">RM 52,400</div><div class="rstage">Negotiation</div></div></div>
+    <div class="r"><div class="ravatar">MW</div><div><div class="rname">Mei Wong Trading</div><div class="rsub">no activity logged</div></div><div class="rval"><div class="rmoney">RM 61,000</div><div class="rstage">Proposal</div></div></div>
+  </div>
+  <div class="p-foot"><span><b>↵</b> open</span><span><b>⌘E</b> edit as filters</span><span><b>⌘S</b> save view</span><span style="margin-left:auto">3 results · ~0.6s</span></div>
+</div></div>
+<p class="note">The interpreted chips are the trust layer: the user always SEES how the AI read their words and can remove a chip or hit <code>⌘E</code> to fall back to manual filters. No black box.</p>
+
+<div class="cap"><span class="em">💬</span> Queries it handles</div>
+<div class="exg">
+  <div class="ex"><div class="q">contacts in KL I haven't emailed</div><div class="r2">Contacts · city = KL · no email activity</div></div>
+  <div class="ex"><div class="q">my open deals worth more than RM20k</div><div class="r2">Deals · owner = me · open · value &gt; 20,000</div></div>
+  <div class="ex"><div class="q">companies with no deals yet</div><div class="r2">Companies · open deals = 0</div></div>
+  <div class="ex"><div class="q">deal paling besar yang close bulan ni <span class="bm">BM</span></div><div class="r2">Deals · closing this month · sort by value desc</div></div>
+  <div class="ex"><div class="q">deals stuck in negotiation over 30 days</div><div class="r2">Deals · stage = Negotiation · in-stage &gt; 30d</div></div>
+  <div class="ex"><div class="q">contacts added this week</div><div class="r2">Contacts · createdAt = last 7 days</div></div>
+</div>
+
+<div class="cap"><span class="em">🔁</span> How it works (safe by design)</div>
+<div class="flow"><div class="flow-steps">
+  <span class="st">type query</span><span class="ar">→</span>
+  <span class="st">POST /ai/nl-search {query, entity}</span><span class="ar">→</span>
+  <span class="st">AI (per-org provider)</span><span class="ar">→</span>
+  <span class="st">returns constrained FilterDSL (JSON)</span><span class="ar">→</span>
+  <span class="st safe">Zod allowlist validate</span><span class="ar">→</span>
+  <span class="st">existing repo query · org-scoped · role-gated</span><span class="ar">→</span>
+  <span class="st">results + chips</span></div>
+  <p class="flow-note"><strong>The AI never touches the database.</strong> It only emits a small JSON FilterDSL from an allow-list of fields/operators; the server Zod-validates it and runs the SAME list query the manual filters use. No raw SQL, no data leakage, tenancy enforced server-side. Invalid/over-broad → reject + ask to rephrase (or keyword fallback).</p>
+</div>
+
+<div class="cap"><span class="em">🧱</span> FilterDSL — fields the AI may target (allow-listed)</div>
+<table><thead><tr><th>Entity</th><th>Filterable fields</th></tr></thead><tbody>
+<tr><td class="ent">Deals</td><td class="fld">value (gt/lt/between) · stage · ownerUserId (=me) · expectedCloseDate (this month / next Nd / overdue) · status (open/won/lost) · daysSinceActivity · daysInStage · companyId · createdAt</td></tr>
+<tr><td class="ent">Contacts</td><td class="fld">companyId · ownerUserId · city/location · hasActivity / daysSinceEmail · createdAt · custom fields</td></tr>
+<tr><td class="ent">Companies</td><td class="fld">ownerUserId · openDealCount (=0 / &gt;0) · totalOpenValue · createdAt · custom fields</td></tr>
+</tbody></table>
+
+<div class="cap"><span class="em">🔌</span> API</div>
+<div class="apibox"><span class="m">POST</span> /api/v1/ai/nl-search&nbsp;&nbsp;<span class="c">// requireOrg</span><br/>
+&nbsp;&nbsp;in:&nbsp; { query: <span class="s">"deals over RM50k…"</span>, entity: <span class="s">"deals"</span> }<br/>
+&nbsp;&nbsp;out: { filter: <span class="c">FilterDSL</span>, interpretation: <span class="s">"Deals · value&gt;50000 · …"</span>, results: [ … ] }<br/>
+&nbsp;&nbsp;<span class="c">// AI emits FilterDSL only → Zod validates → existing repo runs the query</span></div>
+
+<div class="cap"><span class="em">♻️</span> Reuses what you already have</div>
+<div class="reuse">
+  <span class="rchip">nlFilter() interface · provider.ts:47</span>
+  <span class="rchip">@dealflow/ai chain + per-org provider</span>
+  <span class="rchip">ai/routes.ts endpoint pattern</span>
+  <span class="rchip">deals/contacts/companies list repos</span>
+  <span class="rchip">existing list UI + query hooks</span>
+  <span class="rchip">shadcn Command (⌘K)</span>
+</div>
+
+<div class="cap"><span class="em">🎯</span> v1 scope</div>
+<div class="two">
+  <div class="col inld"><h3>✓ In</h3><ul>
+    <li>⌘K command bar (global) on Deals / Contacts / Companies</li>
+    <li>Implement nlFilter in the AI provider (Gemini) + the FilterDSL</li>
+    <li>POST /ai/nl-search endpoint + Zod allow-list validator</li>
+    <li>Interpreted-filter chips (removable) + ⌘E manual fallback</li>
+    <li>BM / Manglish understanding</li>
+    <li>Results render in the existing list view</li>
+    <li>Tests: DSL validator, endpoint (valid/invalid/tenancy), provider</li>
+  </ul></div>
+  <div class="col outld"><h3>Out (later)</h3><ul>
+    <li>Cross-entity joins ("contacts at companies with open deals")</li>
+    <li>Saved views / shared searches (⌘S is a stub for now)</li>
+    <li>Semantic / fuzzy embeddings search (this is structured filter)</li>
+    <li>NL search over activities/tasks &amp; emails</li>
+    <li>Voice input</li>
+  </ul></div>
+</div>
+
+<p class="note"><strong>Effort:</strong> ~M (a few focused days solo): the heavy lifting is the FilterDSL schema + the prompt + the Zod validator; the UI is a shadcn Command palette over your existing list query. No external services, no cost beyond the AI tokens you already pay for draft/summarize.</p>
+</main></body></html>

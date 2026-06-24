@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DealFlow — WhatsApp Inbox design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--indigo:#4f46e5;--indigo-50:#eef2ff;--indigo-100:#e0e7ff;--indigo-700:#4338ca;--slate-50:#f8fafc;--slate-100:#f1f5f9;--slate-200:#e2e8f0;--slate-300:#cbd5e1;--slate-400:#94a3b8;--slate-500:#64748b;--slate-600:#475569;--slate-700:#334155;--slate-900:#0f172a;--wa:#25D366;--wa-d:#128C7E;--wa-bubble:#dcf8c6;--green-100:#dcfce7;--green-700:#15803d;--amber-100:#fef3c7;--amber-700:#b45309;--red-100:#fee2e2;--red-700:#b91c1c;}
+*{box-sizing:border-box}body{margin:0;background:var(--slate-100);color:var(--slate-900);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:1020px;margin:0 auto;padding:34px 22px 120px}
+.hero{background:linear-gradient(135deg,#128C7E,#25D366);color:#fff;border-radius:18px;padding:22px 26px;box-shadow:0 10px 30px rgba(18,140,126,.25)}
+.hero .k{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.9}
+.hero h1{font-size:22px;font-weight:800;margin:5px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600}
+.cap{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--indigo-700);margin:34px 0 13px;display:flex;align-items:center;gap:9px}.cap .em{font-size:18px}
+
+/* architecture flow */
+.arch{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;background:#fff;border:1px solid var(--slate-200);border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.node{flex:1;min-width:120px;border:1px solid var(--slate-200);border-radius:11px;padding:11px;text-align:center;background:var(--slate-50)}
+.node.ext{background:#f0fdf4;border-color:#86efac}.node.df{background:var(--indigo-50);border-color:var(--indigo-100)}
+.node .ic{font-size:20px}.node .t{font-size:12.5px;font-weight:700;margin-top:4px}.node .d{font-size:11px;color:var(--slate-500);margin-top:2px}
+.aarr{display:flex;align-items:center;justify-content:center;width:26px;color:var(--slate-300);font-size:18px;font-weight:800}
+.archnote{font-size:12px;color:var(--slate-500);margin-top:9px;padding-left:10px;border-left:2px solid var(--wa)}
+
+/* data model table */
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden;font-size:12.5px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+thead th{background:var(--slate-50);text-align:left;padding:8px 11px;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-500);font-weight:700}
+td{padding:8px 11px;border-top:1px solid var(--slate-100);vertical-align:top;color:var(--slate-700)}
+.fld{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:var(--slate-900);white-space:nowrap}.null{color:var(--amber-700);font-weight:600}
+
+/* flows */
+.flow{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:14px;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-bottom:11px}
+.flow-h{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.flow-steps{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fchip{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:9px;padding:5px 10px;font-size:12px;color:var(--slate-700)}
+.fchip.gate{background:var(--amber-100);border-color:#fde68a;color:var(--amber-700);font-weight:600}
+.fchip.ok{background:var(--green-100);border-color:#86efac;color:var(--green-700);font-weight:600}
+.farrow{color:var(--wa-d);font-weight:800}
+
+/* inbox mockup */
+.inbox{display:grid;grid-template-columns:230px 1fr;background:#fff;border:1px solid var(--slate-200);border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(15,23,42,.1);height:430px}
+.conv-pane{border-right:1px solid var(--slate-200);display:flex;flex-direction:column;background:var(--slate-50)}
+.tabs{display:flex;border-bottom:1px solid var(--slate-200)}
+.tab{flex:1;text-align:center;font-size:12px;font-weight:600;padding:9px 0;color:var(--slate-500);cursor:default}
+.tab.active{color:var(--indigo-700);border-bottom:2px solid var(--indigo);background:#fff}
+.tab .pill{background:var(--red-100);color:var(--red-700);border-radius:999px;font-size:10px;padding:0 6px;margin-left:4px}
+.conv{display:flex;gap:9px;padding:10px 11px;border-bottom:1px solid var(--slate-100);cursor:default}
+.conv.sel{background:#fff;border-left:3px solid var(--wa)}
+.av{flex:0 0 34px;height:34px;border-radius:50%;background:var(--wa);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.av.unknown{background:var(--slate-300);color:var(--slate-600)}
+.conv .nm{font-size:12.5px;font-weight:600}.conv .pv{font-size:11px;color:var(--slate-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.conv .meta{margin-left:auto;text-align:right}.conv .tm{font-size:10px;color:var(--slate-400)}.conv .unread{background:var(--wa);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:0 6px;margin-top:3px;display:inline-block}
+.thread{display:flex;flex-direction:column;background:#efeae2;background-image:radial-gradient(rgba(0,0,0,.03) 1px,transparent 1px);background-size:14px 14px}
+.th-head{background:#fff;border-bottom:1px solid var(--slate-200);padding:9px 14px;display:flex;align-items:center;gap:10px}
+.th-head .nm{font-size:13.5px;font-weight:700}.th-head .ph{font-size:11px;color:var(--slate-500)}
+.win{margin-left:auto;font-size:10.5px;font-weight:600;background:var(--green-100);color:var(--green-700);border-radius:999px;padding:3px 9px}
+.msgs{flex:1;padding:14px;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.bub{max-width:74%;padding:7px 10px;border-radius:10px;font-size:12.5px;box-shadow:0 1px 1px rgba(0,0,0,.06);position:relative}
+.bub.in{background:#fff;align-self:flex-start;border-top-left-radius:3px}
+.bub.out{background:var(--wa-bubble);align-self:flex-end;border-top-right-radius:3px}
+.bub .tm{font-size:9.5px;color:var(--slate-400);margin-top:3px;text-align:right}.tick{color:#34b7f1;font-weight:700}
+.composer{background:#f0f0f0;border-top:1px solid var(--slate-200);padding:9px 12px}
+.draft-banner{background:var(--indigo-50);border:1px dashed var(--indigo);border-radius:9px;padding:7px 10px;font-size:11.5px;color:var(--indigo-700);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.comp-row{display:flex;gap:7px;align-items:center}
+.comp-in{flex:1;background:#fff;border:1px solid var(--slate-300);border-radius:20px;padding:8px 13px;font-size:12.5px;color:var(--slate-700)}
+.btn{border:none;border-radius:20px;padding:8px 13px;font-size:12px;font-weight:700;cursor:default;white-space:nowrap}
+.btn-ai{background:var(--indigo);color:#fff}.btn-send{background:var(--wa);color:#fff}
+.linkbtn{background:#fff;border:1px solid var(--slate-300);border-radius:7px;font-size:10px;font-weight:600;padding:2px 7px;color:var(--indigo-700);margin-top:3px;display:inline-block}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col{background:#fff;border:1px solid var(--slate-200);border-radius:13px;padding:15px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.col h3{margin:0 0 9px;font-size:13px;font-weight:700;display:flex;gap:7px}.col.inld h3{color:var(--green-700)}.col.outld h3{color:var(--slate-500)}
+.col li{list-style:none;font-size:12.5px;color:var(--slate-700);padding:4px 0 4px 22px;position:relative}.col ul{margin:0;padding:0}
+.col.inld li::before{content:"\2713";position:absolute;left:3px;color:var(--green-700);font-weight:700}.col.outld li::before{content:"\2192";position:absolute;left:2px;color:var(--slate-400)}
+.note{font-size:12.5px;color:var(--slate-500);margin-top:14px;padding-left:10px;border-left:2px solid var(--slate-300)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:var(--slate-100);border-radius:4px;padding:1px 5px}
+@media(max-width:720px){.inbox{grid-template-columns:1fr;height:auto}.two{grid-template-columns:1fr}}
+</style></head><body><main class="wrap">
+<div class="hero"><div class="k">DealFlow · P0 wedge · design</div>
+<h1>💬 Two-way WhatsApp Inbox + AI replies</h1>
+<div class="chips"><span class="chip">provider + sandbox now, live later</span><span class="chip">dedicated whatsapp_messages table</span><span class="chip">unmatched holding pen</span><span class="chip">on-demand AI draft</span><span class="chip">dedicated Inbox page</span></div></div>
+
+<div class="cap"><span class="em">🖥️</span> The Inbox (what reps live in)</div>
+<div class="inbox">
+  <div class="conv-pane">
+    <div class="tabs"><div class="tab active">All</div><div class="tab">Unassigned <span class="pill">2</span></div></div>
+    <div class="conv sel"><div class="av">AL</div><div><div class="nm">Aisyah Lim</div><div class="pv">Boleh hantar quotation?</div></div><div class="meta"><div class="tm">2m</div><span class="unread">1</span></div></div>
+    <div class="conv"><div class="av">RT</div><div><div class="nm">Raj · Teh Hardware</div><div class="pv">Ok thanks 👍</div></div><div class="meta"><div class="tm">1h</div></div></div>
+    <div class="conv"><div class="av unknown">?</div><div><div class="nm">+60 12-555 8821</div><div class="pv">Hi, saw your FB ad…</div></div><div class="meta"><div class="tm">3h</div></div></div>
+    <div class="conv"><div class="av">MW</div><div><div class="nm">Mei Wong</div><div class="pv">You: invoice sent ✓✓</div></div><div class="meta"><div class="tm">1d</div></div></div>
+  </div>
+  <div class="thread">
+    <div class="th-head"><div class="av">AL</div><div><div class="nm">Aisyah Lim</div><div class="ph">+60 12-345 6789 · Acme Sdn Bhd · Deal: Q3 Supply</div></div><div class="win">● within 24h window</div></div>
+    <div class="msgs">
+      <div class="bub in">Hi, interested in your bulk pricing for 200 units.<div class="tm">10:02</div></div>
+      <div class="bub out">Hi Aisyah! Sure — for 200 units it's RM38/unit. Boleh I prepare a quotation?<div class="tm">10:05 <span class="tick">✓✓</span></div></div>
+      <div class="bub in">Boleh hantar quotation?<div class="tm">10:08</div></div>
+    </div>
+    <div class="composer">
+      <div class="draft-banner">✨ AI draft (Manglish): "Sure Aisyah! Sending the quotation now — 200 units @ RM38. Let me know if ok ya 🙏" — <strong>edit &amp; send</strong></div>
+      <div class="comp-row"><div class="comp-in">Type a reply…</div><button class="btn btn-ai">✨ Draft reply</button><button class="btn btn-send">Send</button></div>
+    </div>
+  </div>
+</div>
+<p class="note"><strong>Unassigned tab</strong> = the holding pen: messages from unknown numbers (e.g. <code>+60 12-555 8821</code>) wait here with a <span class="linkbtn">＋ Link to contact</span> action until a rep attaches them — nothing is auto-created, nothing is lost. The same thread also shows on the linked contact/deal page.</p>
+
+<div class="cap"><span class="em">🏗️</span> Architecture (mirrors the EngineMailer pattern)</div>
+<div class="arch">
+  <div class="node ext"><div class="ic">📱</div><div class="t">Customer WhatsApp</div><div class="d">sends/receives</div></div>
+  <div class="aarr">⇄</div>
+  <div class="node ext"><div class="ic">☁️</div><div class="t">Meta Cloud API · 360dialog</div><div class="d">BSP</div></div>
+  <div class="aarr">⇄</div>
+  <div class="node df"><div class="ic">🪝</div><div class="t">/webhooks/whatsapp</div><div class="d">verify + ingest</div></div>
+  <div class="aarr">→</div>
+  <div class="node df"><div class="ic">⚙️</div><div class="t">whatsapp module</div><div class="d">match · store · send · AI</div></div>
+  <div class="aarr">→</div>
+  <div class="node df"><div class="ic">🗄️</div><div class="t">whatsapp_messages</div><div class="d">+ Inbox UI</div></div>
+</div>
+<p class="archnote">Sending goes through a <code>WhatsAppProvider</code> interface: <code>SandboxWhatsAppProvider</code> (build + test now) ↔ <code>Dialog360WhatsAppProvider</code> (flip live via config) — exactly like <code>buildEmailProvider</code>. Per-org keys live in the encrypted <code>OrgIntegrationsRepo</code>; the AI draft reuses <code>@dealflow/ai</code>.</p>
+
+<div class="cap"><span class="em">🗃️</span> New table: <code style="font-size:13px">whatsapp_messages</code></div>
+<table><thead><tr><th>Field</th><th>Type</th><th>Note</th></tr></thead><tbody>
+<tr><td class="fld">id, organizationId</td><td>uuid</td><td>tenant-scoped</td></tr>
+<tr><td class="fld">direction</td><td>in | out</td><td>inbound vs rep-sent</td></tr>
+<tr><td class="fld">waMessageId</td><td>text</td><td>provider message id (dedupe + status match)</td></tr>
+<tr><td class="fld">fromPhone, toPhone</td><td>text</td><td>E.164 normalized</td></tr>
+<tr><td class="fld">body, mediaUrl?</td><td>text</td><td>message content</td></tr>
+<tr><td class="fld">status</td><td>received|sent|delivered|read|failed</td><td>updated by status webhooks</td></tr>
+<tr><td class="fld">contactId</td><td>uuid <span class="null">nullable</span></td><td><span class="null">null = holding pen</span>; backfilled on link</td></tr>
+<tr><td class="fld">dealId?</td><td>uuid</td><td>optional deal link</td></tr>
+<tr><td class="fld">occurredAt, createdAt</td><td>timestamptz</td><td>thread ordering + 24h-window calc</td></tr>
+</tbody></table>
+
+<div class="cap"><span class="em">🔁</span> Flows</div>
+<div class="flow"><div class="flow-h">📥 Inbound</div><div class="flow-steps">
+<span class="fchip">customer sends</span><span class="farrow">→</span><span class="fchip">360dialog</span><span class="farrow">→</span><span class="fchip">webhook POST</span><span class="farrow">→</span><span class="fchip">verify HMAC sig</span><span class="farrow">→</span><span class="fchip">normalize phone → match contact</span><span class="farrow">→</span><span class="fchip">store msg (contactId or null)</span><span class="farrow">→</span><span class="fchip ok">200 fast</span></div></div>
+<div class="flow"><div class="flow-h">📤 Outbound</div><div class="flow-steps">
+<span class="fchip">rep types / uses AI draft</span><span class="farrow">→</span><span class="fchip gate">24h-window check</span><span class="farrow">→</span><span class="fchip">provider.send</span><span class="farrow">→</span><span class="fchip">store out msg (sent)</span><span class="farrow">→</span><span class="fchip">status webhook → delivered/read ✓✓</span></div></div>
+<div class="flow"><div class="flow-h">✨ AI draft reply</div><div class="flow-steps">
+<span class="fchip">click "Draft reply"</span><span class="farrow">→</span><span class="fchip">thread context + SEA tone (BM/Manglish/EN)</span><span class="farrow">→</span><span class="fchip">@dealflow/ai</span><span class="farrow">→</span><span class="fchip">suggestion in composer</span><span class="farrow">→</span><span class="fchip">rep edits + sends</span></div></div>
+
+<div class="cap"><span class="em">🎯</span> v1 scope</div>
+<div class="two">
+  <div class="col inld"><h3>✓ In</h3><ul>
+    <li>Inbound + outbound messaging (sandbox + 360dialog providers)</li>
+    <li>Signed inbound webhook (messages + delivery/read status)</li>
+    <li>whatsapp_messages table + contact phone matching</li>
+    <li>Unassigned holding pen + link-to-contact</li>
+    <li>Inbox page + contact-page thread block</li>
+    <li>On-demand AI draft (SEA tone) · 24h-window guard</li>
+    <li>Settings → WhatsApp connect + webhook URL + send-test</li>
+    <li>Full test suite (provider, webhook, repo, routes)</li>
+  </ul></div>
+  <div class="col outld"><h3>Out (later)</h3><ul>
+    <li>Pre-approved message templates (outside 24h)</li>
+    <li>Media/attachments beyond a stored URL</li>
+    <li>Async job queue (process inline for now)</li>
+    <li>Auto-suggest replies on every inbound</li>
+    <li>Multiple WhatsApp numbers per org</li>
+    <li>Instagram / Messenger channels</li>
+  </ul></div>
+</div>
+
+<p class="note">Prerequisite you handle in parallel (doesn't block the build): a Meta Business account + 360dialog BSP + verified number. The build is done against the sandbox provider and flips live with a config change.</p>
+</main></body></html>
